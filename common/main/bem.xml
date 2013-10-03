@@ -313,17 +313,17 @@ For terms of use, see http://www.unicode.org/copyright.html
 	<numbers>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
+					<pattern>¤#,##0.00</pattern>
+				</currencyFormat>
+				<currencyFormat type="accounting">
 					<pattern>¤#,##0.00;(¤#,##0.00)</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
 		</currencyFormats>
 		<currencies>
-			<currency type="ZMK">
-				<symbol>K</symbol>
-			</currency>
 			<currency type="ZMW">
-				<symbol>KR</symbol>
+				<symbol>K</symbol>
 			</currency>
 		</currencies>
 	</numbers>

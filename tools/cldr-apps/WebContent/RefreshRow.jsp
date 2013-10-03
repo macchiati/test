@@ -1,13 +1,19 @@
 <%@page import="com.ibm.icu.dev.util.ElapsedTimer"%>
-<%@page import="org.unicode.cldr.web.*"%><%@ page language="java" contentType="text/html; charset=UTF-8"
+<%@page import="java.io.PrintWriter,org.unicode.cldr.web.*"%><%@ page language="java" contentType="text/html; charset=UTF-8"
 	import="com.ibm.icu.util.ULocale,org.unicode.cldr.util.*,org.json.*"%><%--  Copyright (C) 2012 IBM and Others. All Rights Reserved  --%><%WebContext ctx = new WebContext(request, response);
 	ElapsedTimer et = new ElapsedTimer();
 			String what = request.getParameter(SurveyAjax.REQ_WHAT);
 			String sess = request.getParameter(SurveyMain.QUERY_SESSION);
 			String loc = request.getParameter(SurveyMain.QUERY_LOCALE);
-			CLDRLocale l;
-			ctx.setLocale(l=CLDRLocale.getInstance(loc));
-			String xpath = WebContext.decodeFieldString(request.getParameter(SurveyForum.F_XPATH));
+			
+			CLDRLocale l = SurveyAjax.validateLocale(new PrintWriter(out), loc);
+			if(l==null) return;
+			ctx.setLocale(l);
+            String xpath = WebContext.decodeFieldString(request.getParameter(SurveyForum.F_XPATH));
+            String strid = WebContext.decodeFieldString(request.getParameter("strid"));
+            if(strid!=null&&strid.isEmpty()) strid=null;
+            String sectionName = WebContext.decodeFieldString(request.getParameter("x"));
+            if(sectionName!=null&&sectionName.isEmpty()) sectionName=null;
 			String voteinfo = request.getParameter("voteinfo");
 			String vhash = request.getParameter("vhash");
 			String fieldHash = request.getParameter(SurveyMain.QUERY_FIELDHASH);
@@ -49,11 +55,24 @@
 				}
 				return;
 			}
+			
+			if(request.getParameter("automatic")==null || request.getParameter("automatic").isEmpty()) {
+                mySession.userDidAction(); // don't touch for auto refresh
+			}
+			
+			if(xpath!=null && xpath.isEmpty()) {
+				xpath = null;
+			}
 			String xp = xpath;
 			XPathMatcher matcher = null;
-			PathHeader.PageId pageId = WebContext.getPageId(xp);
+			String pageIdStr = xp;
+			if(xp == null && sectionName!=null)  {
+				pageIdStr = sectionName;
+			}
 			
-			if(pageId == null ) {
+			PathHeader.PageId pageId = WebContext.getPageId(pageIdStr);
+			
+			if(pageId == null && xpath != null ) {
 				try {
 					int id = Integer.parseInt(xpath);
 					xp = mySession.sm.xpt.getById(id);
@@ -64,12 +83,39 @@
 	
 				}
 			}
+			if(pageId == null && xpath == null && strid!=null) {
+				try {
+				    				xp = mySession.sm.xpt.getByStringID(strid);
+				} catch(Throwable t) {
+                    JSONWriter r = new JSONWriter(out).object().
+                            key("err").value("Exception getting stringid " + strid).
+                            key("err_code").value("E_BAD_SECTION").endObject();
+                    return;
+				}
+                if(xp!=null) {
+                	try {
+	                	pageId = mySession.sm.getSTFactory().getPathHeader(xp).getPageId(); // section containing
+                	} catch(Throwable t) {
+	                    matcher = XPathMatcher.getMatcherForString(xp); // single string
+                	}
+                }
+			}
+			
 			ctx.session = mySession;
 			ctx.sm = ctx.session.sm;
 			ctx.setServletPath(ctx.sm.defaultServletPath);
 			CLDRLocale locale = CLDRLocale.getInstance(loc);
 			
 			ctx.setLocale(locale);
+			
+			// don't return dc content
+            SupplementalDataInfo sdi = ctx.sm.getSupplementalDataInfo();
+            CLDRLocale dcParent = sdi.getBaseFromDefaultContent(locale);
+            if(dcParent != null) {
+                JSONWriter r = new JSONWriter(out).object().
+                        key("section").value(new JSONObject().put("nocontent", "Default Content, see " + dcParent.getBaseName())).endObject();
+                return; // short circuit.
+            }
 
 			boolean dataEmpty = false;
 			boolean zoomedIn = request.getParameter("zoomedIn") != null
@@ -86,11 +132,16 @@
                                 coverage.toString(),
                                 WebContext.LoadingShow.dontShowLoading);
                         section.setUserAndFileForVotelist(mySession.user,null);
-                    } else {
+                    } else if (xp!=null) {
 					    baseXp = XPathTable.xpathToBaseXpath(xp);
 						section = ctx.getSection(baseXp,matcher,
 								coverage.toString(),
 								WebContext.LoadingShow.dontShowLoading);
+                    } else {
+                        JSONWriter r = new JSONWriter(out).object().
+                                key("err").value("Could not understand that section, xpath, or ID. Bad URL?").
+                                key("err_code").value("E_BAD_SECTION").endObject();
+                        return;
                     }
 				} catch (Throwable t) {
 					SurveyLog.logException(t,"on loading " + locale+":"+ baseXp);
@@ -98,17 +149,19 @@
 						response.sendError(500, "Exception on getSection:"+t.toString());
 					} else {
 						JSONWriter r = new JSONWriter(out).object().
-								key("err").value("Exception on getSection:"+t.toString()).endObject();
+								key("err").value("Exception on getSection:"+t.toString()).
+                                key("err_code").value("E_BAD_SECTION").endObject();
+
 					}
 					return;
 				}
 
-				if (request.getParameter("json") != null) {
+				if (request.getParameter("json") != null) { // JSON (new) mode
 					request.setCharacterEncoding("UTF-8");
 					response.setCharacterEncoding("UTF-8");
 					response.setContentType("application/json");
 					JSONObject dsets = new JSONObject();
-					if(pageId==null) {
+					if(pageId==null) { // requested an xp, not a pageid?
 						for (String n : SortMode.getSortModesFor(xp)) {
 							dsets.put(
 									n,
@@ -117,15 +170,28 @@
 						}
 						//DataSection.DisplaySet ds = section.getDisplaySet(ctx, matcher);
 						dsets.put("default", SortMode.getSortMode(ctx, section));
+						pageId = section.getPageId();
 					} else {
 					    dsets.put("default",PathHeaderSort.name);
-					    dsets.put(PathHeaderSort.name,section.createDisplaySet(SortMode.getInstance(PathHeaderSort.name),null));
+					    dsets.put(PathHeaderSort.name,section.createDisplaySet(SortMode.getInstance(PathHeaderSort.name),null)); // the section creates the sort
+					}
+							
+					if(pageId!=null) {
+						if(pageId.getSectionId() == org.unicode.cldr.util.PathHeader.SectionId.Special) {
+	                        JSONWriter r = new JSONWriter(out).object().
+	                                key("err").value("Items not visible - page " + pageId + " section " + pageId.getSectionId()).
+	                                key("err_code").value("E_SPECIAL_SECTION").endObject();
+	                        return;
+						}
 					}
 					
 					try {
 						JSONWriter r = new JSONWriter(out).object()
 								.key("stro").value(STFactory.isReadOnlyLocale(ctx.getLocale()))
+								.key("baseXpath").value(baseXp)
+                                .key("pageId").value((pageId!=null)?pageId.name():null)
 								.key("section").value(section)
+								.key("localeDisplayName").value(ctx.getLocale().getDisplayName())
 								.key("displaySets").value(dsets)
 								.key("dir").value(ctx.getDirectionForLocale())
 								.key("canModify").value(ctx.canModify())

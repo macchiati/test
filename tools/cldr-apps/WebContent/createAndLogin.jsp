@@ -4,18 +4,16 @@
 <%
 String vap = request.getParameter("vap");
 if(vap==null ||
+    SurveyMain.isBusted() ||
+    !SurveyMain.isSetup ||
     vap.length()==0 ||
     	!SurveyMain.isUnofficial() || 
 			(!SurveyMain.vap.equals(vap) && !vap.equals(SurveyMain.testpw))  ) {
-	response.sendRedirect("http://cldr.unicode.org");
+	response.sendRedirect(request.getContextPath() + "index.jsp");
 	return;
 }
-
-VoteResolver.Organization orgs[] = VoteResolver.Organization.values();
-VoteResolver.Organization anOrg = orgs[(int)Math.rint(Math.random()*(double)(orgs.length-1))];
-String myorg = anOrg.name();
 	
-	
+// zap any current login
     Cookie c0 = WebContext.getCookie(request,SurveyMain.QUERY_EMAIL);
     if(c0!=null) {
         c0.setValue("");
@@ -39,7 +37,22 @@ String myorg = anOrg.name();
 <body>
 <%@ include file="header.jspf"%>
 				<img src="STLogo.png" align="right" border="0" title="[logo]" alt="[logo]" />
+				
+<%
+if(SurveyMain.isSetup==false ) {
+	%>
+	   <div class='ferrbox'>The SurveyTool is not yet setup. <a href='<%= request.getContextPath() %>/survey'>Try clicking this link.</a></div>
+	<%
+	return;
+}
+CookieSession.sm.reg.setOrgList();
+String orgs[] = UserRegistry.getOrgList();
+String myorg = orgs[(int)Math.rint(Math.random()*(double)(orgs.length-1))];
+%>
+				
 <h1>Add a Test Survey Tool user</h1>
+<i>Note: the organization chosen will be random, unless you change it at the bottom of this page.</i> <br/>
+<i>This account is for testing purposes and may be deleted without notice!</i> <br/>
 <form class="adduser" action='survey'
 	method="POST"><input type="hidden" name="dump"
 	value='<%=vap%>' /> <input type="hidden"
@@ -51,18 +64,34 @@ String myorg = anOrg.name();
 		<td><input id='real' size="40" value="REALNAME" name="real" /></td>
 	</tr>
 	<tr class="submit">
-		<td colspan="2"><button type="submit">Login</button></td>
+		<td colspan="2"><button style='font-size: xx-large' type="submit">Login</button></td>
 	</tr>
 	</table>
 	<hr>
 	
 
-	
-	<table id='more' style='display: none;'>
+	<h2>More Options...</h2>
+	<table id='more'>
 	<tr>
-		<th><label for="new_org">Organization:</label></th>
+		<th><label for="new_org">Specific Organization:</label></th>
+            <td>
+                <select onchange="document.getElementById('new_org').value=this.value">
+                    <option value='' selected="selected">Choose...</option>
+                    <%
+                        for(String o : UserRegistry.getOrgList()) {
+                    %>
+                            <option value='<%= o %>'><%= o %></option>
+                    <%
+                        }
+                    %>
+                </select>
+            </td>
+                  <td><input id='new_org' name="new_org" value="<%=myorg%>" /></td>
 		
+		<%--
 			<td><input name="new_org"  value="<%=myorg%>" /></td>
+			
+			--%>
 	</tr>
 	<tr>
 		<th><label for="new_userlevel">Userlevel:</label></th>
@@ -71,7 +100,9 @@ String myorg = anOrg.name();
 				for (int lev : UserRegistry.ALL_LEVELS) {
 			%>
 			<option value="<%=lev%>"
-				<%=(lev == UserRegistry.TC) ? "selected" : ""%>><%=lev%>
+				<%=(lev == UserRegistry.TC) ? "selected" : ""%>
+				<%=(lev == UserRegistry.ADMIN) ? "disabled" : ""%>
+				                ><%=lev%>
 			(<%=UserRegistry.levelAsStr(lev)%>)</option>
 			<%
 				}
@@ -94,7 +125,7 @@ document.getElementById('real').focus()
 	href='<%=request.getParameter("a")%>?s=<%=request.getParameter("s")%>'>Cancel,
 return to Survey Tool</a>
  --%>|
-<a href="./index.jsp">Return to CLDR Applications</a>  | <a href='javascript:document.getElementById("more").style.display="";'>(More Options...)</a>
+<a href="./index.jsp">Return to CLDR Applications</a>
 |
 <!-- <a target="_new"
 	href="http://dev.icu-project.org/cgi-bin/cldrwiki.pl?SurveyToolHelp/AddModifyUser">Help

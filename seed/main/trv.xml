@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE ldml SYSTEM "../../common/dtd/ldml.dtd">
-<!-- Copyright © 1991-2013 Unicode, Inc. -->
-<!-- CLDR data files are interpreted according to the LDML specification (http://unicode.org/reports/tr35/) -->
-<!-- For terms of use, see http://www.unicode.org/copyright.html -->
+<!-- Copyright © 1991-2013 Unicode, Inc.
+CLDR data files are interpreted according to the LDML specification (http://unicode.org/reports/tr35/)
+For terms of use, see http://www.unicode.org/copyright.html
+-->
 <ldml>
 	<identity>
 		<version number="$Revision$"/>
@@ -79,7 +80,6 @@
 	<characters>
 		<exemplarCharacters draft="provisional">[a b c d e g h i j k l m n {ng} o p q r s t u w x y]</exemplarCharacters>
 		<exemplarCharacters type="auxiliary" draft="provisional">[ḏ f ɨ ḻ ṟ ṯ ʉ v z ʼ]</exemplarCharacters>
-		<exemplarCharacters type="currencySymbol" draft="unconfirmed">[a b c d e f g h i j k l m n o p q r s t u v w x y z]</exemplarCharacters>
 		<exemplarCharacters type="index" draft="unconfirmed">[A B C D E F G H I J K L M N O P Q R S T U V W X Y Z]</exemplarCharacters>
 	</characters>
 	<delimiters>
@@ -206,12 +206,12 @@
 						<dateFormatItem id="MMMMEd" draft="provisional">E MMMM d</dateFormatItem>
 						<dateFormatItem id="ms" draft="provisional">mm:ss</dateFormatItem>
 						<dateFormatItem id="y" draft="provisional">y</dateFormatItem>
-						<dateFormatItem id="yM" draft="provisional">yyyy-M</dateFormatItem>
-						<dateFormatItem id="yMEd" draft="provisional">E, yyyy-M-d</dateFormatItem>
+						<dateFormatItem id="yM" draft="provisional">y-M</dateFormatItem>
+						<dateFormatItem id="yMEd" draft="provisional">E, y-M-d</dateFormatItem>
 						<dateFormatItem id="yMMM" draft="provisional">y MMM</dateFormatItem>
 						<dateFormatItem id="yMMMEd" draft="provisional">E, y MMM d</dateFormatItem>
 						<dateFormatItem id="yMMMM" draft="provisional">y MMMM</dateFormatItem>
-						<dateFormatItem id="yQ" draft="provisional">yyyy Q</dateFormatItem>
+						<dateFormatItem id="yQ" draft="provisional">y Q</dateFormatItem>
 						<dateFormatItem id="yQQQ" draft="provisional">y QQQ</dateFormatItem>
 					</availableFormats>
 				</dateTimeFormats>
@@ -350,7 +350,7 @@
 					</dateFormatLength>
 					<dateFormatLength type="short">
 						<dateFormat>
-							<pattern draft="provisional">yyyy-MM-dd</pattern>
+							<pattern draft="provisional">y-MM-dd</pattern>
 						</dateFormat>
 					</dateFormatLength>
 				</dateFormats>
@@ -390,12 +390,12 @@
 						<dateFormatItem id="MMMMEd" draft="provisional">E MMMM d</dateFormatItem>
 						<dateFormatItem id="ms" draft="provisional">mm:ss</dateFormatItem>
 						<dateFormatItem id="y" draft="provisional">y</dateFormatItem>
-						<dateFormatItem id="yM" draft="provisional">yyyy-M</dateFormatItem>
-						<dateFormatItem id="yMEd" draft="provisional">E, yyyy-M-d</dateFormatItem>
+						<dateFormatItem id="yM" draft="provisional">y-M</dateFormatItem>
+						<dateFormatItem id="yMEd" draft="provisional">E, y-M-d</dateFormatItem>
 						<dateFormatItem id="yMMM" draft="provisional">y MMM</dateFormatItem>
 						<dateFormatItem id="yMMMEd" draft="provisional">E, y MMM d</dateFormatItem>
 						<dateFormatItem id="yMMMM" draft="provisional">y MMMM</dateFormatItem>
-						<dateFormatItem id="yQ" draft="provisional">yyyy Q</dateFormatItem>
+						<dateFormatItem id="yQ" draft="provisional">y Q</dateFormatItem>
 						<dateFormatItem id="yQQQ" draft="provisional">y QQQ</dateFormatItem>
 					</availableFormats>
 				</dateTimeFormats>
@@ -443,7 +443,6 @@
 			<hourFormat draft="provisional">+HH:mm;-HH:mm</hourFormat>
 			<gmtFormat draft="provisional">JQG{0}</gmtFormat>
 			<regionFormat draft="provisional">Jikan {0}</regionFormat>
-			<fallbackRegionFormat draft="provisional">Jikan {1} ({0})</fallbackRegionFormat>
 			<zone type="Etc/Unknown">
 				<exemplarCity draft="provisional">Ini klayi ka Jikan hini</exemplarCity>
 			</zone>
@@ -614,7 +613,7 @@
 		</percentFormats>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
 					<pattern draft="provisional">¤ #,##0.00</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
@@ -665,27 +664,29 @@
 		</currencies>
 	</numbers>
 	<units>
-		<unit type="day">
-			<unitPattern count="other" draft="provisional">{0} Jiyax</unitPattern>
-		</unit>
-		<unit type="hour">
-			<unitPattern count="other" draft="provisional">{0} Tuki</unitPattern>
-		</unit>
-		<unit type="minute">
-			<unitPattern count="other" draft="provisional">{0} spngan</unitPattern>
-		</unit>
-		<unit type="month">
-			<unitPattern count="other" draft="provisional">{0} Idas</unitPattern>
-		</unit>
-		<unit type="second">
-			<unitPattern count="other" draft="provisional">{0} Seykn</unitPattern>
-		</unit>
-		<unit type="week">
-			<unitPattern count="other" draft="provisional">{0} Jiyax iyax sngayan</unitPattern>
-		</unit>
-		<unit type="year">
-			<unitPattern count="other" draft="provisional">{0} Hnkawas</unitPattern>
-		</unit>
+		<unitLength type="long">
+			<unit type="duration-day">
+				<unitPattern count="other">{0} Jiyax</unitPattern>
+			</unit>
+			<unit type="duration-hour">
+				<unitPattern count="other">{0} Tuki</unitPattern>
+			</unit>
+			<unit type="duration-minute">
+				<unitPattern count="other">{0} spngan</unitPattern>
+			</unit>
+			<unit type="duration-month">
+				<unitPattern count="other">{0} Idas</unitPattern>
+			</unit>
+			<unit type="duration-second">
+				<unitPattern count="other">{0} Seykn</unitPattern>
+			</unit>
+			<unit type="duration-week">
+				<unitPattern count="other">{0} Jiyax iyax sngayan</unitPattern>
+			</unit>
+			<unit type="duration-year">
+				<unitPattern count="other">{0} Hnkawas</unitPattern>
+			</unit>
+		</unitLength>
 	</units>
 	<posix>
 		<messages>
@@ -694,3 +695,4 @@
 		</messages>
 	</posix>
 </ldml>
+

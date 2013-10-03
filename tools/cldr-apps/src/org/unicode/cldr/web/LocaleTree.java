@@ -6,16 +6,14 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.unicode.cldr.util.CLDRLocale;
-import org.unicode.cldr.util.CLDRLocale.NameFormatter;
+import org.unicode.cldr.util.CLDRLocale.CLDRFormatter;
 
-import com.ibm.icu.text.LocaleDisplayNames;
 import com.ibm.icu.text.RuleBasedCollator;
-import com.ibm.icu.util.ULocale;
 
 public class LocaleTree {
-    NameFormatter displayLocale;
+    CLDRFormatter displayLocale;
 
-    public LocaleTree(CLDRLocale.NameFormatter nf) {
+    public LocaleTree(CLDRLocale.CLDRFormatter nf) {
         this.displayLocale = nf;
     }
 
@@ -66,7 +64,7 @@ public class LocaleTree {
         String ls = ((s == null) ? l : (l + "_" + s)); // language and script
         CLDRLocale lsl = CLDRLocale.getInstance(ls);
 
-        localeListMap.put(lsl.getDisplayName(displayLocale), lsl);
+        localeListMap.put(getLocaleDisplayName(lsl), lsl);
 
         Map<String, CLDRLocale> lm = subLocales.get(lsl);
         if (lm == null) {
@@ -77,9 +75,12 @@ public class LocaleTree {
         if (t != null || v != null) {
             if (v == null) {
                 lm.put(localeName.getDisplayCountry(displayLocale), localeName);
-            } else {
+            } else if (t != null) {
                 lm.put(localeName.getDisplayCountry(displayLocale) + " (" + localeName.getDisplayVariant(displayLocale) + ")",
-                        localeName);
+                    localeName);
+            } else {
+                lm.put("(" + localeName.getDisplayVariant(displayLocale) + ")",
+                    localeName);
             }
         }
     }
@@ -94,7 +95,7 @@ public class LocaleTree {
     }
 
     public String getLocaleDisplayName(CLDRLocale locale) {
-        return locale.getDisplayName(displayLocale);
+        return displayLocale.getDisplayName(locale, true, null);
     }
 
     public Map<String, CLDRLocale> getMap() {

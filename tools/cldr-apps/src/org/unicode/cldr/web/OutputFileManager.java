@@ -18,9 +18,10 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.Map;
 import java.util.Set;
-import java.util.TimerTask;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
 import javax.servlet.ServletException;
@@ -46,6 +47,7 @@ import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.CLDRLocale;
 import org.unicode.cldr.util.CldrUtility;
+import org.unicode.cldr.util.Pair;
 import org.unicode.cldr.util.XMLSource;
 import org.unicode.cldr.web.CLDRProgressIndicator.CLDRProgressTask;
 
@@ -53,6 +55,7 @@ import com.ibm.icu.dev.util.ElapsedTimer;
 
 public class OutputFileManager {
 
+    private static boolean DEBUG = false;
     private static final String XML_SUFFIX = ".xml";
     private SurveyMain sm;
 
@@ -70,7 +73,7 @@ public class OutputFileManager {
         } catch (Throwable t) {
             tryCommit = false;
             String whyNot = tryCommitWhyNot = "SVN disabled - because: " + t.toString() + " on "
-                    + ((vxmlDir == null) ? "(null vxml directory)" : vxmlDir.getAbsolutePath());
+                + ((vxmlDir == null) ? "(null vxml directory)" : vxmlDir.getAbsolutePath());
 
             System.err.println(whyNot);
 
@@ -78,7 +81,7 @@ public class OutputFileManager {
         }
         if (tryCommit) {
             System.err.println("SVN commits active in " + vxmlDir.getAbsolutePath() + " - r"
-                    + i.getCommittedRevision().getNumber() + " " + i.getCommittedDate());
+                + i.getCommittedRevision().getNumber() + " " + i.getCommittedDate());
         }
     }
 
@@ -300,7 +303,7 @@ public class OutputFileManager {
                 throw new InternalError("Can't (yet) cache kind " + kind + " for loc " + loc);
             } else {
                 throw new InternalError("Don't know how to make kind " + kind + " for loc " + loc
-                        + " - isCacheableKind() out of sync with writeOutputFile()");
+                    + " - isCacheableKind() out of sync with writeOutputFile()");
             }
         }
         try {
@@ -319,19 +322,19 @@ public class OutputFileManager {
                     if (e.getMessage().contains("E155007")) {
                         SurveyLog.logException(e, "Trying to add [and giving up on SVN commits!]" + outFile.getAbsolutePath());
                         tryCommitWhyNot = "Trying to add [and giving up on SVN commits!]" + outFile.getAbsolutePath() + " - "
-                                + e.toString();
+                            + e.toString();
                         tryCommit = false;
                     } else if (e.getMessage().contains("E155015")) {
                         svnRemoveAndResolved(outFile);
                         doWriteFile(loc, file, isFlat, outFile);
                         SurveyLog
-                                .debug("Updater: Resolved, Re-Wrote: " + kind + "/" + loc + " - " + ElapsedTimer.elapsedTime(st));
+                            .debug("Updater: Resolved, Re-Wrote: " + kind + "/" + loc + " - " + ElapsedTimer.elapsedTime(st));
                     } else if (!e.getMessage().contains("E150002")) {
                         SurveyLog.logException(e, "Trying to add " + outFile.getAbsolutePath());
                     }
                 }
                 if (false && /* for now- just add, don't commit */
-                tryCommit && outFile.exists())
+                    tryCommit && outFile.exists())
                     try {
                         File dirs[] = { outFile };
                         ElapsedTimer et = new ElapsedTimer();
@@ -341,27 +344,27 @@ public class OutputFileManager {
                     } catch (SVNException e) {
                         if (e.getMessage().contains("E155007")) {
                             SurveyLog.logException(e,
-                                    "Trying to commit [and giving up on SVN commits!]" + outFile.getAbsolutePath());
+                                "Trying to commit [and giving up on SVN commits!]" + outFile.getAbsolutePath());
                             tryCommit = false;
                         } else if (e.getMessage().contains("E155011")) {
                             SurveyLog.logException(e, "Out of date in commit - will update and REMOVE (to be regenerated) "
-                                    + outFile.getAbsolutePath());
+                                + outFile.getAbsolutePath());
                             try {
                                 long l = svnUpdate(outFile);
                                 System.err.println("Updated " + outFile.getAbsolutePath() + " to r" + l
-                                        + " - will now delete/rewrite it so that it up to date");
+                                    + " - will now delete/rewrite it so that it up to date");
                             } catch (SVNException e1) {
                                 SurveyLog.logException(e1, "While trying to update " + outFile.getAbsolutePath());
                             } finally {
                                 outFile.delete(); //
-                                doWriteFile(loc, file, isFlat, outFile);
-                                SurveyLog.debug("Updater: Updated, Re-Wrote: " + kind + "/" + loc + " - "
-                                        + ElapsedTimer.elapsedTime(st));
-                            }
-                        } else {
-                            SurveyLog.logException(e, "Trying to commit " + outFile.getAbsolutePath());
-                        }
-                    }
+                    doWriteFile(loc, file, isFlat, outFile);
+                    SurveyLog.debug("Updater: Updated, Re-Wrote: " + kind + "/" + loc + " - "
+                        + ElapsedTimer.elapsedTime(st));
+                }
+            } else {
+                SurveyLog.logException(e, "Trying to commit " + outFile.getAbsolutePath());
+            }
+        }
             }
             return outFile;
         } catch (IOException e) {
@@ -389,7 +392,7 @@ public class OutputFileManager {
      * @throws FileNotFoundException
      */
     private void doWriteFile(CLDRLocale loc, CLDRFile file, boolean isFlat, File outFile) throws UnsupportedEncodingException,
-            FileNotFoundException {
+        FileNotFoundException {
         PrintWriter u8out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outFile), "UTF8"));
         if (!isFlat) {
             file.write(u8out);
@@ -632,9 +635,9 @@ public class OutputFileManager {
         String s = request.getPathInfo();
 
         if ((s == null)
-                || !(s.startsWith(XML_PREFIX) || s.startsWith(ZXML_PREFIX) || s.startsWith(ZVXML_PREFIX)
-                        || s.startsWith(VXML_PREFIX) || s.startsWith(FXML_PREFIX) || s.startsWith(PXML_PREFIX)
-                        || s.startsWith(RXML_PREFIX) || s.startsWith(TXML_PREFIX) || s.startsWith(FEED_PREFIX))) {
+            || !(s.startsWith(XML_PREFIX) || s.startsWith(ZXML_PREFIX) || s.startsWith(ZVXML_PREFIX)
+                || s.startsWith(VXML_PREFIX) || s.startsWith(FXML_PREFIX) || s.startsWith(PXML_PREFIX)
+                || s.startsWith(RXML_PREFIX) || s.startsWith(TXML_PREFIX) || s.startsWith(FEED_PREFIX))) {
             return false;
         }
 
@@ -645,7 +648,7 @@ public class OutputFileManager {
     }
 
     public synchronized boolean _doRawXml(HttpServletRequest request, HttpServletResponse response) throws IOException,
-            ServletException {
+        ServletException {
         String s = request.getPathInfo();
         CLDRProgressTask p = sm.openProgress("Raw XML");
         try {
@@ -732,7 +735,7 @@ public class OutputFileManager {
                     String localeName = locale.getBaseName();
                     String fileName = localeName + XML_SUFFIX;
                     ctx.println("<li><a href='" + fileName + "'>" + fileName + "</a> " + locale.getDisplayName(ctx.displayLocale)
-                            + "</li>");
+                        + "</li>");
                 }
                 ctx.println("</ul>");
                 ctx.println("<hr>");
@@ -902,10 +905,10 @@ public class OutputFileManager {
         if (haveVbv || DBUtils.hasTable(conn, STFactory.CLDR_VBV)) {
             if (haveVbv == false) {
                 SurveyLog
-                        .debug("OutputFileManager: have "
-                                + STFactory.CLDR_VBV
-                                + ", commencing  output file updates ( use CLDR_NOOUTPUT=true in cldr.properties to suppress  -  CLDR_NOOUTPUT current value = "
-                                + CldrUtility.getProperty("CLDR_NOOUTPUT", false));
+                    .debug("OutputFileManager: have "
+                        + STFactory.CLDR_VBV
+                        + ", commencing  output file updates ( use CLDR_NOOUTPUT=true in cldr.properties to suppress  -  CLDR_NOOUTPUT current value = "
+                        + CldrUtility.getProperty("CLDR_NOOUTPUT", false));
             }
             haveVbv = true;
             Object[][] o = DBUtils.sqlQueryArrayArrayObj(conn, "select max(last_mod) from cldr_votevalue where locale=?", loc);
@@ -1003,6 +1006,9 @@ public class OutputFileManager {
 
             @Override
             public void run() {
+                if (sm.isBusted() || !sm.isSetup) {
+                    return;
+                }
                 // System.err.println("spinner hot...ac="+SurveyThread.activeCount());
                 // if(SurveyThread.activeCount()>1) {
                 // return;
@@ -1038,12 +1044,12 @@ public class OutputFileManager {
                                                                 // more, due to
                                                                 // load.
                             loc = CLDR_OUTPUT_ONLY != null ? CLDRLocale.getInstance(CLDR_OUTPUT_ONLY) // DEBUGGING
-                                    : locs[(spinner++) % locs.length]; // A new
-                                                                       // one
-                                                                       // each
-                                                                       // time.
-                                                                       // (normal
-                                                                       // case
+                                : locs[(spinner++) % locs.length]; // A new
+                                                                   // one
+                                                                   // each
+                                                                   // time.
+                                                                   // (normal
+                                                                   // case
                             // SurveyLog.debug("Updater: Considering: " +loc );
 
                             Timestamp localeTime = getLocaleTime(conn, loc);
@@ -1101,22 +1107,24 @@ public class OutputFileManager {
 
                         if (SurveyMain.hostBusy()) {
                             SurveyLog.debug("Wrote " + wrtl + "locales  , but host is busy:  "
-                                    + SurveyMain.osmxbean.getSystemLoadAverage());
+                                + SurveyMain.osmxbean.getSystemLoadAverage());
                             return;
                         } else {
                             Thread.sleep(5000);
                             if (SurveyMain.hostBusy()) {
                                 SurveyLog.debug("Wrote " + wrtl + "locales, slept 5s , but host is now busy:  "
-                                        + SurveyMain.osmxbean.getSystemLoadAverage());
+                                    + SurveyMain.osmxbean.getSystemLoadAverage());
                                 return;
                             } else {
                                 SurveyLog.debug("Wrote " + wrtl + "locales  , continuing! host is not busy:  "
-                                        + SurveyMain.osmxbean.getSystemLoadAverage());
+                                    + SurveyMain.osmxbean.getSystemLoadAverage());
                             }
                         }
                     }
 
                     // SurveyLog.logger.warning("Finished writing " + loc);
+                } catch (InterruptedException ie) {
+                    SurveyLog.logger.warning("Interrupted while running Updater - goodbye: " + ie);
                 } catch (SQLException e) {
                     SurveyLog.logException(e);
                     SurveyLog.logger.warning("While running Updater: " + DBUtils.unchainSqlException(e));
@@ -1236,7 +1244,7 @@ public class OutputFileManager {
         if (ourClientManager == null) {
             if (tryCommit == false) {
                 throw new SVNException(SVNErrorMessage.create(SVNErrorCode.ASSERTION_FAIL, "commits were disabled: "
-                        + tryCommitWhyNot));
+                    + tryCommitWhyNot));
             }
 
             ourClientManager = SVNClientManager.newInstance();
@@ -1265,7 +1273,7 @@ public class OutputFileManager {
             updateClient.setIgnoreExternals(true);
             System.err.println("Exporting " + url + " into " + dir.getAbsolutePath());
             long rv = updateClient.doExport(SVNURL.parseURIEncoded(url), dir, SVNRevision.UNDEFINED, SVNRevision.HEAD, "native",
-                    false, SVNDepth.INFINITY);
+                false, SVNDepth.INFINITY);
             System.err.println(".. Exported r" + rv);
         }
     }
@@ -1285,7 +1293,7 @@ public class OutputFileManager {
     }
 
     public long[] svnUpdate(File f[], SVNRevision rev, SVNDepth depth, boolean allowUnversionedObstructions, boolean depthIsSticky)
-            throws SVNException {
+        throws SVNException {
         synchronized (OutputFileManager.class) {
             SVNUpdateClient updateClient = getClientManager().getUpdateClient();
             return updateClient.doUpdate(f, rev, depth, allowUnversionedObstructions, depthIsSticky);
@@ -1352,4 +1360,45 @@ public class OutputFileManager {
             }
         }
     }
+
+    // statistics helpers
+    private static Map<CLDRLocale, Pair<String, String>> localeNameCache = new ConcurrentHashMap<CLDRLocale, Pair<String, String>>();
+
+    // for the statistics page - wrap locale ids in an <old data> span to show they were from the previous revision
+    private static final String OLD_DATA_BEGIN = "<span class='olddata'>";
+    private static final String OLD_DATA_END = "</span>";
+
+    public static Pair<String, String> statGetLocaleDisplayName(CLDRLocale loc) {
+        Pair<String, String> ret = localeNameCache.get(loc), toAdd = null;
+        if (ret == null) {
+            toAdd = ret = new Pair<String, String>();
+        }
+        // note, may concurrently modify this object- that's OK.
+        if (ret.getFirst() == null) {
+            // use baseline data
+            ret.setFirst(loc.getDisplayName(false, null));
+        }
+        if (ret.getSecond() == null) {
+            // uses 'on disk' (old) data.
+            ret.setSecond(OLD_DATA_BEGIN + CookieSession.sm.getDiskFactory().make(loc.getBaseName(), true).getName(loc.toLanguageTag()) + OLD_DATA_END);
+        }
+        // needed to add it
+        if (toAdd != null) {
+            localeNameCache.put(loc, toAdd);
+        }
+        return ret;
+    }
+
+    // update the cache
+    public static void updateLocaleDisplayName(CLDRFile f, CLDRLocale l) {
+        Pair<String, String> ret = statGetLocaleDisplayName(l);
+        String newValue = (f.getName(l.getBaseName()));
+        if (DEBUG) {
+            if (!newValue.equals(ret.getSecond())) {
+                System.out.println("Setting: " + newValue + " insteadof " + ret.getSecond() + " for " + ret.getFirst());
+            }
+        }
+        ret.setSecond(newValue);
+    }
+
 }

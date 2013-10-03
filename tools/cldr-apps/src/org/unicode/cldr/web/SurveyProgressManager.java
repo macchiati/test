@@ -17,7 +17,7 @@ import com.ibm.icu.text.NumberFormat;
  * 
  */
 public class SurveyProgressManager implements CLDRProgressIndicator {
-    private static final boolean DEBUG_PROGRESS = false;
+    private static final boolean DEBUG_PROGRESS = true;
     private Deque<SurveyProgressTask> tasks = new LinkedList<SurveyProgressTask>();
 
     private class SurveyProgressTask implements CLDRProgressIndicator.CLDRProgressTask {
@@ -38,9 +38,9 @@ public class SurveyProgressManager implements CLDRProgressIndicator {
         @Override
         public void close() {
             tasks.remove(this); // remove from deque
-            if (DEBUG_PROGRESS)
+            if (DEBUG_PROGRESS && SurveyMain.isUnofficial())
                 System.err.println("Progress (" + progressWhat + ") DONE - "
-                        + ElapsedTimer.elapsedTime(taskTime, System.currentTimeMillis()));
+                    + ElapsedTimer.elapsedTime(taskTime, System.currentTimeMillis()) + " @" + SurveyMain.uptime);
             dead = true;
         }
 
@@ -48,8 +48,7 @@ public class SurveyProgressManager implements CLDRProgressIndicator {
         public void update(int count) {
             progressCount = count;
             subTaskTime = System.currentTimeMillis();
-            // if(SurveyMain.isUnofficial) System.err.println("Progress (" +
-            // progressWhat + ") on #"+progressCount );
+            if (SurveyMain.isUnofficial()) System.err.println("Progress (" + progressWhat + ") on #" + progressCount + " @" + SurveyMain.uptime);
         }
 
         @Override
@@ -57,8 +56,7 @@ public class SurveyProgressManager implements CLDRProgressIndicator {
             progressCount = count;
             progressSub = what;
             subTaskTime = System.currentTimeMillis();
-            // if(SurveyMain.isUnofficial) System.err.println("Progress (" +
-            // progressWhat + ") on " + progressSub + " #"+progressCount );
+            // if(SurveyMain.isUnofficial()) System.err.println("Progress (" + progressWhat + ") on " + progressSub + " #"+progressCount  + " @" + SurveyMain.uptime);
         }
 
         /**
@@ -72,8 +70,7 @@ public class SurveyProgressManager implements CLDRProgressIndicator {
                 progressCount++;
             }
             subTaskTime = System.currentTimeMillis();
-            // if(SurveyMain.isUnofficial) System.err.println("Progress (" +
-            // progressWhat + ") on "+what );
+            if (SurveyMain.isUnofficial()) System.err.println("Progress (" + progressWhat + ") on " + what + " @" + SurveyMain.uptime);
         }
 
         @Override
@@ -208,7 +205,7 @@ public class SurveyProgressManager implements CLDRProgressIndicator {
 
         StringBuffer buf = new StringBuffer();
         buf.append("<table id='progress-list' border=0 class='progress-list"
-                + (orderedTasks.isEmpty() ? " progress-idle" : " progress-busy") + "'><tr>");
+            + (orderedTasks.isEmpty() ? " progress-idle" : " progress-busy") + "'><tr>");
         buf.append("<th>");
         if (orderedTasks.isEmpty()) {
             buf.append("<span id='busy0' onclick='document.getElementById(\"progress\").className=\"popout\";'><!-- idle -->\u00BB</span>");
@@ -216,7 +213,7 @@ public class SurveyProgressManager implements CLDRProgressIndicator {
             buf.append("<span id='busy0' onclick='document.getElementById(\"progress\").className=\"popout\";'><!-- busy -->\u00BB</span>");
         }
         buf.append("<span id='busy1' onclick='document.getElementById(\"progress\").className=\"\";'><!-- hide -->\u00AB</span>"
-                + "</th>");
+            + "</th>");
         for (SurveyProgressTask t : orderedTasks) {
             buf.append("<td>");
             buf.append(t.toString());

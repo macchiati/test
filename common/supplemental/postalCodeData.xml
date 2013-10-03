@@ -72,7 +72,6 @@ For terms of use, see http://www.unicode.org/copyright.html
             <postCodeRegex territoryId="IS" >\d{3}</postCodeRegex>
             <postCodeRegex territoryId="IN" >\d{6}</postCodeRegex>
             <postCodeRegex territoryId="ID" >\d{5}</postCodeRegex>
-            <postCodeRegex territoryId="IE" >((D|DUBLIN)?([1-9]|6[wW]|1[0-8]|2[024]))?</postCodeRegex>
             <postCodeRegex territoryId="IL" >\d{5}</postCodeRegex>
             <postCodeRegex territoryId="JO" >\d{5}</postCodeRegex>
             <postCodeRegex territoryId="KZ" >\d{6}</postCodeRegex>
@@ -166,6 +165,7 @@ For terms of use, see http://www.unicode.org/copyright.html
             <postCodeRegex territoryId="SZ" >[HLMS]\d{3}</postCodeRegex>
             <postCodeRegex territoryId="TC" >TKCA 1ZZ</postCodeRegex>
             <postCodeRegex territoryId="WF" >986\d{2}</postCodeRegex>
+            <postCodeRegex territoryId="XK" >\d{5}</postCodeRegex>
             <postCodeRegex territoryId="YT" >976\d{2}</postCodeRegex>
         </postalCodeData>
 </supplementalData>

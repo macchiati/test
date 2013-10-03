@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE ldml SYSTEM "../../common/dtd/ldml.dtd">
-<!-- Copyright © 1991-2013 Unicode, Inc. -->
-<!-- CLDR data files are interpreted according to the LDML specification (http://unicode.org/reports/tr35/) -->
-<!-- For terms of use, see http://www.unicode.org/copyright.html -->
+<!-- Copyright © 1991-2013 Unicode, Inc.
+CLDR data files are interpreted according to the LDML specification (http://unicode.org/reports/tr35/)
+For terms of use, see http://www.unicode.org/copyright.html
+-->
 <ldml>
 	<identity>
 		<version number="$Revision$"/>
@@ -173,7 +174,6 @@
 	<characters>
 		<exemplarCharacters draft="unconfirmed">[a á à b c d e é è f g h i í ï j k l m n o ó ò p q r s t u ú ü v w x y z]</exemplarCharacters>
 		<exemplarCharacters type="auxiliary" draft="unconfirmed">[á à ç é è í ï ó ò ú ü]</exemplarCharacters>
-		<exemplarCharacters type="currencySymbol" draft="unconfirmed">[a b c d e f g h i j k l m n o p q r s t u v w x y z]</exemplarCharacters>
 		<exemplarCharacters type="index" draft="unconfirmed">[A B C D E F G H I J K L M N O P Q R S T U V W X Y Z]</exemplarCharacters>
 	</characters>
 	<dates>
@@ -264,7 +264,6 @@
 		</fields>
 		<timeZoneNames>
 			<regionFormat draft="unconfirmed">Ora de: {0}</regionFormat>
-			<fallbackRegionFormat draft="unconfirmed">Ora de: {1} ({0})</fallbackRegionFormat>
 		</timeZoneNames>
 	</dates>
 	<numbers>
@@ -275,26 +274,29 @@
 		</currencies>
 	</numbers>
 	<units>
-		<unit type="day">
-			<unitPattern count="other" draft="unconfirmed">{0} jorns</unitPattern>
-		</unit>
-		<unit type="hour">
-			<unitPattern count="other" draft="unconfirmed">{0} oras</unitPattern>
-		</unit>
-		<unit type="minute">
-			<unitPattern count="other" draft="unconfirmed">{0} minutas</unitPattern>
-		</unit>
-		<unit type="month">
-			<unitPattern count="other" draft="unconfirmed">{0} mes</unitPattern>
-		</unit>
-		<unit type="second">
-			<unitPattern count="other" draft="unconfirmed">{0} segondas</unitPattern>
-		</unit>
-		<unit type="week">
-			<unitPattern count="other" draft="unconfirmed">{0} setmanas</unitPattern>
-		</unit>
-		<unit type="year">
-			<unitPattern count="other" draft="unconfirmed">{0} annadas</unitPattern>
-		</unit>
+		<unitLength type="long">
+			<unit type="duration-day">
+				<unitPattern count="other">{0} jorns</unitPattern>
+			</unit>
+			<unit type="duration-hour">
+				<unitPattern count="other">{0} oras</unitPattern>
+			</unit>
+			<unit type="duration-minute">
+				<unitPattern count="other">{0} minutas</unitPattern>
+			</unit>
+			<unit type="duration-month">
+				<unitPattern count="other">{0} mes</unitPattern>
+			</unit>
+			<unit type="duration-second">
+				<unitPattern count="other">{0} segondas</unitPattern>
+			</unit>
+			<unit type="duration-week">
+				<unitPattern count="other">{0} setmanas</unitPattern>
+			</unit>
+			<unit type="duration-year">
+				<unitPattern count="other">{0} annadas</unitPattern>
+			</unit>
+		</unitLength>
 	</units>
 </ldml>
+

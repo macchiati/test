@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE ldml SYSTEM "../../common/dtd/ldml.dtd">
-<!-- Copyright © 1991-2013 Unicode, Inc. -->
-<!-- CLDR data files are interpreted according to the LDML specification (http://unicode.org/reports/tr35/) -->
-<!-- For terms of use, see http://www.unicode.org/copyright.html -->
+<!-- Copyright © 1991-2013 Unicode, Inc.
+CLDR data files are interpreted according to the LDML specification (http://unicode.org/reports/tr35/)
+For terms of use, see http://www.unicode.org/copyright.html
+-->
 <ldml>
 	<identity>
 		<version number="$Revision$"/>
@@ -13,7 +14,7 @@
 	<localeDisplayNames>
 		<localeDisplayPattern>
 			<localePattern>{0} ({1})</localePattern>
-			<localeSeparator>، </localeSeparator>
+			<localeSeparator>،</localeSeparator>
 			<localeKeyTypePattern>{0}: {1}</localeKeyTypePattern>
 		</localeDisplayPattern>
 		<languages>
@@ -128,8 +129,8 @@
 		</orientation>
 	</layout>
 	<characters>
-		<exemplarCharacters draft="contributed">[ ء آ أ ؤ إ ئ ا ب ة ت ث ج چ ح خ د ذ ر ز س ش ص ض ط ظ ع غ ڠ ف ڤ ق ك ݢ ل م ن ڽ ه و ۏ ى ي ]</exemplarCharacters>
-		<exemplarCharacters type="auxiliary" draft="contributed">[ ڬ ۑ ]</exemplarCharacters>
+		<exemplarCharacters draft="contributed">[ء آ أ ؤ إ ئ ا ب ة ت ث ج چ ح خ د ذ ر ز س ش ص ض ط ظ ع غ ڠ ف ڤ ق ك ݢ ل م ن ڽ ه و ۏ ى ي]</exemplarCharacters>
+		<exemplarCharacters type="auxiliary" draft="contributed">[ڬ ۑ]</exemplarCharacters>
 		<ellipsis type="final" draft="contributed">{0}…</ellipsis>
 		<ellipsis type="initial" draft="contributed">…{0}</ellipsis>
 		<ellipsis type="medial" draft="contributed">{0}…{1}</ellipsis>
@@ -407,18 +408,18 @@
 							<greatestDifference id="y">y–y</greatestDifference>
 						</intervalFormatItem>
 						<intervalFormatItem id="yM">
-							<greatestDifference id="M">M/yy – M/yy</greatestDifference>
-							<greatestDifference id="y">M/yy – M/yy</greatestDifference>
+							<greatestDifference id="M">M/y – M/y</greatestDifference>
+							<greatestDifference id="y">M/y – M/y</greatestDifference>
 						</intervalFormatItem>
 						<intervalFormatItem id="yMd">
-							<greatestDifference id="d">d/M/yy – d/M/yy</greatestDifference>
-							<greatestDifference id="M">d/M/yy – d/M/yy</greatestDifference>
-							<greatestDifference id="y">d/M/yy – d/M/yy</greatestDifference>
+							<greatestDifference id="d">d/M/y – d/M/y</greatestDifference>
+							<greatestDifference id="M">d/M/y – d/M/y</greatestDifference>
+							<greatestDifference id="y">d/M/y – d/M/y</greatestDifference>
 						</intervalFormatItem>
 						<intervalFormatItem id="yMEd">
-							<greatestDifference id="d">E، d/M/yy – E، d/M/yy</greatestDifference>
-							<greatestDifference id="M">E، d/M/yy – E، d/M/yy</greatestDifference>
-							<greatestDifference id="y">E، d/M/yy – E، d/M/yy</greatestDifference>
+							<greatestDifference id="d">E، d/M/y – E، d/M/y</greatestDifference>
+							<greatestDifference id="M">E، d/M/y – E، d/M/y</greatestDifference>
+							<greatestDifference id="y">E، d/M/y – E، d/M/y</greatestDifference>
 						</intervalFormatItem>
 						<intervalFormatItem id="yMMM">
 							<greatestDifference id="M">MMM–MMM y</greatestDifference>
@@ -516,7 +517,7 @@
 					</dateFormatLength>
 					<dateFormatLength type="medium">
 						<dateFormat>
-							<pattern>dd/MM/yyyy</pattern>
+							<pattern>dd/MM/y</pattern>
 						</dateFormat>
 					</dateFormatLength>
 					<dateFormatLength type="short">
@@ -660,18 +661,18 @@
 							<greatestDifference id="y">y–y</greatestDifference>
 						</intervalFormatItem>
 						<intervalFormatItem id="yM">
-							<greatestDifference id="M">M/yy – M/yy</greatestDifference>
-							<greatestDifference id="y">M/yy – M/yy</greatestDifference>
+							<greatestDifference id="M">M/y – M/y</greatestDifference>
+							<greatestDifference id="y">M/y – M/y</greatestDifference>
 						</intervalFormatItem>
 						<intervalFormatItem id="yMd">
-							<greatestDifference id="d">d/M/yy – d/M/yy</greatestDifference>
-							<greatestDifference id="M">d/M/yy – d/M/yy</greatestDifference>
-							<greatestDifference id="y">d/M/yy – d/M/yy</greatestDifference>
+							<greatestDifference id="d">d/M/y – d/M/y</greatestDifference>
+							<greatestDifference id="M">d/M/y – d/M/y</greatestDifference>
+							<greatestDifference id="y">d/M/y – d/M/y</greatestDifference>
 						</intervalFormatItem>
 						<intervalFormatItem id="yMEd">
-							<greatestDifference id="d">E، d/M/yy – E، d/M/yy</greatestDifference>
-							<greatestDifference id="M">E، d/M/yy – E، d/M/yy</greatestDifference>
-							<greatestDifference id="y">E، d/M/yy – E، d/M/yy</greatestDifference>
+							<greatestDifference id="d">E، d/M/y – E، d/M/y</greatestDifference>
+							<greatestDifference id="M">E، d/M/y – E، d/M/y</greatestDifference>
+							<greatestDifference id="y">E، d/M/y – E، d/M/y</greatestDifference>
 						</intervalFormatItem>
 						<intervalFormatItem id="yMMM">
 							<greatestDifference id="M">MMM–MMM y</greatestDifference>
@@ -823,7 +824,6 @@
 			<hourFormat>+HH:mm;-HH:mm</hourFormat>
 			<regionFormat draft="unconfirmed">وقتو {0}</regionFormat>
 			<fallbackFormat>{1} ({0})</fallbackFormat>
-			<fallbackRegionFormat draft="unconfirmed">{1} وقتو ({0})</fallbackRegionFormat>
 			<zone type="Etc/Unknown">
 				<exemplarCity draft="unconfirmed">باندر تيدق دکتاهوءي</exemplarCity>
 			</zone>
@@ -919,7 +919,7 @@
 		</percentFormats>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
 					<pattern>¤#,##0.00;(¤#,##0.00)</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
@@ -949,76 +949,94 @@
 		</currencies>
 	</numbers>
 	<units>
-		<unit type="day">
-			<unitPattern count="other" draft="unconfirmed">{0} هاري</unitPattern>
-			<unitPattern count="other" alt="short" draft="unconfirmed">{0} هاري</unitPattern>
-		</unit>
-		<unit type="day-future">
-			<unitPattern count="other" draft="unconfirmed">دالم {0} هاري</unitPattern>
-		</unit>
-		<unit type="day-past">
-			<unitPattern count="other" draft="unconfirmed">{0} هاري لالو</unitPattern>
-		</unit>
-		<unit type="hour">
-			<unitPattern count="other" draft="unconfirmed">{0} جم</unitPattern>
-			<unitPattern count="other" alt="short" draft="unconfirmed">{0} جم</unitPattern>
-		</unit>
-		<unit type="hour-future">
-			<unitPattern count="other" draft="unconfirmed">دالم {0} جم</unitPattern>
-		</unit>
-		<unit type="hour-past">
-			<unitPattern count="other" draft="unconfirmed">{0} جم لالو</unitPattern>
-		</unit>
-		<unit type="minute">
-			<unitPattern count="other" draft="unconfirmed">{0} مينيت</unitPattern>
-			<unitPattern count="other" alt="short" draft="unconfirmed">{0} min</unitPattern>
-		</unit>
-		<unit type="minute-future">
-			<unitPattern count="other" draft="unconfirmed">دالم {0} مينيت</unitPattern>
-		</unit>
-		<unit type="minute-past">
-			<unitPattern count="other" draft="unconfirmed">{0} مينيت لالو</unitPattern>
-		</unit>
-		<unit type="month">
-			<unitPattern count="other" draft="unconfirmed">{0} بولن</unitPattern>
-			<unitPattern count="other" alt="short" draft="unconfirmed">{0} بولن</unitPattern>
-		</unit>
-		<unit type="month-future">
-			<unitPattern count="other" draft="unconfirmed">دالم {0} بولن</unitPattern>
-		</unit>
-		<unit type="month-past">
-			<unitPattern count="other" draft="unconfirmed">{0} بولن لالو</unitPattern>
-		</unit>
-		<unit type="second">
-			<unitPattern count="other" draft="unconfirmed">{0} ساعت</unitPattern>
-			<unitPattern count="other" alt="short" draft="unconfirmed">{0} ساعت</unitPattern>
-		</unit>
-		<unit type="second-future">
-			<unitPattern count="other" draft="unconfirmed">دالم {0} ساعت</unitPattern>
-		</unit>
-		<unit type="second-past">
-			<unitPattern count="other" draft="unconfirmed">{0} ساعت لالو</unitPattern>
-		</unit>
-		<unit type="week">
-			<unitPattern count="other" draft="unconfirmed">{0} ميڠݢو</unitPattern>
-			<unitPattern count="other" alt="short" draft="unconfirmed">{0} ميڠݢو</unitPattern>
-		</unit>
-		<unit type="week-future">
-			<unitPattern count="other" draft="unconfirmed">دالم {0} ميڠݢو</unitPattern>
-		</unit>
-		<unit type="week-past">
-			<unitPattern count="other" draft="unconfirmed">{0} ميڠݢو لالو</unitPattern>
-		</unit>
-		<unit type="year">
-			<unitPattern count="other" draft="unconfirmed">{0} تاهون</unitPattern>
-			<unitPattern count="other" alt="short" draft="unconfirmed">{0} thn</unitPattern>
-		</unit>
-		<unit type="year-future">
-			<unitPattern count="other" draft="unconfirmed">دالم {0} تاهون</unitPattern>
-		</unit>
-		<unit type="year-past">
-			<unitPattern count="other" draft="unconfirmed">{0} تاهون لالو</unitPattern>
-		</unit>
+		<unitLength type="long">
+			<unit type="duration-day">
+				<unitPattern count="other">{0} هاري</unitPattern>
+			</unit>
+			<unit type="duration-day-future">
+				<unitPattern count="other">دالم {0} هاري</unitPattern>
+			</unit>
+			<unit type="duration-day-past">
+				<unitPattern count="other">{0} هاري لالو</unitPattern>
+			</unit>
+			<unit type="duration-hour">
+				<unitPattern count="other">{0} جم</unitPattern>
+			</unit>
+			<unit type="duration-hour-future">
+				<unitPattern count="other">دالم {0} جم</unitPattern>
+			</unit>
+			<unit type="duration-hour-past">
+				<unitPattern count="other">{0} جم لالو</unitPattern>
+			</unit>
+			<unit type="duration-minute">
+				<unitPattern count="other">{0} مينيت</unitPattern>
+			</unit>
+			<unit type="duration-minute-future">
+				<unitPattern count="other">دالم {0} مينيت</unitPattern>
+			</unit>
+			<unit type="duration-minute-past">
+				<unitPattern count="other">{0} مينيت لالو</unitPattern>
+			</unit>
+			<unit type="duration-month">
+				<unitPattern count="other">{0} بولن</unitPattern>
+			</unit>
+			<unit type="duration-month-future">
+				<unitPattern count="other">دالم {0} بولن</unitPattern>
+			</unit>
+			<unit type="duration-month-past">
+				<unitPattern count="other">{0} بولن لالو</unitPattern>
+			</unit>
+			<unit type="duration-second">
+				<unitPattern count="other">{0} ساعت</unitPattern>
+			</unit>
+			<unit type="duration-second-future">
+				<unitPattern count="other">دالم {0} ساعت</unitPattern>
+			</unit>
+			<unit type="duration-second-past">
+				<unitPattern count="other">{0} ساعت لالو</unitPattern>
+			</unit>
+			<unit type="duration-week">
+				<unitPattern count="other">{0} ميڠݢو</unitPattern>
+			</unit>
+			<unit type="duration-week-future">
+				<unitPattern count="other">دالم {0} ميڠݢو</unitPattern>
+			</unit>
+			<unit type="duration-week-past">
+				<unitPattern count="other">{0} ميڠݢو لالو</unitPattern>
+			</unit>
+			<unit type="duration-year">
+				<unitPattern count="other">{0} تاهون</unitPattern>
+			</unit>
+			<unit type="duration-year-future">
+				<unitPattern count="other">دالم {0} تاهون</unitPattern>
+			</unit>
+			<unit type="duration-year-past">
+				<unitPattern count="other">{0} تاهون لالو</unitPattern>
+			</unit>
+		</unitLength>
+		<unitLength type="short">
+			<unit type="duration-day">
+				<unitPattern count="other">{0} هاري</unitPattern>
+			</unit>
+			<unit type="duration-hour">
+				<unitPattern count="other">{0} جم</unitPattern>
+			</unit>
+			<unit type="duration-minute">
+				<unitPattern count="other">{0} min</unitPattern>
+			</unit>
+			<unit type="duration-month">
+				<unitPattern count="other">{0} بولن</unitPattern>
+			</unit>
+			<unit type="duration-second">
+				<unitPattern count="other">{0} ساعت</unitPattern>
+			</unit>
+			<unit type="duration-week">
+				<unitPattern count="other">{0} ميڠݢو</unitPattern>
+			</unit>
+			<unit type="duration-year">
+				<unitPattern count="other">{0} thn</unitPattern>
+			</unit>
+		</unitLength>
 	</units>
 </ldml>
 

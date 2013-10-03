@@ -1,3 +1,5 @@
+<%@page import="com.ibm.icu.text.DateFormat"%>
+<%@page import="com.ibm.icu.text.SimpleDateFormat"%>
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"
     import="org.unicode.cldr.util.*,java.util.*,java.sql.Connection,java.sql.Timestamp"
@@ -13,10 +15,15 @@
 <body>
 
 <h1>Status of File Output</h1>
+Bold = available, Shaded = missing.
+
 <a href="<%=request.getContextPath()%>/survey">Return to the SurveyTool <img src='STLogo.png' style='float:right;' /></a>
+<%
+DateFormat df = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, SurveyMain.BASELINE_LOCALE);
 
+%>
 
-
+(timezone is <%= SurveyMain.defaultTimezoneInfo() %>)<br/>
 
 <%
 SurveyMain sm = CookieSession.sm;
@@ -55,18 +62,18 @@ boolean flip=false;
 			<th>
 			<%=loc%>
 			</th>
-			<td><%= locTime %></td>
+			<td><%= df.format(locTime) %></td>
 			<%
 			    int j=0;
 							for(OutputFileManager.Kind kind : OutputFileManager.Kind.values()) {
-								if(kind!=OutputFileManager.Kind.vxml) continue;
+							//if(kind!=OutputFileManager.Kind.vxml) continue;
 							boolean nu= sm.outputFileManager.fileNeedsUpdate(locTime,loc,kind.name());
 							if(nu) totals[j]++;
 							j++;
 //                            org.tmatesoft.svn.core.wc.SVNInfo i = sm.outputFileManager.svnInfo(sm.getDataFile(kind.name(), loc));
                        //     org.tmatesoft.svn.core.wc.SVNStatus s = sm.outputFileManager.svnStatus(sm.getDataFile(kind.name(), loc));
 			%>
-					<td style='background-color: <%= nu?"red":"green" %>'>
+					<td style=' background-color: <%= nu?"#ff9999":"green" %>; font-weight: <%= nu?"regular":"bold" %>; color: <%= nu?"silver":"black" %>;'>
 						<%= kind %>
 					<%--
 					   : <%= s.getNodeStatus() %>  

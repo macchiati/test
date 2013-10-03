@@ -1,15 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE TestSTFactory SYSTEM "TestSTFactory.dtd">
 <TestSTFactory>
-	<!--  these items are read sequentially.  -->
-	
+    	<!--  these items are read sequentially.  -->
+
+    <echo> test permission  </echo>
+    <setvar id="af_fr" locale="af" xpath="//ldml/localeDisplayNames/languages/language[@type='fr']" />
+    <setvar id="en_fr" locale="en" xpath="//ldml/localeDisplayNames/languages/language[@type='fr']" />
+    <setvar id="de_fr" locale="de" xpath="//ldml/localeDisplayNames/languages/language[@type='fr']" />
+    
+    <verify status="approved" locale="af" xpath="//ldml/localeDisplayNames/languages/language[@type='fr']" >$af_fr</verify>
+    <verify status="approved" locale="en" xpath="//ldml/localeDisplayNames/languages/language[@type='fr']" >$en_fr</verify>
+    <verify status="approved" locale="de" xpath="//ldml/localeDisplayNames/languages/language[@type='fr']" >$de_fr</verify>
+
+    <user name="v_af_only" org="afrigen" level="vetter" locales="af"/>
+    <user name="tc_af_only" org="afrigen" level="tc" locales="af"/>
+    
+    <vote exception="true" name="v_af_only" locale="de" xpath="//ldml/localeDisplayNames/languages/language[@type='fr']">the price of tea in china</vote>
+    <verify status="approved" locale="de" xpath="//ldml/localeDisplayNames/languages/language[@type='fr']" >$de_fr</verify>
+    <vote exception="false" name="v_af_only" locale="af" xpath="//ldml/localeDisplayNames/languages/language[@type='fr']">the price of tea in china</vote>
+    <verify status="approved" locale="af" xpath="//ldml/localeDisplayNames/languages/language[@type='fr']" >the price of tea in china</verify>
+    <vote exception="false" name="tc_af_only" locale="el" xpath="//ldml/localeDisplayNames/languages/language[@type='fr']">the price of tea in greece</vote>
+    <verify status="approved" locale="el" xpath="//ldml/localeDisplayNames/languages/language[@type='fr']" >the price of tea in greece</verify>
+    	
 	<!--  the 'name' is the real name of the user, and is also used as a handle later. 
 		 level can be any member of VoteResolver.Level and org is any of VoteResolver.Organization  -->
 	<echo>setting up users</echo>
-	<user name="A" org="afrigen" level="vetter"/>
-	<user name="B" org="breton" level="vetter"/>
-	<user name="C" org="cherokee" level="vetter"/>
-	
+	<user name="A" org="afrigen" level="vetter" locales="*"/>
+	<user name="B" org="breton" level="vetter" locales="*"/>
+    <user name="C" org="cherokee" level="vetter" locales="*"/>
+    <user name="D" org="guest" level="street" locales="*"/>
+    <user name="E" org="afrigen" level="tc" locales="*"/>
+    
+    	
 	<!--  Vote for an item. We choose und to avoid other conflicting data.  --> 
 	<vote name="A" locale="und" xpath="//ldml/localeDisplayNames/keys/key[@type='calendar']">a</vote>  
 	<vote name="B" locale="und" xpath="//ldml/localeDisplayNames/keys/key[@type='calendar']">b</vote>  
@@ -64,13 +86,26 @@
     <verify status="missing" locale="az" xpath="//ldml/numbers/decimalFormats[@numberSystem='latn']/decimalFormatLength[@type='long']/decimalFormat/pattern[@type='1000'][@count='zero']"/>
 -->
 <!--  verify can't vote for items with errors -->
-	<echo>Testing no votes with errors.</echo>
-	<!--  first, sanity -->	
-	<verify status="missing" locale="und" xpath="//ldml/dates/calendars/calendar[@type='hebrew']/dateFormats/dateFormatLength[@type='full']/dateFormat[@type='standard']/pattern[@type='standard'][@alt='variant']" />
-	<vote name="A" locale="und" xpath="//ldml/dates/calendars/calendar[@type='hebrew']/dateFormats/dateFormatLength[@type='full']/dateFormat[@type='standard']/pattern[@type='standard']">The main pump fixing screws with the correct strength class</vote>	 <!--  conforms to ticket:2260 -->
-	<!--  still missing- that was a totally bogus date format. -->
-	<verify status="missing" locale="und" xpath="//ldml/dates/calendars/calendar[@type='hebrew']/dateFormats/dateFormatLength[@type='full']/dateFormat[@type='standard']/pattern[@type='standard'][@alt='variant']" />
-	<vote name="A" locale="und" xpath="//ldml/dates/calendars/calendar[@type='hebrew']/dateFormats/dateFormatLength[@type='full']/dateFormat[@type='standard']/pattern[@type='standard'][@alt='variant']">EEEE, d _MMMM_ y</vote>
-	<verify status="approved" locale="und" xpath="//ldml/dates/calendars/calendar[@type='hebrew']/dateFormats/dateFormatLength[@type='full']/dateFormat[@type='standard']/pattern[@type='standard'][@alt='variant']">EEEE, d _MMMM_ y</verify>
-
+<warn>testing no votes with errors is disabled in ticket:6423</warn>
+<!-- 	<echo>Testing no votes with errors.</echo>
+	 get some pattern from root
+     <setvar id="oldPattern" locale="root" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/dateFormats/dateFormatLength[@type='full']/dateFormat[@type='standard']/pattern[@type='standard']" />
+		 first, sanity
+    <vote name="D"             locale="und" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/dateFormats/dateFormatLength[@type='full']/dateFormat[@type='standard']/pattern[@type='standard']">$oldPattern</vote>
+     <verify status="unconfirmed"   locale="und" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/dateFormats/dateFormatLength[@type='full']/dateFormat[@type='standard']/pattern[@type='standard']" >$oldPattern</verify>
+   <vote name="A"             locale="und" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/dateFormats/dateFormatLength[@type='full']/dateFormat[@type='standard']/pattern[@type='standard']">The main pump fixing screws with the correct strength class</vote>	   conforms to ticket:2260
+    still missing- that was a totally bogus date format.
+	<verify status="unconfirmed"   locale="und" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/dateFormats/dateFormatLength[@type='full']/dateFormat[@type='standard']/pattern[@type='standard']">$oldPattern</verify>
+	<vote name="A"             locale="und" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/dateFormats/dateFormatLength[@type='full']/dateFormat[@type='standard']/pattern[@type='standard']">EEEE, d _MMMM_ y</vote>
+	<verify status="approved"  locale="und" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/dateFormats/dateFormatLength[@type='full']/dateFormat[@type='standard']/pattern[@type='standard']">EEEE, d _MMMM_ y</verify>
+	
+	 <echo> test another bogus value from ticket:6178 (fixed in ticket:6060)</echo>
+    <setvar id="oldSeparatorPattern" locale="zh_Hant" xpath="//ldml/localeDisplayNames/localeDisplayPattern/localeSeparator" />
+    <vote name="E" locale="zh_Hant" xpath="//ldml/localeDisplayNames/localeDisplayPattern/localeSeparator">，</vote>
+    <verify status="contributed" locale="zh_Hant" xpath="//ldml/localeDisplayNames/localeDisplayPattern/localeSeparator">$oldSeparatorPattern</verify>
+    <vote name="E" locale="zh_Hant" xpath="//ldml/localeDisplayNames/localeDisplayPattern/localeSeparator">{1} na {0}</vote>
+    <verify status="approved" locale="zh_Hant" xpath="//ldml/localeDisplayNames/localeDisplayPattern/localeSeparator">{1} na {0}</verify>
+ -->
+    
+    
 </TestSTFactory>

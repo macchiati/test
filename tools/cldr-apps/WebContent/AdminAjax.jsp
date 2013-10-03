@@ -23,7 +23,9 @@
 			}
 			sess.put("id", cs.id);
 			sess.put("ip", cs.ip);
-			sess.put("last", SurveyMain.timeDiff(cs.last));
+            sess.put("last", SurveyMain.timeDiff(cs.last));
+            sess.put("lastAction", SurveyMain.timeDiff(cs.getLastAction()));
+            sess.put("timeTillKick", cs.timeTillKick());
 			//			sess.put("locales",new JSONArray().put(cs.getLocales().keys()));
 			users.put(cs.id, sess);
 		}
@@ -84,13 +86,8 @@
 		new JSONWriter(out).object().key("exceptions").value(exceptions)
 		.endObject();
     } else if(action.equals("settings")) {
-        JSONObject settings = new JSONObject();
-        
-        JSONObject all = new JSONObject();
-        
-        settings.put("all",CLDRConfig.getInstance());
-        new JSONWriter(out).object().key("settings").value(settings)
-        .endObject();
+    	CLDRConfigImpl cci = (CLDRConfigImpl)(CLDRConfig.getInstance());
+        new JSONWriter(out).object().key("settings").value(new JSONObject().put("all", cci.toJSONObject())).endObject();
     } else if(action.equals("settings_set")) {
         JSONObject settings = new JSONObject();
         
@@ -104,7 +101,7 @@
              sb.append((char)ch);
         }
    //     System.err.println(request.getMethod() + " len " + request.getContentLength() + "type"+ request.getContentType() + "[ chars="+sb+"]");
-          CLDRConfigImpl cci = (CLDRConfigImpl)(CLDRConfig.getInstance());
+          CLDRConfig cci = (CLDRConfig.getInstance());
           cci.setProperty(setting,sb.toString());
           settings.put("ok", true);
           settings.put(setting, cci.getProperty(setting));

@@ -1,32 +1,24 @@
 /**
- * 
+ * Copyright (C) 2013 IBM Corporation and Others All Rights Reserved.
  */
 package org.unicode.cldr.web;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.util.Date;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Handler;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import org.unicode.cldr.util.CLDRConfig;
-import org.unicode.cldr.util.CldrUtility;
 import org.unicode.cldr.util.StackTracker;
-
-import com.ibm.icu.dev.util.BagFormatter;
 
 /**
  * @author srl
@@ -73,7 +65,7 @@ public class SurveyLog {
     public static final String FIELD_SEP = "*** ";
 
     enum LogField {
-        SURVEY_EXCEPTION, DATE, UPTIME, CTX, LOGSITE, MESSAGE, STACK, SQL
+        SURVEY_EXCEPTION, DATE, UPTIME, CTX, LOGSITE, MESSAGE, STACK, SQL, REVISION
     };
 
     private static File gBaseDir = null;
@@ -90,25 +82,28 @@ public class SurveyLog {
         gBaseDir = homeFile;
     }
 
-    public static synchronized void logException(Throwable t, String what, WebContext ctx) {
+    public static synchronized void logException(final Throwable exception, String what, WebContext ctx) {
         long nextTimePost = System.currentTimeMillis();
         StringBuilder sb = new StringBuilder();
         sb.append(RECORD_SEP).append(LogField.SURVEY_EXCEPTION).append(' ').append(what).append('\n').append(FIELD_SEP)
-                .append(LogField.DATE).append(' ').append(nextTimePost).append(' ').append(new Date()).append('\n')
-                .append(FIELD_SEP).append(LogField.UPTIME).append(' ').append(SurveyMain.uptime).append('\n');
+            .append(LogField.DATE).append(' ').append(nextTimePost).append(' ').append(new Date()).append('\n')
+            .append(FIELD_SEP).append(LogField.REVISION).append(' ').append(SurveyMain.getCurrevStr()).append(' ').append(SurveyMain.getNewVersion())
+            .append(' ').append(CLDRConfig.getInstance().getPhase()).append(' ').append(CLDRConfig.getInstance().getEnvironment()).append('\n')
+            .append(FIELD_SEP).append(LogField.UPTIME).append(' ').append(SurveyMain.uptime).append('\n');
         if (ctx != null) {
             sb.append(FIELD_SEP).append(LogField.CTX).append(' ').append(ctx).append('\n');
         }
         sb.append(FIELD_SEP).append(LogField.LOGSITE).append(' ').append(StackTracker.currentStack()).append('\n');
+        Throwable t = exception;
         while (t != null) {
             sb.append(FIELD_SEP).append(LogField.MESSAGE).append(' ').append(t.toString()).append(' ').append(t.getMessage())
-                    .append('\n');
+                .append('\n');
             sb.append(FIELD_SEP).append(LogField.STACK).append(' ').append(StackTracker.stackToString(t.getStackTrace(), 0))
-                    .append('\n');
+                .append('\n');
             if (t instanceof SQLException) {
                 SQLException se = ((SQLException) t);
                 sb.append(FIELD_SEP).append(LogField.SQL).append(' ').append('#').append(se.getErrorCode()).append(' ')
-                        .append(se.getSQLState()).append('\n');
+                    .append(se.getSQLState()).append('\n');
                 t = se.getNextException();
             } else {
                 t = t.getCause();
@@ -121,7 +116,7 @@ public class SurveyLog {
         if (baseDir == null || !baseDir.isDirectory()) {
             setDir(new File("."));
             System.err.println(SurveyLog.class.getName() + " Warning: Storing exception.log in " + gBaseDir.getAbsolutePath()
-                    + "/exception.log");
+                + "/exception.log");
         }
         try {
             File logFile = new File(baseDir, "exception.log");
@@ -139,6 +134,10 @@ public class SurveyLog {
 
         // then, to screen
         logger.severe(sb.toString());
+
+        if (exception instanceof OutOfMemoryError) {
+            SurveyMain.markBusted(exception); // would cause infinite recursion if busted() was called
+        }
     }
 
     private static ChunkyReader cr = null;
@@ -146,7 +145,7 @@ public class SurveyLog {
     public static synchronized ChunkyReader getChunkyReader() {
         if (cr == null) {
             cr = new ChunkyReader(new File(CLDRConfig.getInstance().getProperty("CLDRHOME"), "exception.log"), RECORD_SEP
-                    + LogField.SURVEY_EXCEPTION.name(), FIELD_SEP, LogField.DATE.name());
+                + LogField.SURVEY_EXCEPTION.name(), FIELD_SEP, LogField.DATE.name());
         }
         return cr;
     }
@@ -173,7 +172,7 @@ public class SurveyLog {
     // return lastTimePost;
     // }
 
-    static void logException(Throwable t, WebContext ctx) {
+    public static void logException(Throwable t, WebContext ctx) {
         logException(t, "(exception)", ctx);
     }
 
@@ -198,7 +197,7 @@ public class SurveyLog {
     }
 
     private static void checkDebug() {
-        if (CLDRConfig.getInstance().getProperty("DEBUG") != null) {
+        if (CLDRConfig.getInstance().getProperty("DEBUG", false)) {
             DEBUG = true;
         }
         checkDebug = true;
@@ -209,6 +208,19 @@ public class SurveyLog {
             checkDebug();
         }
         return DEBUG;
+    }
+
+    static Set<String> alreadyWarned = new HashSet<String>();
+
+    /**
+     * Warn one time, ignore after that
+     * @param string
+     */
+    public static synchronized void warnOnce(String string) {
+        if (!alreadyWarned.contains(string)) {
+            logger.log(Level.WARNING, string);
+            alreadyWarned.add(string);
+        }
     }
 
 }

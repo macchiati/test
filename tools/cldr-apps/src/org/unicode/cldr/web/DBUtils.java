@@ -9,6 +9,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Driver;
@@ -19,16 +21,16 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
-import org.apache.derby.impl.sql.compile.GetCurrentConnectionNode;
 import org.apache.tomcat.dbcp.dbcp.BasicDataSource;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -36,6 +38,7 @@ import org.json.JSONObject;
 import org.unicode.cldr.util.CLDRConfig;
 import org.unicode.cldr.util.CLDRConfigImpl;
 import org.unicode.cldr.util.CLDRLocale;
+import org.unicode.cldr.util.PathHeader;
 import org.unicode.cldr.util.StackTracker;
 
 import com.ibm.icu.text.UnicodeSet;
@@ -118,7 +121,7 @@ public class DBUtils {
 
     public Appendable stats(Appendable output) throws IOException {
         return output.append("DBUtils: currently open: " + db_number_open).append(", max open: " + db_max_open)
-                .append(", total used: " + db_number_used);
+            .append(", total used: " + db_number_used);
     }
 
     public Appendable statsShort(Appendable output) throws IOException {
@@ -202,8 +205,8 @@ public class DBUtils {
 
     public static final boolean escapeIsBasic(char c) {
         return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || (c == ' ' || c == '.' || c == '/'
-                || c == '[' || c == ']' || c == '=' || c == '@' || c == '_' || c == ',' || c == '&' || c == '-' || c == '('
-                || c == ')' || c == '#' || c == '$' || c == '!'));
+            || c == '[' || c == ']' || c == '=' || c == '@' || c == '_' || c == ',' || c == '&' || c == '-' || c == '('
+            || c == ')' || c == '#' || c == '$' || c == '!'));
     }
 
     public static final boolean escapeIsEscapeable(char c) {
@@ -270,6 +273,30 @@ public class DBUtils {
         }
     }
 
+    public static String getStringUTF8(ResultSet rs, String which) throws SQLException {
+        if (db_Derby) { // unicode
+            String str = rs.getString(which);
+            if (rs.wasNull())
+                return null;
+            return str;
+        }
+        byte rv[] = rs.getBytes(which);
+        if (rs.wasNull())
+            return null;
+        if (rv != null) {
+            String unicode;
+            try {
+                unicode = new String(rv, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+                throw new InternalError(e.toString());
+            }
+            return unicode;
+        } else {
+            return null;
+        }
+    }
+
     // fix the UTF-8 fail
     public static final String getStringUTF8(ResultSet rs, int which) throws SQLException {
         if (db_Derby) { // unicode
@@ -322,6 +349,21 @@ public class DBUtils {
         }
     }
 
+    private static final byte[] encode_u8(String what) {
+        byte u8[];
+        if (what == null) {
+            u8 = null;
+        } else {
+            try {
+                u8 = what.getBytes("UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+                throw new InternalError(e.toString());
+            }
+        }
+        return u8;
+    }
+
     public static final void setStringUTF8(PreparedStatement s, int which, String what) throws SQLException {
         if (what == null) {
             s.setNull(which, db_UnicodeType);
@@ -329,18 +371,38 @@ public class DBUtils {
         if (db_Derby) {
             s.setString(which, what);
         } else {
-            byte u8[];
-            if (what == null) {
-                u8 = null;
-            } else {
-                try {
-                    u8 = what.getBytes("UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                    throw new InternalError(e.toString());
-                }
-            }
-            s.setBytes(which, u8);
+            s.setBytes(which, encode_u8(what));
+        }
+    }
+
+    public static final Object prepareUTF8(String what) {
+        if (what == null) return null;
+        if (db_Derby) {
+            return what; // sanity
+        } else {
+            return encode_u8(what);
+        }
+    }
+
+    /**
+     * Returns an integer value (such as a count) from the specified sql.
+     * @param sql
+     * @param args
+     * @return
+     */
+    public static int sqlCount(String sql, Object... args) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try {
+            conn = DBUtils.getInstance().getDBConnection();
+            ps = prepareForwardReadOnly(conn, sql);
+            setArgs(ps, args);
+            return sqlCount(conn, ps);
+        } catch (SQLException sqe) {
+            SurveyLog.logException(sqe, "running sqlcount " + sql);
+            return -1;
+        } finally {
+            DBUtils.close(ps, conn);
         }
     }
 
@@ -488,7 +550,7 @@ public class DBUtils {
             } catch (SQLException t) {
                 datasource = null;
                 throw new IllegalArgumentException(getClass().getName() + ": WARNING: we require a JNDI datasource.  " + "'"
-                        + JDBC_SURVEYTOOL + "'" + ".getConnection() returns : " + t.toString() + "\n" + unchainSqlException(t));
+                    + JDBC_SURVEYTOOL + "'" + ".getConnection() returns : " + t.toString() + "\n" + unchainSqlException(t));
             } finally {
                 if (c != null)
                     try {
@@ -527,7 +589,7 @@ public class DBUtils {
         } catch (SQLException t) {
             datasource = null;
             throw new IllegalArgumentException(getClass().getName() + ": WARNING: we require a JNDI datasource.  " + "'"
-                    + JDBC_SURVEYTOOL + "'" + ".getConnection() returns : " + t.toString() + "\n" + unchainSqlException(t));
+                + JDBC_SURVEYTOOL + "'" + ".getConnection() returns : " + t.toString() + "\n" + unchainSqlException(t));
         } finally {
             if (c != null)
                 try {
@@ -543,10 +605,10 @@ public class DBUtils {
         SurveyLog.debug("setting up SQL for database type " + dbInfo);
         if (dbInfo.contains("Derby")) {
             db_Derby = true;
-            SurveyLog.debug("Note: derby mode");
+            System.err.println("Note: Derby (embedded) mode. ** some features may not work as expected **");
             db_UnicodeType = java.sql.Types.VARCHAR;
         } else if (dbInfo.contains("MySQL")) {
-            System.err.println("Note: mysql mode");
+            System.err.println("Note: MySQL mode");
             db_Mysql = true;
             DB_SQL_IDENTITY = "AUTO_INCREMENT PRIMARY KEY";
             DB_SQL_BINCOLLATE = " COLLATE latin1_bin ";
@@ -563,7 +625,7 @@ public class DBUtils {
             db_UnicodeType = java.sql.Types.BLOB;
             DB_SQL_ALLTABLES = "show tables";
         } else {
-            System.err.println("*** WARNING: Don't know what kind of database is " + dbInfo + " - might be interesting!");
+            System.err.println("*** WARNING: Don't know what kind of database is " + dbInfo + " - don't know what kind of hacky nonportable SQL to use!");
         }
     }
 
@@ -622,7 +684,7 @@ public class DBUtils {
                                                                       */) {
                     lastMsg = now;
                     System.err.println("DBUtils: " + db_number_open + " open, " + db_max_open + " max,  " + db_number_used
-                            + " used. " + StackTracker.currentStack());
+                        + " used. " + StackTracker.currentStack());
                 }
             }
 
@@ -678,12 +740,24 @@ public class DBUtils {
     }
 
     /**
+     * Shortcut for certain statements.
+     * 
+     * @param conn
+     * @param str
+     * @return
+     * @throws SQLException
+     */
+    public static final PreparedStatement prepareForwardUpdateable(Connection conn, String str) throws SQLException {
+        return conn.prepareStatement(str, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
+    }
+
+    /**
      * prepare statements for this connection
      * 
      * @throws SQLException
      **/
     public static final PreparedStatement prepareStatementForwardReadOnly(Connection conn, String name, String sql)
-            throws SQLException {
+        throws SQLException {
         PreparedStatement ps = null;
         try {
             ps = prepareForwardReadOnly(conn, sql);
@@ -704,14 +778,14 @@ public class DBUtils {
     }
 
     /**
-     * prepare statements for this connection
+     * prepare statements for this connection. Assumes generated keys.
      * 
      * @throws SQLException
      **/
     public static final PreparedStatement prepareStatement(Connection conn, String name, String sql) throws SQLException {
         PreparedStatement ps = null;
         try {
-            ps = conn.prepareStatement(sql);
+            ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         } finally {
             if (ps == null) {
                 System.err.println("Warning: couldn't initialize " + name + " from " + sql);
@@ -754,7 +828,7 @@ public class DBUtils {
                     ((DBCloseable) o).close();
                 } else {
                     throw new IllegalArgumentException("Don't know how to close " + an(o.getClass().getSimpleName()) + " "
-                            + o.getClass().getName());
+                        + o.getClass().getName());
                 }
             } catch (SQLException e) {
                 System.err.println(unchainSqlException(e));
@@ -817,14 +891,22 @@ public class DBUtils {
      * @param args
      * @throws SQLException
      */
-    private static void setArgs(PreparedStatement ps, Object... args) throws SQLException {
+    public static void setArgs(PreparedStatement ps, Object... args) throws SQLException {
         if (args != null) {
             for (int i = 0; i < args.length; i++) {
                 Object o = args[i];
-                if (o instanceof String) {
+                if (o == null) {
+                    ps.setNull(i + 1, java.sql.Types.NULL);
+                } else if (o instanceof String) {
                     ps.setString(i + 1, (String) o);
+                } else if (o instanceof byte[]) {
+                    ps.setBytes(i + 1, (byte[]) o);
                 } else if (o instanceof Integer) {
                     ps.setInt(i + 1, (Integer) o);
+                } else if (o instanceof java.sql.Date) {
+                    ps.setDate(i + 1, (java.sql.Date) o);
+                } else if (o instanceof java.sql.Timestamp) {
+                    ps.setTimestamp(i + 1, (java.sql.Timestamp) o);
                 } else if (o instanceof CLDRLocale) { /*
                                                        * toString compatible
                                                        * things
@@ -857,7 +939,7 @@ public class DBUtils {
     }
 
     @SuppressWarnings("rawtypes")
-    private Map[] resultToArrayAssoc(ResultSet rs) throws SQLException {
+    private static Map[] resultToArrayAssoc(ResultSet rs) throws SQLException {
         ResultSetMetaData rsm = rs.getMetaData();
         ArrayList<Map<String, Object>> al = new ArrayList<Map<String, Object>>();
         while (rs.next()) {
@@ -866,7 +948,11 @@ public class DBUtils {
         return al.toArray(new Map[al.size()]);
     }
 
-    private Map<String, Object> assocOfResult(ResultSet rs, ResultSetMetaData rsm) throws SQLException {
+    public static Map<String, Object> assocOfResult(ResultSet rs) throws SQLException {
+        return assocOfResult(rs, rs.getMetaData());
+    }
+
+    private static Map<String, Object> assocOfResult(ResultSet rs, ResultSetMetaData rsm) throws SQLException {
         Map<String, Object> m = new HashMap<String, Object>(rsm.getColumnCount());
 
         for (int i = 1; i <= rsm.getColumnCount(); i++) {
@@ -1052,6 +1138,7 @@ public class DBUtils {
         JSONObject ret = new JSONObject();
         JSONObject header = new JSONObject();
         JSONArray data = new JSONArray();
+        //JSONArray rsm2 = new JSONArray();
 
         int hasxpath = -1;
         int haslocale = -1;
@@ -1063,6 +1150,7 @@ public class DBUtils {
             if (colname.equals("LOCALE"))
                 haslocale = i;
             header.put(colname, i - 1);
+            // rsm2.put(i-1, rsm.getColumnType(i));
         }
         int cn = cc;
         if (hasxpath >= 0) {
@@ -1074,6 +1162,7 @@ public class DBUtils {
         }
 
         ret.put("header", header);
+        //ret.put("types", rsm2);
 
         while (rs.next()) {
             JSONArray item = new JSONArray();
@@ -1083,10 +1172,10 @@ public class DBUtils {
                 String v;
                 try {
                     v = rs.getString(i);
-                    if (i == hasxpath) {
+                    if (i == hasxpath && v != null) {
                         xpath = v;
                     }
-                    if (i == haslocale) {
+                    if (i == haslocale && v != null) {
                         locale_name = CLDRLocale.getInstance(v).getDisplayName();
                     }
                 } catch (SQLException se) {
@@ -1097,10 +1186,18 @@ public class DBUtils {
                     }
                 }
                 if (v != null) {
-                    if (rsm.getColumnType(i) == java.sql.Types.LONGVARBINARY) {
+                    int type = rsm.getColumnType(i);
+                    switch (type) {
+                    case java.sql.Types.LONGVARBINARY:
                         String uni = DBUtils.getStringUTF8(rs, i);
                         item.put(uni);
-                    } else {
+                        break;
+                    case java.sql.Types.INTEGER:
+                    case java.sql.Types.TINYINT:
+                    case java.sql.Types.BIGINT:
+                        item.put(rs.getInt(i));
+                        break;
+                    default:
                         item.put(v);
                     }
                 } else {
@@ -1111,8 +1208,12 @@ public class DBUtils {
                 item.put(XPathTable.getStringIDString(xpath)); // add
                                                                // XPATH_STRHASH
                                                                // column
-                item.put(CookieSession.sm.getSTFactory().getPathHeader(xpath).toString()); // add
-                                                                                           // XPATH_CODE
+                PathHeader ph = CookieSession.sm.getSTFactory().getPathHeader(xpath);
+                if (ph != null) {
+                    item.put(ph.toString()); // add XPATH_CODE
+                } else {
+                    item.put("");
+                }
             }
             if (haslocale >= 0 && locale_name != null) {
                 item.put(locale_name); // add XPATH_STRHASH column
@@ -1138,10 +1239,120 @@ public class DBUtils {
         }
     }
 
+    private Map<String, Reference<JSONObject>> cachedJsonQuery = new ConcurrentHashMap<String, Reference<JSONObject>>();
+
+    /**
+     * Run a query, caching the JSON response
+     * TODO: cache exceptions..
+     * @param id
+     * @param cacheAge
+     * @param query
+     * @param args
+     * @return
+     * @throws SQLException
+     * @throws IOException
+     * @throws JSONException
+     */
+    public static JSONObject queryToCachedJSON(String id, long cacheAge, String query, Object... args) throws SQLException, IOException, JSONException {
+        if (SurveyMain.isSetup == false || SurveyMain.isBusted()) {
+            return null;
+        }
+
+        final boolean CDEBUG = false && SurveyMain.isUnofficial();
+        DBUtils instance = getInstance(); // don't want the cache to be static
+        Reference<JSONObject> ref = instance.cachedJsonQuery.get(id);
+        JSONObject result = null;
+        if (ref != null) result = ref.get();
+        long now = System.currentTimeMillis();
+        if (CDEBUG) {
+            System.out.println("cachedjson: id " + id + " ref=" + ref + "res?" + (result != null));
+        }
+        if (result != null) {
+            long age = now - (Long) result.get("birth");
+            if (age > cacheAge) {
+                if (CDEBUG) {
+                    System.out.println("cachedjson: id " + id + " expiring because age " + age + " > " + cacheAge);
+                }
+                result = null;
+            }
+        }
+
+        if (result == null) { // have to fetch it
+            result = queryToJSON(query, args);
+            long queryms = System.currentTimeMillis() - now;
+            result.put("birth", (Long) now);
+            if (CDEBUG) {
+                System.out.println("cachedjson: id " + id + " fetched in " + queryms);
+            }
+            result.put("queryms", (Long) (queryms));
+            result.put("id", id);
+            ref = new WeakReference<JSONObject>(result);
+            instance.cachedJsonQuery.put(id, ref);
+        }
+
+        return result;
+    }
+
+    /**
+     * Get the first row of the first column.  Useful when the query is very simple, such as a count.
+     * @param obj
+     * @return the int
+     * @throws JSONException 
+     */
+    public static final int getFirstInt(JSONObject json) throws JSONException {
+        return json.getJSONArray("data").getJSONArray(0).getInt(0);
+    }
+
+    /**
+     * query to an array associative maps
+     * @param string
+     * @param args
+     * @return
+     * @throws SQLException
+     * @throws IOException
+     */
+    public static Map[] queryToArrayAssoc(String string, Object... args) throws SQLException, IOException {
+        Connection conn = null;
+        PreparedStatement s = null;
+        ResultSet rs = null;
+        try {
+            conn = getInstance().getDBConnection();
+            s = DBUtils.prepareForwardReadOnly(conn, string);
+            setArgs(s, args);
+            rs = s.executeQuery();
+            return resultToArrayAssoc(rs);
+        } finally {
+            close(rs, s, conn);
+        }
+    }
+
+    /**
+     * query to an array of arrays of objects
+     * @param string
+     * @param args
+     * @return
+     * @throws SQLException
+     * @throws IOException
+     */
+    public static Object[][] queryToArrayArrayObj(String string, Object... args) throws SQLException, IOException {
+        Connection conn = null;
+        PreparedStatement s = null;
+        ResultSet rs = null;
+        try {
+            conn = getInstance().getDBConnection();
+            s = DBUtils.prepareForwardReadOnly(conn, string);
+            setArgs(s, args);
+            rs = s.executeQuery();
+            return resultToArrayArrayObj(rs);
+        } finally {
+            close(rs, s, conn);
+        }
+    }
+
     public static String getDbBrokenMessage() {
         final File homeFile = CLDRConfigImpl.homeFile;
         StringBuilder sb = new StringBuilder(
-                "see <a href='http://cldr.unicode.org/development/running-survey-tool/cldr-properties/db'> http://cldr.unicode.org/development/running-survey-tool/cldr-properties/db </a>");
+            "see <a href='http://cldr.unicode.org/development/running-survey-tool/cldr-properties/db'> http://cldr.unicode.org/development/running-survey-tool/cldr-properties/db </a>");
 
         if (homeFile == null) {
             sb.insert(0, "(can't find our home directory, either) ");
@@ -1149,7 +1360,7 @@ public class DBUtils {
             final File cldrDb = new File(homeFile, "cldrdb");
             try {
                 String connectURI = "jdbc:derby:"
-                        + (cldrDb.getCanonicalPath().replace(System.getProperty("file.separator").charAt(0), '/'));
+                    + (cldrDb.getCanonicalPath().replace(System.getProperty("file.separator").charAt(0), '/'));
 
                 if (!cldrDb.exists()) {
                     // Easier to create it for them than to explain it.
@@ -1163,15 +1374,15 @@ public class DBUtils {
 
                 // Try to print something helpful
                 sb.insert(
-                        0,
-                        "</pre>Read the rest of this exception - but, you may be able to add the following to your <b>context.xml</b> file:  <br><br><pre class='graybox adminExceptionLogsite'>"
-                                + "&lt;Resource name=\"jdbc/SurveyTool\" type=\"javax.sql.DataSource\" auth=\"Container\" \n"
-                                + "description=\"database for ST\" maxActive=\"100\" maxIdle=\"30\" maxWait=\"10000\" \n"
-                                + " username=\"\" password=\"\" driverClassName=\"org.apache.derby.jdbc.EmbeddedDriver\" \n"
-                                + " url=\"<u>"
-                                + connectURI
-                                + "</u>\" /&gt;\n</pre>\n"
-                                + " <i>Note: if you are on a Windows system, you may have to adjust the path somewhat.</i><br><pre>");
+                    0,
+                    "</pre>Read the rest of this exception - but, you may be able to add the following to your <b>context.xml</b> file:  <br><br><pre class='graybox adminExceptionLogsite'>"
+                        + "&lt;Resource name=\"jdbc/SurveyTool\" type=\"javax.sql.DataSource\" auth=\"Container\" \n"
+                        + "description=\"database for ST\" maxActive=\"100\" maxIdle=\"30\" maxWait=\"10000\" \n"
+                        + " username=\"\" password=\"\" driverClassName=\"org.apache.derby.jdbc.EmbeddedDriver\" \n"
+                        + " url=\"<u>"
+                        + connectURI
+                        + "</u>\" /&gt;\n</pre>\n"
+                        + " <i>Note: if you are on a Windows system, you may have to adjust the path somewhat.</i><br><pre>");
 
             } catch (Throwable e) {
                 SurveyLog.logException(e, "Trying to help the user out with SQL stuff in " + cldrDb.getAbsolutePath());
@@ -1180,5 +1391,16 @@ public class DBUtils {
         }
 
         return sb.toString();
+    }
+
+    public static java.sql.Timestamp sqlNow() {
+        return new java.sql.Timestamp(new Date().getTime());
+    }
+
+    public static Integer getLastId(PreparedStatement s) throws SQLException {
+        if (s == null) return null;
+        ResultSet rs = s.getGeneratedKeys();
+        if (!rs.next()) return null;
+        return rs.getInt(1);
     }
 }

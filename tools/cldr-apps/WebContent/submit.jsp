@@ -172,7 +172,7 @@
 		</thead>
 
 <%
-	DisplayAndInputProcessor processor = new DisplayAndInputProcessor(loc);
+	DisplayAndInputProcessor processor = new DisplayAndInputProcessor(loc,false);
 	STFactory stf = CookieSession.sm.getSTFactory();
     BallotBox<UserRegistry.User> ballotBox = stf.ballotBoxForLocale(loc);
     SupplementalDataInfo sdi = cs.sm.getSupplementalDataInfo();
@@ -186,6 +186,7 @@
     TestCache.TestResultBundle cc = stf.getTestResult(loc, options);
 	UserRegistry.User u = theirU;
 	CheckCLDR.Phase cPhase = CLDRConfig.getInstance().getPhase();
+	Set<String> allValidPaths = stf.getPathsForFile(loc);
 	CLDRProgressTask progress = cs.sm.openProgress("Bulk:" + loc,
 			all.size());
 	try {
@@ -230,7 +231,7 @@
 			String baseNoAlt = cs.sm.xpt.removeAlt(base);
 			int root_xpath_id = cs.sm.xpt.getByXpath(baseNoAlt);
 			
-			int coverageValue = sdi.getCoverageValue(base, loc.toULocale());
+			int coverageValue = sdi.getCoverageValue(base, loc.getBaseName());
 
 			String result = "";
 			String resultStyle = "";
@@ -239,8 +240,10 @@
 			
 			PathHeader ph = stf.getPathHeader(base);
 			
-			
-			if(ph==null) {
+			if(!allValidPaths.contains(base)) {
+                result="Item is not a valid XPath.";
+                resultIcon="stop";
+			} else if(ph==null) {
                 result="Item is not a SurveyTool-visible LDML entity.";
                 resultIcon="stop";
 			} else {

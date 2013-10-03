@@ -49,7 +49,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<language type="so">Somaliya</language>
 			<language type="sv">Swedia</language>
 			<language type="ta">Tamul</language>
-			<language type="th">Tai</language>
+			<language type="th">th</language>
 			<language type="tr">Turk</language>
 			<language type="uk">Ukrainia</language>
 			<language type="ur">Urdu</language>
@@ -594,7 +594,10 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</percentFormats>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
+					<pattern>¤#,##0.00</pattern>
+				</currencyFormat>
+				<currencyFormat type="accounting">
 					<pattern>¤#,##0.00;(¤#,##0.00)</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
@@ -760,7 +763,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<displayName>Solai Africa nekǝsǝŋ</displayName>
 			</currency>
 			<currency type="ZMK">
-				<displayName>Solai Zambiya (1968-2012)</displayName>
+				<displayName>Solai Zambiya (1968–2012)</displayName>
 			</currency>
 			<currency type="ZMW">
 				<displayName>Solai Zambiya</displayName>

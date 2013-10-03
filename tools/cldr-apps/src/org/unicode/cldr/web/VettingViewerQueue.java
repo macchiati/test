@@ -4,9 +4,14 @@
 package org.unicode.cldr.web;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.unicode.cldr.util.CLDRFile;
@@ -14,7 +19,11 @@ import org.unicode.cldr.util.CLDRLocale;
 import org.unicode.cldr.util.CldrUtility;
 import org.unicode.cldr.util.Level;
 import org.unicode.cldr.util.LruMap;
+import org.unicode.cldr.util.Pair;
+import org.unicode.cldr.util.Predicate;
+import org.unicode.cldr.util.StandardCodes;
 import org.unicode.cldr.util.VettingViewer;
+import org.unicode.cldr.util.VettingViewer.LocalesWithExplicitLevel;
 import org.unicode.cldr.util.VettingViewer.UsersChoice;
 import org.unicode.cldr.util.VettingViewer.VoteStatus;
 import org.unicode.cldr.util.VoteResolver;
@@ -23,10 +32,7 @@ import org.unicode.cldr.web.UserRegistry.User;
 
 import com.ibm.icu.dev.util.ElapsedTimer;
 import com.ibm.icu.text.DurationFormat;
-import com.ibm.icu.text.NumberFormat;
 import com.ibm.icu.util.ULocale;
-import java.util.*;
-import org.unicode.cldr.util.*;
 
 /**
  * @author srl
@@ -129,7 +135,7 @@ public class VettingViewerQueue {
         public String getAge() {
             long now = System.currentTimeMillis();
             return "<span class='age'>Last generated "
-                    + DurationFormat.getInstance(SurveyMain.BASELINE_LOCALE).formatDurationFromNow(start - now) + "</span>";
+                + DurationFormat.getInstance(SurveyMain.BASELINE_LOCALE).formatDurationFromNow(start - now) + "</span>";
         }
     }
 
@@ -176,7 +182,7 @@ public class VettingViewerQueue {
         private String baseUrl;
 
         public Task(QueueEntry entry, CLDRLocale locale, SurveyMain sm, String baseUrl, Level usersLevel,
-                VoteResolver.Organization usersOrg, final String st_org) {
+            VoteResolver.Organization usersOrg, final String st_org) {
             super("VettingTask:" + locale.toString());
             if (DEBUG)
                 System.err.println("Creating task " + locale.toString());
@@ -185,11 +191,18 @@ public class VettingViewerQueue {
             if (locale.toString().length() == 0) {
                 isSummary = true;
                 maxn = 0;
-                // use the hack set
-
-                for (CLDRLocale l : sm.getLocalesSet()) {
-                    if (getLocalesWithVotes(st_org).is(l.toString())) {
-                        maxn += baseMax;
+                List<Level> levelsToCheck = new ArrayList<Level>();
+                if (usersOrg.equals(Organization.surveytool)) {
+                    levelsToCheck.add(Level.COMPREHENSIVE);
+                } else {
+                    levelsToCheck.addAll(Arrays.asList(Level.values()));
+                }
+                for (Level lv : levelsToCheck) {
+                    LocalesWithExplicitLevel lwe = new LocalesWithExplicitLevel(usersOrg, lv);
+                    for (CLDRLocale l : SurveyMain.getLocalesSet()) {
+                        if (lwe.is(l.toString())) {
+                            maxn += baseMax;
+                        }
                     }
                 }
             } else {
@@ -226,7 +239,7 @@ public class VettingViewerQueue {
                     status = "Beginning Process, Calculating";
 
                     vv = new VettingViewer<VoteResolver.Organization>(sm.getSupplementalDataInfo(), sm.getSTFactory(),
-                            sm.getOldFactory(), getUsersChoice(sm), "CLDR " + sm.getOldVersion(), "Winning " + sm.getNewVersion());
+                        sm.getOldFactory(), getUsersChoice(sm), "CLDR " + sm.getOldVersion(), "Winning " + sm.getNewVersion());
                     vv.setBaseUrl(baseUrl);
                     progress.update("Got VettingViewer");
                     statusCode = Status.PROCESSING;
@@ -301,6 +314,13 @@ public class VettingViewerQueue {
                     });
 
                     EnumSet<VettingViewer.Choice> choiceSet = EnumSet.allOf(VettingViewer.Choice.class);
+                    if (usersOrg.equals(VoteResolver.Organization.surveytool)) {
+                        choiceSet = EnumSet.of(
+                            VettingViewer.Choice.error,
+                            VettingViewer.Choice.warning,
+                            VettingViewer.Choice.hasDispute,
+                            VettingViewer.Choice.notApproved);
+                    }
 
                     if (locale.toString().length() > 0) {
                         vv.generateHtmlErrorTables(aBuffer, choiceSet, locale.getBaseName(), usersOrg, usersLevel, true);
@@ -373,11 +393,11 @@ public class VettingViewerQueue {
         final Set<CLDRLocale> anyVotesFromOrg = UserRegistry.anyVotesForOrg(st_org);
 
         System.err.println("CovGroupsFor " + st_org + "=" + covGroupsForOrg.size() + ", anyVotes=" + anyVotesFromOrg.size()
-                + "  - " + SurveyMain.freeMem());
+            + "  - " + SurveyMain.freeMem());
 
         Predicate<String> localesWithVotes = new Predicate<String>() {
             final boolean showAllLocales = (vr_org == Organization.surveytool)
-                    || CldrUtility.getProperty("THRASH_ALL_LOCALES", false);
+                || CldrUtility.getProperty("THRASH_ALL_LOCALES", false);
 
             @Override
             public boolean is(String item) {
@@ -385,7 +405,7 @@ public class VettingViewerQueue {
                     return true;
                 CLDRLocale loc = CLDRLocale.getInstance(item);
                 return (aLocs.contains(item) || // a
-                        covGroupsForOrg.contains(loc.getBaseName()) || // b
+                    covGroupsForOrg.contains(loc.getBaseName()) || // b
                 anyVotesFromOrg.contains(loc)); // c
             }
         };
@@ -421,7 +441,7 @@ public class VettingViewerQueue {
      * @throws IOException
      */
     public void writeVettingViewerOutput(WebContext ctx, CookieSession sess, CLDRLocale locale, Status[] status,
-            LoadingPolicy forceRestart, Appendable output) throws IOException {
+        LoadingPolicy forceRestart, Appendable output) throws IOException {
         String str = getVettingViewerOutput(ctx, sess, locale, status, forceRestart, output);
         if (str != null) {
             output.append(str);
@@ -448,16 +468,22 @@ public class VettingViewerQueue {
     }
 
     public void writeVettingViewerOutput(CLDRLocale locale, String baseUrl, StringBuffer aBuffer,
-            VoteResolver.Organization usersOrg, Level usersLevel, final String st_org) {
+        VoteResolver.Organization usersOrg, Level usersLevel, final String st_org) {
         SurveyMain sm = CookieSession.sm;
-        VettingViewer vv = new VettingViewer<VoteResolver.Organization>(sm.getSupplementalDataInfo(), sm.getSTFactory(),
-                sm.getOldFactory(), getUsersChoice(sm), "CLDR " + sm.getOldVersion(), "Winning " + sm.getNewVersion());
+        VettingViewer<Organization> vv = new VettingViewer<Organization>(sm.getSupplementalDataInfo(), sm.getSTFactory(),
+            sm.getOldFactory(), getUsersChoice(sm), "CLDR " + SurveyMain.getOldVersion(), "Winning " + SurveyMain.getNewVersion());
         vv.setBaseUrl(baseUrl);
         // progress.update("Got VettingViewer");
         // statusCode = Status.PROCESSING;
-        final long start = System.currentTimeMillis();
 
         EnumSet<VettingViewer.Choice> choiceSet = EnumSet.allOf(VettingViewer.Choice.class);
+        if (usersOrg.equals(VoteResolver.Organization.surveytool)) {
+            choiceSet = EnumSet.of(
+                VettingViewer.Choice.error,
+                VettingViewer.Choice.warning,
+                VettingViewer.Choice.hasDispute,
+                VettingViewer.Choice.notApproved);
+        }
 
         if (locale != SUMMARY_LOCALE) {
             vv.generateHtmlErrorTables(aBuffer, choiceSet, locale.getBaseName(), usersOrg, usersLevel, true);
@@ -486,7 +512,7 @@ public class VettingViewerQueue {
      * @throws IOException
      */
     public synchronized String getVettingViewerOutput(WebContext ctx, CookieSession sess, CLDRLocale locale, Status[] status,
-            LoadingPolicy forceRestart, Appendable output) throws IOException {
+        LoadingPolicy forceRestart, Appendable output) throws IOException {
         if (sess == null)
             sess = ctx.session;
         SurveyMain sm = sess.sm;

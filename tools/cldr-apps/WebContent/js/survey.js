@@ -1,24 +1,331 @@
-// survey.js  -Copyright (C) 2012 IBM Corporation and Others. All Rights Reserved.
+// survey.js  -Copyright (C) 2012-2013 IBM Corporation and Others. All Rights Reserved.
 // move anything that's not dynamically generated here.
 
 // These need to be available @ bootstrap time.
 
+/**
+ * @module survey.js - SurveyTool main JavaScript stuff
+ */
+ 
+
+// TODO: replace with AMD [?] loading
 dojo.require("dojo.i18n");
 dojo.require("dojo.string");
 dojo.requireLocalization("surveyTool", "stui");
 
-var stui = {online: "Online", 		error_restart: "(May be due to SurveyTool restart on server)", 	error: "Disconnected: Error", "details": "Details...", disconnected: "Disconnected", startup: "Starting up..."};
+/**
+ * @class Object
+ * @method keys
+ */
+if(!Object.prototype.keys && !Object.keys) {
+	console.log("fixing missing Object.keys");
+	Object.keys = function(x) {
+		var r = [];
+		for (var j in x) {
+			r.push(j);
+		}
+		return r;
+	};
+}
 
-var onIE =  (navigator && navigator.appName && navigator.appName == 'Microsoft Internet Explorer');
+if(!Array.prototype.isArray && !Array.isArray) {
+	console.log("fixing missing Array.isArray() ");
+	Array.isArray = function(x) {
+		if(x === null) return false;
+		return x instanceof Array;   // if this doesn't work, we're in trouble.
+	};
+}
 
+if(!String.prototype.trim && !String.trim) {
+	console.log("TODO fix broken String.trim() ");
+	String.prototype.trim = function(x) {
+		return x;
+	};
+}
 
-stui_str = function(x) {
-    if(stui && stui[x]) {
-    	return stui[x];
-    } else {
-    	return x;
-    }
+/**
+ * @class GLOBAL
+ */
+
+function removeClass(obj, className) {
+	if(obj.className.indexOf(className)>-1) {
+		obj.className = obj.className.substring(className.length+1);
+	}
+}
+function addClass(obj, className) {
+	if(obj.className.indexOf(className)==-1) {
+		obj.className = className+" "+obj.className;
+	}
+}
+
+/**
+ * Remove all subnodes
+ * @method removeAllChildNodes
+ * @param {Node} td
+ */
+function removeAllChildNodes(td) {
+	if(td==null) return;
+	while(td.firstChild) {
+		td.removeChild(td.firstChild);
+	}
+}
+
+/**
+ * set/remove style.display
+ * @method setDIsplayed
+ */
+function setDisplayed(div, visible) {
+	if(div===null) {
+		console.log("setDisplayed: called on null");
+		return;
+	} else if(div.domNode) {
+		setDisplayed(div.domNode, visible); // recurse, it's a dijit
+	} else if(!div.style) {
+		console.log("setDisplayed: called on malformed node " + div + " - no style! " + Object.keys(div));
+//	} else if(!div.style.display) {
+//		console.log("setDisplayed: called on malformed node " + div + " - no display! " + Object.keys(div.style));
+	} else {
+		if(visible) {
+			div.style.display = '';
+		} else {
+			div.style.display = 'none';
+		}
+	}
+}
+
+/**
+ * Section flipping class
+ * @class Flipper
+ */
+function Flipper(ids) {
+	// TODO amd require 'by'
+	this._panes = [];
+	this._killfn = [];
+	this._map = {};
+	for(var k in ids) {
+		var id = ids[k];
+		var node = dojo.byId(id);
+		// TODO if node==null throw
+		if(this._panes.length > 0) {
+			setDisplayed(node,false); // hide it
+		} else {
+			this._visible = id;
+		}
+		this._panes.push(node);
+		this._map[id]=node;
+	}
+}
+
+/**
+ * @method flipTo
+ * @param {String} id
+ * @param {Node} node - if non null - replace new page with this
+ */
+Flipper.prototype.flipTo = function(id, node) {
+	if(!this._map[id]) return; // TODO throw
+	if(this._visible == id && (node === null)) {
+		return; // noop - unless adding s'thing
+	}
+	setDisplayed(this._map[this._visible], false);
+	for(var k in this._killfn) {
+		this._killfn[k]();
+	}
+	this._killfn = []; // pop?
+	if(node!==null && node !== undefined) {
+		removeAllChildNodes(this._map[id]);
+		if(node.nodeType>0) {
+			this._map[id].appendChild(node);
+		} else for( var kk in node) {
+			// it's an array, add all 
+			this._map[id].appendChild(node[kk]);
+		}
+	}
+	setDisplayed(this._map[id], true);
+	this._visible = id;
+	return this._map[id];
 };
+
+/**
+ * @method get
+ * @param id page id or null for current
+ * @returns
+ */
+Flipper.prototype.get = function(id) {
+	if(id) {
+		return this._map[id];
+	} else {
+		return this._map[this._visible];
+	}
+};
+
+/**
+ * @method flipToEmpty
+ * @param id
+ */
+Flipper.prototype.flipToEmpty = function(id) {
+	return this.flipTo(id, []);
+};
+
+/**
+ * killFn is called on next flip
+ * @method addKillFn
+ * @param killFn the functino to call. No params.
+ */
+Flipper.prototype.addKillFn = function(killFn) {
+	this._killfn.push(killFn);
+};
+
+/**
+ * showfn is called, result is added to the div.  killfn is called when page is flipped.
+ * @method addUntilFlipped
+ * @param showFn
+ * @param killFn
+ */
+Flipper.prototype.addUntilFlipped = function addUntilFlipped(showFn, killFn) {
+	this.get().appendChild(showFn());
+	this.addKillFn(killFn);
+};
+
+
+/*
+ * LocaleMap 
+ * @class LocaleMap
+ */
+/**
+ * ctor
+ * @function LocaleMap
+ * @param aLocmap the map object from json
+ */
+function LocaleMap(aLocmap) {
+	this.locmap = aLocmap;
+}
+
+/**
+ * Run the locale id through the idmap.
+ * @function canonicalizeLocaleId
+ * @param menuMap the map
+ * @param locid or null for surveyCurrentLocale
+ * @return canonicalized id, or unchanged
+ */
+LocaleMap.prototype.canonicalizeLocaleId = function canonicalizeLocaleId(locid) {
+	if(locid === null) {
+		locid = surveyCurrentLocale;
+	}
+	if(locid === null || locid === '') {
+		return null;
+	}
+	
+	if(this.locmap) {
+		if(this.locmap.idmap && this.locmap.idmap[locid]) {
+			locid = this.locmap.idmap[locid]; // canonicalize
+		}
+	}
+	return locid;
+};
+
+/**
+ * Return the locale info entry
+ * @method getLocaleInfo
+ * @param menuMap the map
+ * @param locid the id - should already be canonicalized
+ * @return the bundle or null
+ */
+LocaleMap.prototype.getLocaleInfo = function getLocaleInfo(locid) {
+	if(this.locmap && this.locmap.locales && this.locmap.locales[locid]) {
+		return this.locmap.locales[locid];
+	} else {
+		return null;
+	}
+};
+
+/**
+ * Return the locale name, 
+ * @method getLocaleName
+ * @param menuMap the map
+ * @param locid the id - will canonicalize
+ * @return the display name - or else the id
+ */
+LocaleMap.prototype.getLocaleName = function getLocaleName(locid) {
+	locid = this.canonicalizeLocaleId(locid);
+	var bund = this.getLocaleInfo( locid);
+	if(bund && bund.name ) {
+		return bund.name;
+	} else {
+		return locid;
+	}
+};
+
+
+/**
+ * Return the locale language 
+ * @method getLanguage
+ * @param locid
+ * @returns the language portion
+ */
+LocaleMap.prototype.getLanguage = function getLanguage(locid) {
+	return locid.split('_')[0].split('-')[0];
+};
+
+/**
+ * Global items 
+ * @class GLOBAL
+ */
+
+/**
+ * SurveyToolUI (localization) object. Preloaded with a few strings while we wait for the resources to load.
+ *
+ * @property stui
+ */
+var stui = {
+		online: "Online",
+		error_restart: "(May be due to SurveyTool restart on server)", 	
+		error: "Disconnected: Error", "details": "Details...", 
+		disconnected: "Disconnected", 
+		startup: "Starting up...",
+		ari_sessiondisconnect_message: "Your session has been disconnected.",
+};
+
+var stuidebug_enabled=(window.location.search.indexOf('&stui_debug=')>-1);
+
+
+if(!stuidebug_enabled) {
+	/**
+	 * SurveyToolUI string loading function
+	 * @method stui_str
+	 */
+	stui_str = function(x) {
+	    if(stui && stui[x]) {
+	    	return stui[x];
+	    } else {
+	    	return x;
+	    }
+	};
+} else {
+	stui_str = function(x) { return "stui["+x+"]"; };
+}
+
+/**
+ * Is the keyboard 'busy'? i.e., it's a bad time to change the DOM
+ * @method isInputBusy
+ */
+function isInputBusy() {
+	if(!window.getSelection) return false;
+	var sel = window.getSelection();
+	if(sel && sel.anchorNode && sel.anchorNode.className && sel.anchorNode.className.indexOf("dijitInp")!=-1) {
+		return true;
+	}
+	return false;
+}
+
+/**
+ * Create a DOM object with the specified text, tag, and HTML class. 
+ * Applies (classname)+"_desc" as a tooltip (title).
+ * @method createChunk
+ * @param {String} text textual content of the new object, or null for none
+ * @param {String} tag which element type to create, or null for "span"
+ * @param {String} className CSS className, or null for none.
+ * @return {Object} new DOM object 
+ */
 function createChunk(text, tag, className) {
 	if(!tag) {
 		tag="span";
@@ -33,14 +340,60 @@ function createChunk(text, tag, className) {
 	}
 	return chunk;
 }
+
+/**
+ * Create a 'link' that goes to a function. By default it's an 'a', but could be a button, etc.
+ * @param strid  {String} string to be used with stui.str
+ * @param fn {function} function, given the DOM obj as param
+ * @param tag {String}  tag of new obj.  'a' by default.
+ * @return {Element} newobj
+ */
+function createLinkToFn(strid, fn, tag) {
+	if(!tag)  {
+		tag = 'a';
+	}
+	var msg = stui.str(strid);
+	var obj = document.createElement(tag);
+	obj.appendChild(document.createTextNode(msg));
+	if(tag=='a') {
+		obj.href ='';
+	}
+	listenFor(obj, "click", function(e) {
+		fn(obj);
+		stStopPropagation(e);
+		return false;
+	});
+	return obj;
+}
+
+/**
+ * Create a DOM object referring to a user.
+ * @method createUser
+ * @param {JSON} user - user struct
+ * @return {Object} new DOM object
+ */
 function createUser(user) {
 	var div = createChunk(null,"div","adminUserUser");
-	div.appendChild(createChunk(stui_str("userlevel_"+user.userlevelname),"i","userlevel_"+user.userlevelname));
+	if(user.emailHash) {
+		var gravatar = document.createElement("img");
+		gravatar.src = 'http://www.gravatar.com/avatar/'+user.emailHash+'?d=identicon&r=g&s=32';
+		gravatar.title = 'gravatar - http://www.gravatar.com';
+		gravatar.align='laft';		
+		div.appendChild(gravatar);
+	}
+	div.appendChild(createChunk(stui_str("userlevel_"+user.userlevelName.toLowerCase(0)),"i","userlevel_"+user.userlevelName.toLowerCase()));
 	div.appendChild(createChunk(user.name,"span","adminUserName"));
+	div.appendChild(createChunk(user.orgName + ' #'+user.id,"span","adminOrgName"));
 	div.appendChild(createChunk(user.email,"address","adminUserAddress"));
 	return div;
 }
 
+/**
+ * Used from within event handlers. cross platform 'stop propagation'
+ * @method stStopPropagation
+ * @param e event
+ * @returns
+ */
 function stStopPropagation(e) {
 	if(!e) {
 		return false;
@@ -50,20 +403,34 @@ function stStopPropagation(e) {
 		return e.cancelBubble();
 	} else {
 		// hope for the best
-                return false;
+		return false;
 	}
 }
 
-function replaceHash(hash) {
-	window.location.replace("#"+hash);
-}
+/**
+ * is the ST disconnected
+ * @property disconnected 
+ */
 var disconnected = false;
 
+/**
+ * Is debugging enabled?
+ * @property stdebug_enabled
+ */
 var stdebug_enabled=(window.location.search.indexOf('&stdebug=')>-1);
 
+/**
+ * Queue of XHR requests waiting to go out
+ * @property queueOfXhr
+ */
 var queueOfXhr=[];
 
+/**
+ * The current timeout for processing XHRs
+ * @property queueOfXhrTimeout
+ */
 var queueOfXhrTimeout=null;
+
 
 var myLoad0= null;
 var myErr0 = null;
@@ -82,6 +449,7 @@ var processXhrQueue = function() {
 		top.err2 = top.err;
 		top.load=function(){return myLoad0(top,arguments); };
 		top.err=function(){return myErr0(top,arguments); };
+		top.startTime = new Date().getTime();
 		if(top.postData) {
 			stdebug("PXQ("+queueOfXhr.length+"): dispatch POST " + top.url);
 			dojo.xhrPost(top);
@@ -92,8 +460,15 @@ var processXhrQueue = function() {
 	}
 };
 
+function xhrSetTime(top) {
+	top.stopTime = new Date().getTime();
+	top.tookTime = top.stopTime-top.startTime;
+	stdebug("PXQ("+queueOfXhr.length+"): time took= " + top.tookTime);
+}
+
 var xhrQueueTimeout = 3;
 myLoad0 = function(top,args) {
+	xhrSetTime(top);
 	stdebug("myLoad0!:" + top.url + " - a="+args.length);
 	var r = top.load2(args[0],args[1]);
 	queueOfXhrTimeout = setTimeout(processXhrQueue, xhrQueueTimeout);
@@ -124,78 +499,33 @@ function stdebug(x) {
 
 stdebug('stdebug is enabled.');
 
-function removeAllChildNodes(td) {
-	if(td==null) return;
-	while(td.firstChild) {
-		td.removeChild(td.firstChild);
-	}
-}
-
-function readyToSubmit(fieldhash) {
-//    var ch_input = document.getElementById('ch_'+fieldhash);
-//    var submit_btn = document.getElementById('submit_'+fieldhash);
-//    var cancel_btn = document.getElementById('cancel_'+fieldhash);
-    
-//    ch_input.disabled='1';
-//    submit_btn.style.display='block';
-//    cancel_btn.style.display='block';
-}
-
-function hideSubmit(fieldhash) {
-//    var ch_input = document.getElementById('ch_'+fieldhash);
-//    var submit_btn = document.getElementById('submit_'+fieldhash);
-    var cancel_btn = document.getElementById('cancel_'+fieldhash);
-
-//    submit_btn.style.display='none';
-    cancel_btn.style.display='none';
-//    ch_input.disabled=null;
-}
-
-// @deprecated
-function isubmit(fieldhash,xpid,locale,session) {
-    var ch_input = document.getElementById('ch_'+fieldhash);
-//    var submit_btn = document.getElementById('submit_'+fieldhash);
-//    var cancel_btn = document.getElementById('cancel_'+fieldhash);
-    
-    if(!ch_input) {
-    	console.log("Not a field hash: submit " + fieldhash);
-    	return;
-    }
-    hideSubmit(fieldhash);
-    ch_input.disabled=null;
-    do_change(fieldhash, ch_input.value, '', xpid,locale,session,'submit');
-}
-
-function icancel(fieldhash,xpid,locale,session) {
-    var ch_input = document.getElementById('ch_'+fieldhash);
-//    var chtd_input = document.getElementById('chtd_'+fieldhash);
-//    var submit_btn = document.getElementById('submit_'+fieldhash);
-    var cancel_btn = document.getElementById('cancel_'+fieldhash);
-    
-    if(!ch_input) {
-        console.log("Not a field hash: submit " + fieldhash);
-        return;
-    }
-    cancel_btn.style.display='none';
-//    submit_btn.style.display='none';
-    ch_input.disabled=null;
-//    chtd_input.style.width='25%';
-    ch_input.className='inputboxbig';
-    alreadyVerifyValue[fieldhash]=null;
-}
 
 var timerID = -1;
 
+/**
+ * Update the item, if it exists
+ * @method updateIf
+ * @param id ID of DOM node
+ * @param txt text to replace with - should just be plaintext, but currently can be HTML
+ */
 function updateIf(id, txt) {
     var something = document.getElementById(id);
     if(something != null) {
-        something.innerHTML = txt;
+        something.innerHTML = txt;  // TODO shold only use for plain text
     }
 }
 
-// work around IE8 problem
-
-function listenFor(what, event, fn, ievent) {
+/** 
+ * Add an event listener function to the object.
+ * @method listenFor
+ * @param {DOM} what object to listen to (or array of them)
+ * @param {String} what event, bare name such as 'click'
+ * @param {Function} fn function, of the form:  function(e) { 	doSomething();  	stStopPropagation(e);  	return false; }
+ * @param {String} ievent IE name of an event, if not 'on'+what
+ * @return {DOM} returns the object what (or the array)
+ */
+function listenFor(whatArray, event, fn, ievent) {
+    function listenForOne(what, event, fn, ievent) {
 	if(!(what._stlisteners)) {
 		what._stlisteners={};
 	}
@@ -219,38 +549,26 @@ function listenFor(what, event, fn, ievent) {
 		what.attachEvent(ievent,fn);
 	}
 	what._stlisteners[event]=fn;
-}
-//function unListen(what, event, ievent) {
-//	if(what.removeEventListener) {
-//		what.removeEventListener(event,false);
-//	} else {
-//		if(!ievent) {
-//			ievent = "on"+event;
-//		}
-//		what.attachEvent(ievent,fn);
-//	}
-//}
-// ?!!!!
-if(!Object.keys) {
-	Object.keys = function(x) {
-		var r = [];
-		for (j in x) {
-			r.push(j);
-		}
-		return r;
-	};
-}
 
-function getAbsolutePosition (x) {
-    var hh = 0;
-    var vv = 0;
-    for(var xx=x;xx.offsetParent;xx=xx.offsetParent) {
-        hh += xx.offsetLeft;
-        vv += xx.offsetTop;
+	return what;
     }
-    return {left:hh, top: vv};
+    
+    if(Array.isArray(whatArray)) {
+        for(var k in whatArray) {
+            listenForOne(whatArray[k], event, fn, ievent);
+        }
+        return whatArray;
+    } else {
+        return listenForOne(whatArray, event, fn, ievent);
+    }
 }
 
+/**
+ * On click, select all
+ * @method clickToSelect
+ * @param {Node} obj to listen to
+ * @param {Node} targ to select
+ */
 function clickToSelect(obj, targ) {
 	if(!targ) targ=obj;
 	listenFor(obj, "click", function(e) {
@@ -260,6 +578,7 @@ function clickToSelect(obj, targ) {
 		stStopPropagation(e);
 		return false;
 	});
+	return obj;
 }
 
 var wasBusted = false;
@@ -267,11 +586,34 @@ var wasOk = false;
 var loadOnOk = null;
 var clickContinue = null;
  var surveyNextLocaleStamp = 0;
+ var surveyNextLocaleStampId = '';
  
+ /**
+  * Mark the page as busted. Don't do any more requests.
+  * @method busted
+  */
  function busted() {
 	 disconnected = true;
-	 //console.log("disconnected.");
-	 document.getElementsByTagName("body")[0].className="disconnected"; // hide buttons when disconnected.
+	 stdebug("disconnected.");
+	 addClass(document.getElementsByTagName("body")[0], "disconnected");
+ }
+ 
+ var didUnbust = false;
+ 
+ function unbust() {
+	 didUnbust = true;
+	 console.log("Un-busting");
+	 progressWord="unbusted";
+	 disconnected = false;
+	 saidDisconnect = false;
+	 removeClass(document.getElementsByTagName("body")[0], "disconnected");
+	 wasBusted = false;
+	 queueOfXhr=[]; // clear queue
+	 clearTimeout(queueOfXhrTimeout);
+	 queueOfXhrTimeout = null;
+	 hideLoader();
+	 saidDisconnect = false;
+	 updateStatus(); // will restart regular status updates
  }
 
 // hashtable of items already verified
@@ -282,42 +624,67 @@ var showers={};
 var deferUpdates = 0;
 var deferUpdateFn = {};
 
-
+/**
+ * Process all deferred updates
+ * @method doDeferredUpdates
+ */
 function doDeferredUpdates() {
-	if(deferUpdateFn==null) {
+	if(deferUpdateFn==null || deferUpdates>0 || isInputBusy()) {
 		return;
 	}
+
 	for(i in deferUpdateFn) {
 		if(deferUpdateFn[i]) {
 			var fn = deferUpdateFn[i];
 			deferUpdateFn[i]=null;
+			stdebug(".. calling deferred update fn ..");			
 			fn();
 		}
 	}
 }
 
+/**
+ * Set whether we are deferring or not. For example, call setDefer(true) on entering a text field, and setDefer(false) leaving it.
+ * @method setDefer
+ * @param {boolean} defer
+ */
 function setDefer(defer) {
 	if(defer) {
 		deferUpdates++;
 	} else {
 		deferUpdates--;
 	}
-	if(deferUpdates<=0) {
-		doDeferredUpdates();
-	}
+	doDeferredUpdates();
 	stdebug("deferUpdates="+deferUpdates);
 }
 
+/**
+ * Note an update as deferred. 
+ * @method deferUpdate
+ * @param {String} what type of item to defer  (must be unique- will overwrite)
+ * @param {Function} fn function to register
+ */
 function deferUpdate(what, fn) {
 	deferUpdateFn[what]=fn;
 }
 
+/**
+ * Note an update as not needing deferral
+ * @method undeferUpdate
+ * @param {String} what the type of item to undefer
+ */
 function undeferUpdate(what) {
-	deferUpdateFn[what]=null;
+	deferUpdate(what, null);
 }
 
+/**
+ * Perform or queue an update. Note that there's data waiting if we are deferring.
+ * @method doUpdate
+ * @param {String} what
+ * @param {Function} fn function to call, now or later
+ */
 function doUpdate(what,fn) {
-	if(deferUpdates>0) {
+	if(deferUpdates>0 || isInputBusy()) {
 		updateAjaxWord(stui_str('newDataWaiting'));
 		deferUpdate(what,fn);
 	} else {
@@ -326,6 +693,12 @@ function doUpdate(what,fn) {
 	}
 }
 
+/**
+ * Process that the locale has changed under us.
+ * @method handleChangedLocaleStamp
+ * @param {String} stamp timestamp
+ * @param {String} name locale name
+ */
 function handleChangedLocaleStamp(stamp,name) {
 	if(disconnected) return;
 	if(stamp <= surveyNextLocaleStamp) {
@@ -340,47 +713,24 @@ function handleChangedLocaleStamp(stamp,name) {
         }
 	} else {
 		for(i in showers) {
-			showers[i]();
+			var fn = showers[i];
+			if(fn) {
+				fn();
+			}
 		}
 	}
 	stdebug("Reloaded due to change: " + stamp);
     surveyNextLocaleStamp = stamp;
 }
 
-////    updateStatusBox({err: err.message, err_name: err.name, disconnected: true});
-/*
- * {
-"status": {
-"memfree": 378.6183984375,
-"lockOut": false,
-"pages": 16,
-"specialHeader": "Welcome to SurveyTool@oc7426272865.ibm.com. Please edit /home/srl/apache-tomcat-7.0.8/cldr/cldr.properties to change CLDR_HEADER (to change this message), or comment it out entirely.",
-"dbopen": 0,
-"users": 1,
-"uptime": "uptime: 49:47",
-"isUnofficial": true,
-"memtotal": 492.274,
-"sysprocs": 8,
-"isSetup": true,
-"sysload": 0.33,
-"dbused": 1439,
-"guests": 0,
-"surveyRunningStamp": 1331941056940
-},
-"isSetup": "0",
-"err": "",
-"visitors": "",
-"SurveyOK": "1",
-"uptime": "",
-"isBusted": "0",
-"progress": "(obsolete-progress)"
-}
- */
-
 var progressWord = null;
 var ajaxWord = null;
 var specialHeader = null;
 
+/**
+ * Update the 'status' if need be.
+ * @method showWord 
+ */
 function showWord() {
 	var p = dojo.byId("progress");	
 	var oneword = dojo.byId("progress_oneword");
@@ -411,11 +761,21 @@ function showWord() {
 	}
 }
 
+/**
+ * Update our progress 
+ * @method updateProgressWord
+ * @param {String} prog the status to update
+ */
 function updateProgressWord(prog) {
 	progressWord = prog;
 	showWord();
 }
 
+/**
+ * Update ajax loading status
+ * @method updateAjaxWord
+ * @param {String} ajax 
+ */
 function updateAjaxWord(ajax) {
 	ajaxWord = ajax;
 	showWord();
@@ -423,7 +783,44 @@ function updateAjaxWord(ajax) {
 
 var saidDisconnect=false;
 
-function handleDisconnect(why, json, word) {
+/**
+ * @method showARIDialog
+ * @param why 
+ * @param json
+ * @param word
+ * @param oneword
+ * @param p
+ */
+function showARIDialog(why, json, word, oneword, p) {
+	console.log("Can't recover, not in /v or not loaded yet.");
+	// has not been loaded yet.
+}
+/**
+ * @method showARIDialog
+ * @param why 
+ * @param json
+ * @param word
+ * @param oneword
+ * @param p
+ */
+function ariRetry() {
+	window.location.reload(true);
+}
+
+
+
+/**
+ * Handle that ST has disconnected
+ * @method handleDisconnect
+ * @param why
+ * @param json
+ * @param word
+ * @param what - what we were doing
+ */
+function handleDisconnect(why, json, word, what) {
+	if(!what) {
+		what = "unknown";
+	}
 	if(!word) {
 		word = "error"; // assume it's an error except for a couple of cases.
 	}
@@ -439,6 +836,7 @@ function handleDisconnect(why, json, word) {
 			oneword.title = "Disconnected: " + why;
 			oneword.onclick = function() {
 				var p = dojo.byId("progress");	
+				var subDiv = document.createElement('div');
 				var chunk0 = document.createElement("i");
 				chunk0.appendChild(document.createTextNode(stui_str("error_restart")));
 				var chunk = document.createElement("textarea");
@@ -446,23 +844,27 @@ function handleDisconnect(why, json, word) {
 				chunk.appendChild(document.createTextNode(why));
 				chunk.rows="10";
 				chunk.cols="40";				
-				p.appendChild(chunk0);
-				p.appendChild(chunk);
+				subDiv.appendChild(chunk0);
+				subDiv.appendChild(chunk);
+				p.appendChild(subDiv);
 				if(oneword.details) {
-					oneword.details.style.display="none";
+					setDisplayed(oneword.details, false);
 				}
 				oneword.onclick=null;
 				return false;
 			};
 			{
 				var p = dojo.byId("progress");	
+				var subDiv = document.createElement('div');
 				var detailsButton = document.createElement("button");
 				detailsButton.type = "button";
 				detailsButton.id = "progress-details";
 				detailsButton.appendChild(document.createTextNode(stui_str("details")));
 				detailsButton.onclick = oneword.onclick;
-				p.appendChild(detailsButton);
+				subDiv.appendChild(detailsButton);
 				oneword.details = detailsButton;
+				p.appendChild(subDiv);
+				showARIDialog(why, json, word, oneword, subDiv, what);
 			}
 		}
 		if(json) {
@@ -475,6 +877,11 @@ var updateParts = null;
 
 var cacheKillStamp = surveyRunningStamp;
 
+/**
+ * Return a string to be used with a URL to avoid caching. Ignored by the server.
+ * @method cacheKill 
+ * @returns {String} the URL fragment, append to the query
+ */
 function cacheKill() {
 	if(!cacheKillStamp || cacheKillStamp<surveyRunningStamp) {
 		cacheKillStamp=surveyRunningStamp;
@@ -484,7 +891,10 @@ function cacheKill() {
 	return "&cacheKill="+cacheKillStamp;
 }
 
-
+/**
+ * Note that there is special site news.
+ * @param {String} newSpecialHeader site news
+ */
 function updateSpecialHeader(newSpecialHeader) {
 	if(newSpecialHeader && newSpecialHeader.length>0) {
 		specialHeader = newSpecialHeader;
@@ -493,41 +903,78 @@ function updateSpecialHeader(newSpecialHeader) {
 	}
 	showWord();
 }
+
+function trySurveyLoad() {
+	try {
+		var url = contextPath + "/survey"+cacheKill();
+		console.log("Attempting to restart ST at " + url);
+	    dojo.xhrGet({
+	        url: url,
+	        timeout: ajaxTimeout
+	    });
+	} catch(e){}
+}
+
+var lastJsonStatus = null;
+
+
+function formatErrMsg(json, subkey) {
+	if(!subkey) {
+		subkey = "unknown";
+	}
+	var theCode = "E_UNKNOWN";
+	if(json && json.session_err) {
+		theCode = "E_SESSION_DISCONNECTED";
+	}
+	var msg_str = theCode;
+	if(json && json.err_code) {
+		msg_str = theCode = json.err_code;
+		if(stui.str(json.err_code) == json.err_code) {
+			msg_str = "E_UNKNOWN";
+		}
+	}
+	return stui.sub(msg_str,
+			{
+				json: json, what: stui.str('err_what_'+subkey), code: theCode,
+				surveyCurrentLocale: surveyCurrentLocale,
+				surveyCurrentId: surveyCurrentId,
+				surveyCurrentSection: surveyCurrentSection,
+				surveyCurrentPage: surveyCurrentPage
+			} );
+}
+
+/**
+ * Based on the last received packet of JSON, update our status
+ * @method updateStatusBox
+ * @param {Object} json received 
+ */
 function updateStatusBox(json) {
 	if(json.disconnected) {
 		handleDisconnect("Misc Disconnect", json,"disconnected"); // unknown 
+	} else if(json.err_code) {
+		console.log('json.err_code == ' + json.err_code);
+		if(json.err_code == "E_NOT_STARTED") {
+			trySurveyLoad();
+		}
+		handleDisconnect(json.err_code, json, "disconnected", "status");
 	} else if (json.SurveyOK==0) {
-		handleDisconnect("Not running: ", json,"disconnected"); // ST has restarted
+		console.log('json.surveyOK==0');
+		trySurveyLoad();
+		handleDisconnect("The SurveyTool server is not ready to accept connections, please retry. ", json,"disconnected"); // ST has restarted
 	} else if (json.status && json.status.isBusted) {
-		handleDisconnect("Server says: busted " + json.status.isBusted, json,"disconnected"); // Server down- not our fault. Hopefully.
+		handleDisconnect("The SurveyTool server has halted due to an error: " + json.status.isBusted, json,"disconnected"); // Server down- not our fault. Hopefully.
 	} else if(!json.status) {
-		handleDisconnect("!json.status",json);
+		handleDisconnect("The SurveyTool erver returned a bad status",json);
 	} else if(json.status.surveyRunningStamp!=surveyRunningStamp) {
-		handleDisconnect("Server restarted since page was loaded",json,"disconnected"); // desync
+		handleDisconnect("The SurveyTool server restarted since this page was loaded. Please retry.",json,"disconnected"); // desync
 	} else if(json.status && json.status.isSetup==false && json.SurveyOK==1) {
 		updateProgressWord("startup");
 	} else {
 		updateProgressWord("ok");
 	}
 	
-	/* 
-"memfree": 378.6183984375,
-"lockOut": false,
-"pages": 16,
-"specialHeader": "Welcome to SurveyTool@oc7426272865.ibm.com. Please edit /home/srl/apache-tomcat-7.0.8/cldr/cldr.properties to change CLDR_HEADER (to change this message), or comment it out entirely.",
-"dbopen": 0,
-"users": 1,
-"uptime": "uptime: 49:47",
-"isUnofficial": true,
-"memtotal": 492.274,
-"sysprocs": 8,
-"isSetup": true,
-"sysload": 0.33,
-"dbused": 1439,
-"guests": 0,
-"surveyRunningStamp": 1331941056940
-	 */
 	if(json.status) {
+		lastJsonStatus = json.status;
 		if(!updateParts) {
 			var visitors = dojo.byId("visitors");
 			updateParts = {
@@ -568,7 +1015,31 @@ function updateStatusBox(json) {
 			removeAllChildNodes(updateParts.visitors);
 			updateParts.visitors.appendChild(fragment);
 		}
-		if(json.status.specialHeader && json.status.specialHeader.length>0) {
+		
+		function standOutMessage(txt) {
+			return "<b style='font-size: x-large; color: red;'>" + txt + "</b>";
+		}
+		
+		if(window.kickMe) {
+			json.timeTillKick = 0;
+		} else if(window.kickMeSoon) {
+			json.timeTillKick = 5000;
+		}
+		
+		// really don't care if guest user gets 'kicked'. Doesn't matter.
+		if( (surveyUser!==null) && json.timeTillKick && (json.timeTillKick>=0) && (json.timeTillKick < (60*1*1000) )) { // show countdown when 1 minute to go
+			var kmsg = "Your session will end if not active in about "+ (parseInt(json.timeTillKick)/1000).toFixed(0) + " seconds.";
+			console.log(kmsg);
+			updateSpecialHeader(standOutMessage(kmsg));
+		} else if((surveyUser!==null) && (( json.timeTillKick === 0) || (json.session_err))) {
+			var kmsg  = stui_str("ari_sessiondisconnect_message");
+			console.log(kmsg);
+			updateSpecialHeader(standOutMessage(kmsg));
+			disconnected=true;
+  		    addClass(document.getElementsByTagName("body")[0], "disconnected");
+  		    if(!json.session_err) json.session_err = "disconnected";
+  		    handleDisconnect(kmsg,json,"Your session has been disconnected.");
+		} else if(json.status.specialHeader && json.status.specialHeader.length>0) {
 			updateSpecialHeader(json.status.specialHeader);
 		} else {
 			updateSpecialHeader(null);
@@ -576,14 +1047,42 @@ function updateStatusBox(json) {
 	}
 }
 
+/**
+ * How often to fetch updates. Default 15s
+ * @property timerSpeed
+ */
 var timerSpeed = 15000;
+
+/**
+ * How long to wait for AJAX updates.
+ * @property ajaxTimeout
+ */
 var ajaxTimeout = 120000; // 2 minutes
 
+
+var surveyVersion = 'Current';
+/**
+ * This is called periodically to fetch latest ST status
+ * @method updateStatus
+ */
 function updateStatus() {
-	if(disconnected) return;
+	if(disconnected) { 
+		stdebug("Not updating status - disconnected.");
+		return;
+	}
+	
+	doDeferredUpdates(); // do this periodically
 //	stdebug("UpdateStatus...");
+	var surveyLocaleUrl = '';
+	var surveySessionUrl = '';
+	if(surveyCurrentLocale!==null && surveyCurrentLocale!= '') {
+		surveyLocaleUrl = '&_='+surveyCurrentLocale;
+	}
+	if(surveySessionId && surveySessionId !==null) {
+		surveySessionUrl = '&s='+surveySessionId;
+	}
     dojo.xhrGet({
-        url: contextPath + "/SurveyAjax?what=status"+surveyLocaleUrl+cacheKill(),
+        url: contextPath + "/SurveyAjax?what=status"+surveyLocaleUrl+surveySessionUrl+cacheKill(),
         handleAs:"json",
         timeout: ajaxTimeout,
         load: function(json){
@@ -603,11 +1102,15 @@ function updateStatus() {
                wasBusted = true;
                busted();
             } else {
+            	if(json.status.newVersion) {
+            		surveyVersion = json.status.newVersion;
+            	}
             	if(json.status.surveyRunningStamp!=surveyRunningStamp) {
                     st_err.className = "ferrbox";
                     st_err.innerHTML="The SurveyTool has been restarted. Please reload this page to continue.";
                     wasBusted=true;
                     busted();
+                    // TODO: show ARI for reconnecting
             	}else if(wasBusted == true && 
             			(!json.status.isBusted) 
                       || (json.status.surveyRunningStamp!=surveyRunningStamp)) {
@@ -643,7 +1146,7 @@ function updateStatus() {
             if((wasBusted == false) && (json.status.isSetup) && (loadOnOk != null)) {
                 window.location.replace(loadOnOk);
             } else {
-            	setTimeout(updateStatus, timerSpeed)
+            	setTimeout(updateStatus, timerSpeed);
             }
         },
         error: function(err, ioArgs){
@@ -658,33 +1161,53 @@ function updateStatus() {
     });
 }
 
-
+/**
+ * Fire up the main timer loop to update status
+ * @method setTimerOn
+ */
 function setTimerOn() {
     updateStatus();
 //    timerID = setInterval(updateStatus, timerSpeed);
     
 }
 
+/**
+ * Change the update timer's speed
+ * @method resetTimerSpeed
+ * @param {Int} speed
+ */
 function resetTimerSpeed(speed) {
 	timerSpeed = speed;
 //	clearInterval(timerID);
 //	timerID = setInterval(updateStatus, timerSpeed);
 }
 
-// set up window
-// TODO: make optional
-listenFor(window,'load',setTimerOn);
+// set up window. Let Dojo call us, otherwise dojo won't load.
+dojo.ready(function(){
+	setTimerOn();
+});
 
+/**
+ * Table mapping CheckCLDR.StatusAction into capabilites 
+ * @property statusActionTable
+ */
 var statusActionTable = {
     ALLOW: 									   { vote: true, ticket: false, change: true  }, 
     ALLOW_VOTING_AND_TICKET:   { vote: true, ticket: true, change: false },
     ALLOW_VOTING_BUT_NO_ADD: { vote: true, ticket: false, change: false },
+    ALLOW_TICKET_ONLY : { vote: false, ticket: true, change: true },
     //FORBID_ERRORS: {}, 
     //FORBID_READONLY:{}, 
     //FORBID_COVERAGE:{}
     DEFAULT: { vote: false, ticket: false, change: false}
 };
 
+/**
+ * Parse a CheckCLDR.StatusAction and return the capabilities table
+ * @method parseStatusAction
+ * @param action
+ * @returns {Object} capabilities 
+ */
 function parseStatusAction(action) {
 	if(!action) return statusActionTable.DEFAULT;
 	var result = statusActionTable[action];
@@ -692,6 +1215,11 @@ function parseStatusAction(action) {
 	return result;
 }
 
+/**
+ * Determine whether a JSONified array of CheckCLDR.CheckStatus is overall a warning or an error.
+ * @param {Object} testResults - array of CheckCLDR.CheckStatus
+ * @returns {String} 'Warning' or 'Error' or null
+ */
 function getTestKind(testResults) {
 	if(!testResults) {
 		return null;
@@ -708,215 +1236,11 @@ function getTestKind(testResults) {
     return theKind;
 }
 
-function updateTestResults(fieldhash, testResults, what) {
-    var e_div = document.getElementById('e_'+fieldhash);
-    var v_td = document.getElementById('i_'+fieldhash);
-    var v_tr = document.getElementById('r_'+fieldhash);
-    var v_tr2 = document.getElementById('r2_'+fieldhash);
-    var newHtml = "";
-    e_div.className="";
-    v_td.className="v_warn";
-    if(v_tr!=null) {
-            v_tr.className="";
-    }
-    v_tr2.className="tr_warn";
-    newHtml = "";
-    
-    if(testResults)
-    for(var i=0;i<testResults.length;i++) {
-        var tr = testResults[i];
-        newHtml += "<p class='tr_"+tr.type+"' title='"+tr.type+"'>";
-        if(tr.type == 'Warning') {
-            newHtml += warnIcon;
-            //what='warn';
-        } else if(tr.type == 'Error') {
-            v_tr2.className="tr_err";
-            newHtml += stopIcon;
-            what='error';
-        }
-        newHtml += testResults[i].message;
-        newHtml += "</p>";
-    }
-    e_div.innerHTML = newHtml;
-    return what;
-}
-
-
-//@deprecated
-function refreshRow(fieldhash, xpid, locale, session) {
-    var v_tr = document.getElementById('r_'+fieldhash);
-    var e_div = document.getElementById('e_'+fieldhash);
-    var what = WHAT_GETROW;
-    var ourUrl = contextPath + "/RefreshRow.jsp?what="+what+"&xpath="+xpid +"&_="+locale+"&fhash="+fieldhash+"&vhash="+''+"&s="+session;
-    var ourUrlVI =  ourUrl+"&voteinfo=t";
-    //console.log("refreshRow('" + fieldhash +"','"+value+"','"+vhash+"','"+xpid+"','"+locale+"','"+session+"')");
-    //console.log(" url = " + ourUrl);
-    var errorHandler = function(err, ioArgs){
-        console.log('Error in refreshRow: ' + err + ' response ' + ioArgs.xhr.responseText);
-        v_tr.className="tr_err";
-        v_tr.innerHTML = "<td class='v_error' colspan=8>" + stopIcon + " Couldn't reload this row- please refresh the page. <br>Error: " + err+"</td>";
-        removeAllChildNodes(e_div);
-//        var st_err =  document.getElementById('st_err');
-//        wasBusted = true;
-//        st_err.className = "ferrbox";
-//        st_err.innerHTML="Disconnected from Survey Tool while processing a field: "+err.name + " <br> " + err.message;
-//        updateIf('progress','<hr><i>(disconnected from Survey Tool)</i></hr>');
-//        updateIf('uptime','down');
-//        updateIf('visitors','nobody');
-    };
-    var loadHandler = function(text){
-        try {
-//             var newHtml = "";
-             if(text) {
-                 v_tr.className='topbar';
-                 v_tr.innerHTML = text;
-                 removeAllChildNodes(e_div);
-                 e_div.className="";
-             } else {
-                 v_tr.className='';
-                 v_tr.innerHTML = "<td colspan=4>" + stopIcon + " Couldn't reload this row- please refresh the page.</td>";
-             }
-           }catch(e) {
-               console.log("Error in ajax get ",e.message);
-               console.log(" response: " + text);
-               e_div.innerHTML = "<i>JavaScript Error: " + e.message + "</i>";
-           }
-    };
-    var xhrArgs = {
-            url: ourUrl+cacheKill(),
-            handleAs:"text",
-            load: loadHandler,
-            error: errorHandler
-        };
-    //window.xhrArgs = xhrArgs;
-    //console.log('xhrArgs = ' + xhrArgs);
-    dojo.xhrGet(xhrArgs);
-    
-    var voteinfo_div = document.getElementById('voteresults_'+fieldhash);
-    if(voteinfo_div) {
-    	voteinfo_div.innerHTML="<i>Updating...</i>";
-	    var loadHandlerVI = function(text){
-	        try {
-//	             var newHtml = "";
-	             if(text) {
-	                 voteinfo_div.innerHTML = text;
-	                 voteinfo_div.className="";
-	             } else {
-	                 voteinfo_div.className='';
-	                 voteinfo_div.innerHTML = "<td colspan=4>" + stopIcon + " Couldn't reload this row- please refresh the page.</td>";
-	             }
-	           }catch(e) {
-	               console.log("Error in ajax get ",e.message);
-	               console.log(" response: " + text);
-	               voteinfo_div.innerHTML = "<i>Internal Error: " + e.message + "</i>";
-	           }
-	    };
-        var xhrArgsVI = {
-                url: ourUrlVI + cacheKill(),
-                handleAs:"text",
-                load: loadHandlerVI,
-                error: errorHandler
-            };
-        //console.log('urlVI = ' + ourUrlVI);
-	    dojo.xhrGet(xhrArgsVI);
-    }
-    
-}
-
-// for validating CLDR data values
-// do_change(hash, value, xpid, locale)
-// divs:    e_HASH = div under teh item
-//           v_HASH - the entire td
-function do_change(fieldhash, value, vhash,xpid, locale, session,what) {
-	var e_div = document.getElementById('e_'+fieldhash);
-//	var v_td = document.getElementById('i_'+fieldhash);
-    var v_tr = document.getElementById('r_'+fieldhash);
-    var v_tr2 = document.getElementById('r2_'+fieldhash);
-    alreadyVerifyValue[fieldhash]=null;
-    if(what==null) {
-		 what = WHAT_SUBMIT;
-	}
-	if((!vhash || vhash.length==0) && (!value || value.length==0)) {
-		return;
-	}
-	var ourUrl = contextPath + "/SurveyAjax?what="+what+"&xpath="+xpid +"&_="+locale+"&fhash="+fieldhash+"&vhash="+vhash+"&s="+session;
-	//console.log("do_change('" + fieldhash +"','"+value+"','"+vhash+"','"+xpid+"','"+locale+"','"+session+"')");
-//	console.log(" what = " + what);
-//	console.log(" url = " + ourUrl);
-    hideSubmit(fieldhash);
-	e_div.innerHTML = '<i>Checking...</i>';
-	e_div.className="";
-	if(v_tr!=null) {
-	    v_tr.className="tr_checking";
-	}
-    v_tr2.className="tr_checking";
-//    var st_err =  document.getElementById('st_err');
-    var errorHandler = function(err, ioArgs){
-    	console.log('Error: ' + err + ' response ' + ioArgs.xhr.responseText);
-    	removeAllChildNodes(e_div);
-        e_div.className="";
-//      v_td.className="v_warn";
-        v_tr.className="";
-        v_tr2.className="tr_err";
-//        var st_err =  document.getElementById('st_err');
-//        wasBusted = true;
-//        st_err.className = "ferrbox";
-//        st_err.innerHTML="Disconnected from Survey Tool while processing a field: "+err.name + " <br> " + err.message;
-//        updateIf('progress','<hr><i>(disconnected from Survey Tool)</i></hr>');
-//        updateIf('uptime','down');
-//        updateIf('visitors','nobody');
-    };
-    var loadHandler = function(json){
-        try {
-             var newHtml = "";
-             if(json.err && json.err.length >0) {
-                 v_tr.className="tr_err";
-                 v_tr2.className="tr_err";
-                 newHtml = stopIcon + " Could not check value. Try reloading the page.<br>"+json.err;
-                 e_div.innerHTML = newHtml;
-             } else if(json.testResults && json.testResults.length == 0) {
-            	 if(what == 'verify') {
-	                 e_div.className="";
-                     v_tr.className="tr_submit";
-                     v_tr2.className="tr_submit";
-	                 e_div.innerHTML = newHtml;
-                     readyToSubmit(fieldhash);
-            	 } else {
-                     e_div.className="";
-                     v_tr.className="tr_submit";
-                     v_tr2.className="tr_submit";
-                     newHtml = "<i>Vote Accepted:</i>";
-                     e_div.innerHTML = newHtml;
-            	 }
-             } else {
-                 var update = updateTestResults(fieldhash,json.testResults,what);
-                 if (update == 'verify') {
-                	 readyToSubmit(fieldhash);
-                 }
-             }
-             if(json.submitResultRaw) {
-                 e_div.innerHTML = e_div.innerHTML + "<b>Updating...</b><!-- <br><b>SUBMIT RESULTS:</b> <tt>" + json.submitResultRaw+"</tt> <b>Refreshing row...</b> -->";
-                 refreshRow(fieldhash, xpid, locale, session);
-             }
-           }catch(e) {
-               console.log("Error in ajax post [do_change]  ",e.message);
-               e_div.innerHTML = "<i>Internal Error: " + e.message + "</i>";
-           }
-    };
-    var xhrArgs = {
-            url: ourUrl+cacheKill(),
-            postData: value,
-            handleAs:"json",
-            load: loadHandler,
-            error: errorHandler
-        };
-    //window.xhrArgs = xhrArgs;
-//    console.log('xhrArgs = ' + xhrArgs);
-    dojo.xhrPost(xhrArgs);
-}
-
-
-
+/**
+ * Clone the node, removing the id
+ * @param {Node} i
+ * @returns {Node} new return, deep clone but with no ids
+ */
 function cloneAnon(i) {
 	if(i==null) return null;
 	var o = i.cloneNode(true);
@@ -926,6 +1250,11 @@ function cloneAnon(i) {
 	return o;
 }
 
+/**
+ * like cloneAnon, but localizes by fetching stui-html string substitution.
+ * @method localizeAnon
+ * @param o
+ */
 function localizeAnon(o) {
 	if(o&&o.childNodes) for(var i=0;i<o.childNodes.length;i++) {
 		var k = o.childNodes[i];
@@ -940,6 +1269,12 @@ function localizeAnon(o) {
 		}
 	}
 }
+
+/**
+ * Localize the flyover text by replacing $X with stui[Z]
+ * @method localizeFlyover
+ * @param {Node} o
+ */
 function localizeFlyover(o) {
 	if(o&&o.childNodes) for(var i=0;i<o.childNodes.length;i++) {
 		var k = o.childNodes[i];
@@ -956,12 +1291,24 @@ function localizeFlyover(o) {
 	}
 }
 
+/**
+ * cloneAnon, then call localizeAnon
+ * @method cloneLocalizeAnon
+ * @param {Node} i
+ * @returns {Node}
+ */
 function cloneLocalizeAnon(i) {
 	var o = cloneAnon(i);
 	if(o) localizeAnon(o);
 	return o;
 }
 
+/**
+ * Return an array of all children of the item which are tags
+ * @method getTagChildren
+ * @param {Node} tr
+ * @returns {Array}
+ */
 function getTagChildren(tr) {
 	var rowChildren = [];
 	
@@ -974,28 +1321,34 @@ function getTagChildren(tr) {
 	return rowChildren;
 }
 
+/**
+ * show the 'loading' sign
+ * @method showLoader
+ * @param loaderDiv ignored
+ * @param {String} text text to use
+ */
 function showLoader(loaderDiv, text) {
 	updateAjaxWord(text);
-//	updateIf("progress_ajax",text);
-//	console.log("Load: " + text);
-//	return;
-//	
-//	var para = loaderDiv.getElementsByTagName("p");
-//	if(para) {
-//		para=para[0];
-//	} else {
-//		para = loaderDiv;
-//	}
-//	para.innerHTML = text;
-//	loaderDiv.style.display="";
 }
 
+/**
+ * Hide the 'loading' sign
+ * @method hideLoader
+ * @param loaderDiv ignored
+ */
 function hideLoader(loaderDiv) {
 	updateAjaxWord(null);
-//	updateIf("progress_ajax","");
-//	loaderDiv.style.display="none";
 }
 
+/**
+ * wire up the button to perform a submit
+ * @method wireUpButton
+ * @param button
+ * @param tr
+ * @param theRow
+ * @param vHash
+ * @param box
+ */
 function wireUpButton(button, tr, theRow, vHash,box) {
 	if(box) {
 		button.id="CHANGE_" + tr.rowHash;
@@ -1030,18 +1383,28 @@ function wireUpButton(button, tr, theRow, vHash,box) {
 	if(tr.myProposal) {
 		if(button == tr.myProposal.button) {
 			button.className = "ichoice-x";
+			button.checked = true;
 			tr.lastOn = button;
 		} else {
 			button.className = "ichoice-o";
+			button.checked = false;
 		}
 	} else if((theRow.voteVhash==vHash) && !box) {
 		button.className = "ichoice-x";
+		button.checked = true;
 		tr.lastOn = button;
 	} else {
 		button.className = "ichoice-o";
+		button.checked = false;
 	}
 }
 
+/**
+ * Append an icon to the div
+ * @method addIcon
+ * @param {Node} td
+ * @Param {String} className name of icon's CSS class
+ */
 function addIcon(td, className) {
 	var star = document.createElement("span");
 	star.className=className;
@@ -1061,18 +1424,14 @@ function showInPop(str,tr, theObj, fn, immediate) {
 }
 
 function listenToPop(str, tr, theObj, fn) {
-//	listenFor(theObj, "mouseover",
-//			function(e) {
-//				showInPop(str, tr, theObj, fn, false);
-//				stStopPropagation(e);
-//				return false;
-//			});
+	var theFn;
 	listenFor(theObj, "click",
-			function(e) {
+			theFn = function(e) {
 				showInPop(str, tr, theObj, fn, true);
 				stStopPropagation(e);
 				return false;
 			});
+	return theFn;
 }
 
 
@@ -1087,43 +1446,40 @@ function incrPopToken(x) {
 }
 
 
-function hidePopHandler(e){ 		
-	window.hidePop(null);
-	stStopPropagation(e); return false; 
-}
-function removeClass(obj, className) {
-	if(obj.className.indexOf(className)>-1) {
-		obj.className = obj.className.substring(className.length+1);
-	}
-}
-function addClass(obj, className) {
-	if(obj.className.indexOf(className)==-1) {
-		obj.className = className+" "+obj.className;
-	}
-}
+//function hidePopHandler(e){ 		
+//	window.hidePop(null);
+//	stStopPropagation(e); return false; 
+//}
 
 
 // called when showing the popup each time
 function showForumStuff(frag, forumDiv, tr) {
 	// prepend something
-	var newButton = createChunk("New Post (leaves this page)", "button", "forumNewButton");
+	var newButton = createChunk(stui.str("forumNewPostButton"), "button", "forumNewButton");
 	frag.appendChild(newButton);
 	
 	listenFor(newButton, "click", function(e) {
-		window.blur(); // submit anything unsubmitted
-		window.location = tr.forumDiv.postUrl;
+		//window.blur(); // submit anything unsubmitted
+		window.open(tr.forumDiv.postUrl);
 		stStopPropagation(e);
 		return true;
 	});
+	
+	var loader2 = createChunk(stui.str("loading"),"i");
+	frag.appendChild(loader2);
 
-	console.log("showingForumStuff: " + tr.forumDiv.forumPosts);
-	if(tr.forumDiv.forumPosts > 0) {
+	function havePosts(nrPosts) {
+		setDisplayed(loader2,false); // not needed
+		tr.forumDiv.forumPosts = nrPosts;
+		
+		if(nrPosts == 0) return; // nothing to do,
+		
 		var showButton = createChunk("Show " + tr.forumDiv.forumPosts  + " posts", "button", "forumShow");
 		
 		forumDiv.appendChild(showButton);
 		
 		var theListen = function(e) {
-			showButton.style.display = "none";
+			setDisplayed(showButton, false);
 			
 			// callback.
 			var ourUrl = tr.forumDiv.url + "&what=forum_fetch";
@@ -1134,7 +1490,7 @@ function showForumStuff(frag, forumDiv, tr) {
 						stopIcon
 								+ " Couldn't load forum post for this row- please refresh the page. <br>Error: "
 								+ err + "</td>", tr, null);
-				handleDisconnect("Could not showForumStuff:"+err, null)
+				handleDisconnect("Could not showForumStuff:"+err, null);
 				return true;
 			};
 			var loadHandler = function(json) {
@@ -1207,48 +1563,94 @@ function showForumStuff(frag, forumDiv, tr) {
 		listenFor(showButton, "click", theListen);
 		listenFor(showButton, "mouseover", theListen);
 	}
+
+	// lazy load post count!
+	{
+		// load async
+		var ourUrl = tr.forumDiv.url + "&what=forum_count" + cacheKill() ;
+		var xhrArgs = {
+				url: ourUrl,
+				handleAs:"json",
+				load: function(json) {
+					if(json && json.forum_count !== undefined) {
+						havePosts(parseInt(json.forum_count));
+					} else {
+						console.log("Some error loading post count??");
+					}
+				},
+		};
+		queueXhr(xhrArgs);
+	}
 	
 	
-	//	if(tr.theRow.forumPosts > (-1)) {
-//		td.appendChild(document.createTextNode("Forum posts: " + tr.theRow.forumPosts ));
-//	}
 }
 
 // called when initially setting up the section
 function appendForumStuff(tr, theRow, forumDiv) {
 	removeAllChildNodes(forumDiv); // we may be updating.
-	forumDiv.replyStub = contextPath + "/survey?forum=&_=" + surveyCurrentLocale + "&replyto=";
+	var theForum = 	locmap.getLanguage(surveyCurrentLocale);
+	forumDiv.replyStub = contextPath + "/survey?forum=" + theForum + "&_=" + surveyCurrentLocale + "&replyto=";
 	forumDiv.postUrl = forumDiv.replyStub + "x"+theRow.xpid;
 	forumDiv.url = contextPath + "/SurveyAjax?xpath=" + theRow.xpid + "&_=" + surveyCurrentLocale + "&fhash="
 		+ theRow.rowHash + "&vhash=" + "&s=" + tr.theTable.session
 		+ "&voteinfo=t";
 }
 
+/**
+ * change the current id. 
+ * @method updateCurrentId
+ * @param id the id to set
+ */
+window.updateCurrentId = function updateCurrentId(id) {
+	if(id==null) id = '';
+    if(surveyCurrentId != id) { // don't set if already set.
+	    surveyCurrentId = id;
+//	    replaceHash();
+    }
+};
+
 // window loader stuff
 dojo.ready(function() {
 	var unShow = null;
 //	var lastShown = null;
-	var pucontent = dojo.byId("pu-content");
-	var puouter=pucontent;
-	var pubody=pucontent;
-	var nudgeh=0;
+	var pucontent = dojo.byId("itemInfo");
+
 //	var nudgev=0;
 //	var nudgehpost=0;
 //	var nudgevpost=0;
 //	var hardleft = 10;
 //	var hardtop = 10;
 //	var pupeak_height = pupeak.offsetHeight;
-	if(!pubody) return;
+	if(!pucontent) return;
+
+	//pucontent.className = "oldFloater";
 	var hideInterval=null;
+	
+	function parentOfType(tag, obj) {
+		if(!obj) return null;
+//		console.log('POT ' + tag + '-' + obj + '=' + obj.nodeName);
+		if(obj.nodeName===tag) return obj;
+		return parentOfType(tag, obj.parentElement);
+	}
 	
 	function setLastShown(obj) {
 		if(gPopStatus.lastShown && obj!=gPopStatus.lastShown) {
 			removeClass(gPopStatus.lastShown,"pu-select");
 			//addClass(gPopStatus.lastShown,"pu-deselect");
+			var partr = parentOfType('TR',gPopStatus.lastShown);
+			if(partr) {
+//				console.log('Removing select from ' + partr + ' ' + partr.id);
+				removeClass(partr, 'selectShow');
+			}
 		}
 		if(obj) {
 			//removeClass(obj,"pu-deselect");
 			addClass(obj,"pu-select");
+			var partr = parentOfType('TR',obj);
+			if(partr) {
+//				console.log('Adding select  to ' + partr + ' ' + partr.id);
+				addClass(partr, 'selectShow');
+			}
 		}
 		gPopStatus.lastShown = obj;
 	}
@@ -1257,11 +1659,7 @@ dojo.ready(function() {
 		setLastShown(null);
 	}
 	
-//	listenFor(pubody, "mouseover", function() {
-//		clearTimeout(hideInterval);
-//		hideInterval=null;
-//	});
-//	listenFor(pubody, "mouseout", hidePopHandler);
+	var deferHelp = {};
 	
 	window.showInPop2 = function(str, tr, hideIfLast, fn, immediate) {
 //		if(hideIfLast&&lastShown==hideIfLast) {
@@ -1279,12 +1677,26 @@ dojo.ready(function() {
 //		if(hideIfLast && lastShown==hideIfLast) {
 //			lastShown=null;
 //			
-//			puouter.style.display="none";
+//			pucontent.style.display="none";
 //			
 //			return;
 //		}
+		
+		if(tr && tr.theRow) {
+//			console.log('Hey, selecting this row..');
+			
+			if(tr.theRow.coverageValue > effectiveCoverage()) {
+//				addClass(tr,'selectShow');
+//				console.log("Hey!! I'm a " + tr.theRow.coverageValue + " but e-cov is " + effectiveCoverage());
+				// add something to popinfo?
+			} else {
+//				console.log("A-OK  - I'm a " + tr.theRow.coverageValue + " but e-cov is " + effectiveCoverage());
+			}
+		}
+		
+		
 		if(tr && tr.sethash) {
-			replaceHash(tr.sethash);
+			window.updateCurrentId(tr.sethash);
 		}
 		setLastShown(hideIfLast);
 
@@ -1292,11 +1704,50 @@ dojo.ready(function() {
 
 		// Always have help (if available).
 		var theHelp = null;
-		if(tr&& tr.helpDiv) {
-			theHelp =  tr.helpDiv;
+		if(tr) {
+			var theRow = tr.theRow;
+			// this also marks this row as a 'help parent'
+			theHelp = createChunk("","div","helpHtml");
+				
+			if(theRow.xpstrid /*&& theRow.displayHelp*/) {
+				var deferHelpSpan = document.createElement('span');
+				theHelp.appendChild(deferHelpSpan);		
+
+				if(deferHelp[theRow.xpstrid]) {
+					deferHelpSpan.innerHTML = deferHelp[theRow.xpstrid];
+				} else {
+					deferHelpSpan.innerHTML = "<i>"+stui.str("loading")+"</i>";
+					
+					// load async
+					var url = contextPath + "/help?xpstrid="+theRow.xpstrid+"&_instance="+surveyRunningStamp;
+					var xhrArgs = {
+							url: url,
+							handleAs:"text",
+							load: function(html) {
+								deferHelp[theRow.xpstrid] = html;
+//								console.log("Got>> " + html);
+								deferHelpSpan.innerHTML = html;
+							},
+					};
+					queueXhr(xhrArgs);
+					// loader.
+				}
+				
+				
+//				tr.helpDiv.innerHTML += theRow.displayHelp;
+				
+				// extra attributes
+				if(theRow.extraAttributes && Object.keys(theRow.extraAttributes).length>0) {
+					var extraHeading = createChunk( stui.str("extraAttribute_heading"), "h3", "extraAttribute_heading");
+					var extraContainer = createChunk("","div","extraAttributes");
+					appendExtraAttributes(extraContainer, theRow);
+					theHelp.appendChild(extraHeading);
+					theHelp.appendChild(extraContainer);
+				}
+			}
 		}
 		if(theHelp) {
-			td.appendChild(theHelp.cloneNode(true));
+			td.appendChild(theHelp);
 		}
 
 		if(str) { // If a simple string, clone the string
@@ -1316,6 +1767,9 @@ dojo.ready(function() {
 		if(theVoteinfo) {
 			td.appendChild(theVoteinfo.cloneNode(true));
 		}
+		if(tr&&tr.ticketLink) {
+			td.appendChild(tr.ticketLink.cloneNode(true));
+		}
 
 		// forum stuff
 		if(tr && tr.forumDiv) {
@@ -1324,66 +1778,16 @@ dojo.ready(function() {
 			td.appendChild(forumDiv);
 		}
 		
+		if(tr && tr.theRow && tr.theRow.xpath) {
+			td.appendChild(clickToSelect(createChunk(tr.theRow.xpath,"div","xpath")));
+		}
+
+		
+		// SRL suspicious
 		removeAllChildNodes(pucontent);
 		pucontent.appendChild(td);
-//		if(stdebug_enabled) {
-//			if(pupin) {
-//				pucontent.appendChild(pupin);
-//			}
-////			listenFor(pupin, "click", function(e) {
-////				window.hidePop = function() {
-////
-////				};
-////				pucontent.removeChild(pupin);
-////				pupin = null;
-////				stStopPropagation(e); return false; 
-////			});
-//
-//		}
 		td=null;
 		
-//		var popParent = tr;
-//		if(hideIfLast.popParent) {
-//			popParent = hideIfLast.popParent;
-//		}
-		
-//		if(hideIfLast) { // context
-////			var loc = getAbsolutePosition(hideIfLast);
-////			var newTopPeak = (loc.top+((hideIfLast.offsetHeight)/2)-8);
-////			//if(newTop<hardtop) newTop=hardtop;
-////			//puouter.style.top = (newTop+nudgevpost)+"px";
-////			newLeftPeak = (loc.left);
-////			
-////			pupeak.style.left = (newLeftPeak-pupeak.offsetWidth) + "px";
-////			pupeak.style.top = newTopPeak + "px";
-//			
-////			if(false) {
-////				// now, body style
-////				var bodyTop;
-////				if(hideIfLast.popParent) {
-////					loc = getAbsolutePosition(hideIfLast.popParent); // specifies:  move the v part here
-////					bodyTop = (loc.top+hideIfLast.popParent.offsetHeight+nudgeh);
-////				} else {
-////					bodyTop = (loc.top+hideIfLast.offsetHeight+nudgeh);
-////				}
-////				pubody.style.top = bodyTop+"px";
-////				pupeak.style.height = (bodyTop-newTopPeak) + "px";
-////			}			
-////			if(newLeft<hardleft) {
-////				pupeak.style.left = (newLeft - hardleft)+"px";
-////				newLeft = hardleft;
-////			} else {
-////				pupeak.style.left = "0px";
-////			}
-////			puouter.style.left = (newLeft+nudgehpost)+"px";
-//			pupeak.style.display="none";
-//		} else {
-//			pupeak.style.display="none";
-////			pupeak.style.left = "0px";
-////			pupeak.style.top = "0px";
-////			stdebug("Note: showPop with no td");
-//		}
-		puouter.style.display="block"; // show
 	};
 	if(false) {
 		window.showInPop = window.showInPop2;
@@ -1403,39 +1807,36 @@ dojo.ready(function() {
 			}
 		};
 	}
-	window.hidePop = function() {
-		if(hideInterval) {
-			clearTimeout(hideInterval);
-		}
-		hideInterval=setTimeout(function() {
-			if(false) {
-				puouter.style.display="none";
-			} else {
-				removeAllChildNodes(pucontent);
-//				pupeak.style.display="none";
-			}
-			clearLastShown();
-			incrPopToken('newHide');
-		}, 2000);
-	};
+//	window.hidePop = function() {
+//		if(hideInterval) {
+//			clearTimeout(hideInterval);
+//		}
+//		hideInterval=setTimeout(function() {
+//			if(false) {
+//				//pucontent.style.display="none";
+//			} else {
+//				// SRL suspicious
+//				removeAllChildNodes(pucontent);
+////				pupeak.style.display="none";
+//			}
+//			clearLastShown();
+//			incrPopToken('newHide');
+//		}, 2000);
+//	};
 	window.resetPop = function() {
 		lastShown = null;
 	};
 });
 
-//function appendItem(div,value, pClass) {
-//	var text = document.createTextNode(value);
-//	var span = document.createElement("span");
-//	span.appendChild(text);
-//	if(pClass) {
-//		span.className = pClass;
-//	} else {
-//		span.className = "value";
-//	}
-//	div.appendChild(span);
-//	return span;
-//}
-
+/**
+ * Append just an editable span representing a candidate voting item
+ * @method appendItem
+ * @param div {DOM} div to append to
+ * @param value {String} string value
+ * @param pClass {String} html class for the voting item
+ * @param tr {DOM} ignored, but the tr the span belongs to
+ * @return {DOM} the new span
+ */
 function appendItem(div,value, pClass, tr) {
 	var text = document.createTextNode(value?value:stui.str("no value"));
 	var span = document.createElement("span");
@@ -1446,28 +1847,6 @@ function appendItem(div,value, pClass, tr) {
 		span.className = "value";
 	}
 	div.appendChild(span);
-	
-	// clicking on some item will attempt to jump to that item.
-	if(false && tr && value) { // TODO: not working yet.
-		addClass(span, "rolloverspan");
-		var fn = null;
-		listenFor(span, "mouseover",
-			 fn = 	function(e) {
-			console.log("Clicked on " + value + " - item is " + item.toString());
-					var item = tr.theRow.valueToItem[value];
-					if(item && item.showFn) {
-						showInPop("", tr, item.div, item.showFn, true);
-						stStopPropagation(e);
-						return false;
-					} else {
-						return true;
-					}
-				});
-		
-		//span.onclick = fn;
-//	} else {
-//		console.log("no tr or no value: " + value);
-	}
 	
 	return span;
 }
@@ -1514,9 +1893,20 @@ function findItemByValue(items, value) {
 	return null;
 }
 
+/**
+ * TODO remove
+ * global config of table rows
+ * @property surveyConfig
+ */
+var surveyConfig = null;
+
+/**
+ * Show an item that's not in the saved data, but has been proposed newly by the user.
+ * @method showProposedItem
+ */
 function showProposedItem(inTd,tr,theRow,value,tests, json) {
 	var children = getTagChildren(tr);
-	var config = tr.theTable.config;
+	var config = surveyConfig;
 	
 //	stdebug("Searching for our value " + value );
 	// Find where our value went.
@@ -1536,6 +1926,7 @@ function showProposedItem(inTd,tr,theRow,value,tests, json) {
 		if(newButton) {
 			newButton.value=value;
 			if(tr.lastOn) {
+				tr.lastOn.checked = false;
 				tr.lastOn.className = "ichoice-o";
 			}
 			wireUpButton(newButton,tr,theRow,"[retry]", {"value":value});
@@ -1646,70 +2037,12 @@ function showItemInfoFn(theRow, item, vHash, newButton, div) {
 		
 		newDiv.innerHTML = newHtml;
 		
-		if(item.inExample) {
-			appendExample(td, item.inExample);
-//		} else if(item.example) {
-//			appendExample(td, item.example);
+		if(item.example) {
+			appendExample(td, item.example);
 		}
 		
 		//return function(){ var d2 = div; return function(){ 	d2.className="d-item";  };}();
 	}; // end fn
-}
-
-function popInfoInto(tr, theRow, theChild, immediate) {
-	showInPop("NOT USED.", tr, theChild); // empty
-	return; 
-	
-	//if(theRow.voteInfoText) {
-	//	showInPop(theRow.voteInfoText, tr, theChild, null, immediate);
-	//	return;
-	//}
-	showInPop("<i>" + stui.str("loading") + "</i>", tr, theChild);
-	var popShowingToken = getPopToken();
-	stdebug('Got token ' + popShowingToken);
-//	var what = WHAT_GETROW;
-	var ourUrl = contextPath + "/RefreshRow.jsp?what=" + WHAT_GETROW
-			+ "&xpath=" + theRow.xpid + "&_=" + surveyCurrentLocale + "&fhash="
-			+ theRow.rowHash + "&vhash=" + "&s=" + tr.theTable.session
-			+ "&voteinfo=t";
-	var errorHandler = function(err, ioArgs) {
-		console.log('Error in refreshRow: ' + err + ' response '
-				+ ioArgs.xhr.responseText);
-		showInPop(
-				stopIcon
-						+ " Couldn't reload this row- please refresh the page. <br>Error: "
-						+ err + "</td>", tr, theChild);
-		handleDisconnect("Could not refresh row:"+err, null)
-		return true;
-	};
-	var loadHandler = function(text) {
-		try {
-			if (text) {
-				theRow.voteInfoText = text;
-			} else {
-				theRow.voteInfoText = stopIcon + stui.noVotingInfo;
-			}
-			if(getPopToken()==popShowingToken) {
-				showInPop(theRow.voteInfoText, tr, theChild, null, true);
-//				stdebug("success with token " + popShowingToken);
-			} else { // else, something else happened meanwhile.
-//				stdebug("our token was " + popShowingToken + " but now at " + getPopToken() );
-			}
-		} catch (e) {
-			console.log("Error in ajax get ", e.message);
-			console.log(" response: " + text);
-			showInPop(stopIcon + " exception: " + e.message, tr, theChild, true);
-		}
-	};
-	var xhrArgs = {
-		url : ourUrl,
-		handleAs : "text",
-		load : loadHandler,
-		error : errorHandler
-	};
-	// window.xhrArgs = xhrArgs;
-	// console.log('xhrArgs = ' + xhrArgs);
-	queueXhr(xhrArgs);
 }
 
 
@@ -1721,8 +2054,16 @@ function appendExample(parent, text) {
 	return div;
 }
 
-
-
+/**
+ * Append a Vetting item ( vote button, etc ) to the row.
+ * @method addVitem
+ * @param {DOM} td cell to append into
+ * @param {DOM} tr which row owns the items
+ * @param {JSON} theRow JSON content of this row's data
+ * @param {JSON} item JSON of the specific item we are adding
+ * @param {String} vHash     stringid of the item
+ * @param {DOM} newButton     button prototype object
+ */
 function addVitem(td, tr,theRow,item,vHash,newButton) {
 //	var canModify = tr.theTable.json.canModify;
 	var div = document.createElement("div");
@@ -1740,9 +2081,13 @@ function addVitem(td, tr,theRow,item,vHash,newButton) {
 		wireUpButton(newButton,tr,theRow,vHash);
 		div.appendChild(newButton);
 	}
-	var span = appendItem(div,item.value,item.pClass,tr);
+    var subSpan = document.createElement("span");
+    subSpan.className = "subSpan";
+	var span = appendItem(subSpan,item.value,item.pClass,tr);
+	div.appendChild(subSpan);
 	
 	span.dir = tr.theTable.json.dir;
+	
 	if(item.isOldValue==true && !isWinner) {
 		addIcon(div,"i-star");
 	}
@@ -1750,17 +2095,64 @@ function addVitem(td, tr,theRow,item,vHash,newButton) {
 		addIcon(div,"i-vote");
 	}
 
+    // wire up the onclick
 	td.showFn = item.showFn = showItemInfoFn(theRow,item,vHash,newButton,div);
 	div.popParent = tr;
 	listenToPop(null, tr, div, td.showFn);
 	td.appendChild(div);
 	
-	if(item.inExample) {
-		//addIcon(div,"i-example-zoom").onclick = div.onclick;
-	} else if(item.example) {
-		var example = appendExample(div,item.example);
+    if(item.example && item.value != item.examples ) {
+		appendExample(div,item.example);
 //		example.popParent = tr;
 //		listenToPop(null,tr,example,td.showFn);
+	}
+	
+	if(tr.canChange) {
+	    var oldClassName = span.className = span.className + " editableHere";
+	    ///span.title = span.title  + " " + stui_str("clickToChange");
+	    var ieb = null;
+	    var editInPlace = function(e) {
+	        require(["dojo/ready", "dijit/InlineEditBox", "dijit/form/TextBox", "dijit/registry"],
+	        function(ready, InlineEditBox, TextBox, registry) {
+	    	    var spanId = span.id = dijit.registry.getUniqueId(); // bump the #, probably leaks something in dojo?
+	    	    stdebug("Ready for " + spanId);
+	            ready(function(){
+	            if(!ieb) {
+	                ieb = new InlineEditBox({
+	                	dir: tr.theTable.json.dir,
+	                	editor: TextBox, 
+	                	editorParams:  { dir: tr.theTable.json.dir },
+	                	autoSave: true, 
+	                    onChange: function (newValue) {
+	                                  //  console.log("Destroyed -> "+ newValue);
+	                                   // remove dojo stuff..
+	                                   //removeAllChildNodes(subSpan);
+	                                   // reattach the span
+	                                   //subSpan.appendChild(span);
+	                                   //span.className = oldClassName;
+	                               tr.inputTd = td; // cause the proposed item to show up in the right box
+                       				handleWiredClick(tr,theRow,"",{value: newValue},newButton); 
+	                                   //ieb.destroy();
+	                               },
+                               onShow: function() {
+                            	   setDefer(true);
+                               },
+                               onHide: function() {
+                            	   setDefer(false);
+                               }
+	                   }, spanId);
+	                		tr.iebs.push(ieb);
+	                       stdebug("Minted  " + spanId);
+	                   } else {
+//	                       console.log("Leaving alone " + spanId);
+	                   }
+	            });
+	        });
+	    	stStopPropagation(e);
+	    	return false;
+	    };
+	    
+	    listenFor(span, "mouseover", editInPlace);
 	}
 }
 
@@ -1781,6 +2173,7 @@ function appendExtraAttributes(container, theRow) {
 }
 
 function updateRow(tr, theRow) {
+	tr.theRow = theRow;
 	tr.valueToItem = {}; // hash:  string value to item (which has a div)
 	tr.rawValueToItem = {}; // hash:  string value to item (which has a div)
 	for(k in theRow.items) {
@@ -1788,21 +2181,6 @@ function updateRow(tr, theRow) {
 		if(item.value) {
 			tr.valueToItem[item.value] = item; // back link by value
 			tr.rawValueToItem[item.rawValue] = item; // back link by value
-		}
-	}
-	
-	if(!tr.helpDiv && theRow.displayHelp) {
-		// this also marks this row as a 'help parent'
-		tr.helpDiv = cloneAnon(dojo.byId("proto-help"));
-		tr.helpDiv.innerHTML += theRow.displayHelp;
-		
-		// extra attributes
-		if(theRow.extraAttributes && Object.keys(theRow.extraAttributes).length>0) {
-			var extraHeading = createChunk( stui.str("extraAttribute_heading"), "h3", "extraAttribute_heading");
-			var extraContainer = createChunk("","div","extraAttributes");
-			appendExtraAttributes(extraContainer, theRow);
-			tr.helpDiv.appendChild(extraHeading);
-			tr.helpDiv.appendChild(extraContainer);
 		}
 	}
 	
@@ -1940,31 +2318,26 @@ function updateRow(tr, theRow) {
 			var kdiv = createChunk(null,"div","voteInfo_key");
 			tr.voteDiv.appendChild(createChunk(stui.str("voteInfo_key"),"h3","voteInfo_key_title"));
 			var disputedText = (theRow.voteResolver.isDisputed)?stui.str("winningStatus_disputed"):"";
-			//var p = document.createElement("p");
-//			tr.voteDiv.appendChild(createChunk(stui.str("voteInfo_established"),"p","warnText nobg"));
-//			tr.voteDiv.appendChild(createChunk(stui.str("voteInfo_lastRelease"),"p","voteInfo_lastReleaseKey voteInfo_iconValue"));
 			kdiv.appendChild(createChunk(
 						stui.sub("winningStatus_msg",
 								[ stui.str(theRow.voteResolver.winningStatus), disputedText ])
 						, "div", "voteInfo_winningKey d-dr-"+theRow.voteResolver.winningStatus+" winningStatus"));
-//			appendItem(p, theRow.voteResolver.winningValue, "winner",tr);
 			
 			kdiv.appendChild(createChunk(
 					stui.sub("lastReleaseStatus_msg",
 							[ stui.str(theRow.voteResolver.lastReleaseStatus) ])
 					, "div",  /* "d-dr-"+theRow.voteResolver.lastReleaseStatus+ */ "voteInfo_lastReleaseKey voteInfo_iconValue"));
-//			appendItem(p, theRow.voteResolver.lastReleaseValue, "value",tr);
-//			p.appendChild(createChunk(
-//					stui.sub("lastReleaseStatus1_msg",
-//							[ stui.str(theRow.voteResolver.lastReleaseStatus) ])
-//					, "b", /* "d-dr-"+theRow.voteResolver.lastReleaseStatus+ */ "  lastReleaseStatus1"));
 
 			
 			tr.voteDiv.appendChild(kdiv);
+
+			var link = createChunk(stui.str("voteInfo_moreInfo"),"a", null);
+			var theUrl = "http://cldr.unicode.org/index/survey-tool/guide#TOC-Key";
+			link.href = theUrl;
+			tr.voteDiv.appendChild(link);
+
 		}
-		if(theRow.voteResolver.isEstablished) {
-			tr.voteDiv.appendChild(createChunk(stui.str("voteInfo_established"),"p","warnText nobg"));
-		}
+
 		// done with voteresolver table
 		
 		if(stdebug_enabled) {
@@ -1974,10 +2347,10 @@ function updateRow(tr, theRow) {
 		tr.voteDiv = null;
 	}
 	
-	var statusAction = parseStatusAction(theRow.statusAction);
-	var canModify = tr.theTable.json.canModify && statusAction.vote;
-    var ticketOnly = canModify && statusAction.ticket;
-    var canChange = canModify && statusAction.change;
+	var statusAction = tr.statusAction = parseStatusAction(theRow.statusAction);
+	var canModify = tr.canModify =  tr.theTable.json.canModify && statusAction.vote;
+    var ticketOnly = tr.ticketOnly = tr.theTable.json.canModify && statusAction.ticket;
+    /* var canChange = */ tr.canChange = canModify && statusAction.change;
     if(!theRow || !theRow.xpid) {
 		tr.innerHTML="<td><i>ERROR: missing row</i></td>";
 		return;
@@ -1987,96 +2360,50 @@ function updateRow(tr, theRow) {
 		tr.xpstrid = theRow.xpstrid;
 		if(tr.xpstrid) {
 			tr.id = "r@"+tr.xpstrid;
-			tr.sethash = "x@"+tr.xpstrid;
+			tr.sethash = tr.xpstrid;
 		}
 	}
 	var children = getTagChildren(tr);
-	var config = tr.theTable.config;
+	var config = surveyConfig;
 	var protoButton = dojo.byId('proto-button');
 	if(!canModify) {
 		protoButton = null; // no voting at all.
 	}
 	
-	var doPopInfo = function(e) {
-		popInfoInto(tr,theRow,children[config.statuscell],false);
-		stStopPropagation(e); return false; 
-	};
-	var doPopInfoNow = function(e) {
-		popInfoInto(tr,theRow,children[config.statuscell],true);
-		stStopPropagation(e); return false; 
-	};
-		
-//	if(theRow.hasErrors) {
-////		children[config.errcell].className = "d-st-stop";
-////		children[config.errcell].title = stui.testError;
-//		children[config.proposedcell].className = 'd-win-err';
-//	} else if(theRow.hasWarnings) {
-////		children[config.errcell].className = "d-st-warn";
-////		children[config.errcell].title = stui.testWarn;
-//		children[config.proposedcell].className = 'd-win-warn';
-//	} else {
-////		children[config.errcell].className = "d-st-okay";
-////		children[config.errcell].title = stui.testOkay;
-//		children[config.proposedcell].className = 'd-win';
-//	}
-	
-	children[config.statuscell].className = "d-dr-"+theRow.confirmStatus;
+	children[config.statuscell].className = "d-dr-"+theRow.confirmStatus + " d-dr-status";
 	if(!children[config.statuscell].isSetup) {
 		listenToPop("", tr, children[config.statuscell]);
 
-//		listenFor(children[config.statuscell],"mouseover",
-//				doPopInfo);
-//		listenFor(children[config.statuscell],"click",  // TODO: change t empty
-//				doPopInfoNow);
 		children[config.statuscell].isSetup=true;
 	}
 	children[config.statuscell].title = stui.sub('draftStatus',[stui.str(theRow.confirmStatus)]);
 
 	if(theRow.hasVoted) {
-//		children[config.votedcell].className = "d-vo-true";
-//		children[config.votedcell].title=stui.voTrue;
 		children[config.nocell].title=stui.voTrue;
 		children[config.nocell].className= "d-no-vo-true";
 	} else {
-//		children[config.votedcell].className = "d-vo-false";
-//		children[config.votedcell].title=stui.voFalse;
 		children[config.nocell].title=stui.voFalse;
 		children[config.nocell].className= "d-no-vo-false";
 	}
-//	if(!children[config.votedcell].isSetup) {
-//		listenFor(children[config.votedcell],"mouseover",
-//				doPopInfo);
-//		listenFor(children[config.votedcell],"click",
-//				doPopInfoNow);
-//		children[config.votedcell].isSetup=true;
-//	}
 
-	if(!tr.anch || stdebug_enabled) {
-		if(tr.anch) { // clear out old (only for debug)
+	children[config.codecell].appendChild(createChunk('|>'));
 			removeAllChildNodes(children[config.codecell]);
-		}
-		var codeStr = theRow.code;
-		if(theRow.coverageValue==101 && !stdebug_enabled) {
-			codeStr = codeStr + " (optional)";
-		}
-		children[config.codecell].appendChild(createChunk(codeStr));
-		
-		
+			children[config.codecell].appendChild(createChunk('<|'));
+					removeAllChildNodes(children[config.codecell]);
+	var codeStr = theRow.code;
+	if(theRow.coverageValue==101 && !stdebug_enabled) {
+		codeStr = codeStr + " (optional)";
+	}
+	children[config.codecell].appendChild(createChunk(codeStr));
 		if(tr.theTable.json.canModify) { // pointless if can't modify.
 	
-			if(theRow.forumPosts > 0) {
-				children[config.codecell].className = "d-code hasPosts";		
-			} else {
-				children[config.codecell].className = "d-code";			
-			}
+			children[config.codecell].className = "d-code";			
 	
 			
 			if(!tr.forumDiv) {
 				tr.forumDiv = document.createElement("div");
 				tr.forumDiv.className = "forumDiv";
 			}			
-			tr.forumDiv.forumPosts = theRow.forumPosts;
-			tr.forumDiv.forumUpdate = null;
 			
 			appendForumStuff(tr,theRow, tr.forumDiv);
 		}
@@ -2085,12 +2412,12 @@ function updateRow(tr, theRow) {
 		if(theRow.extraAttributes && Object.keys(theRow.extraAttributes).length>0) {
 			appendExtraAttributes(children[config.codecell], theRow);
 		}
-		var anch = document.createElement("a");
-		anch.className="anch";
-		anch.id=theRow.xpid;
-		anch.href="#"+anch.id;
-		children[config.codecell].appendChild(anch);
 		if(stdebug_enabled) {
+			var anch = document.createElement("i");
+			anch.className="anch";
+			anch.id=theRow.xpid;
+//			anch.href="#"+anch.id;
+			children[config.codecell].appendChild(anch);
 			anch.appendChild(document.createTextNode("#"));
 
 			var go = document.createElement("a");
@@ -2103,7 +2430,7 @@ function updateRow(tr, theRow) {
 			js.className="anch-go";
 			js.appendChild(document.createTextNode("{JSON}"));
 			js.popParent=tr;
-			js.href="#";
+//			js.href="#";
 			listenToPop(JSON.stringify(theRow),tr,js);
 			children[config.codecell].appendChild(js);
 			children[config.codecell].appendChild(createChunk(" c="+theRow.coverageValue));
@@ -2113,14 +2440,24 @@ function updateRow(tr, theRow) {
 //					showInPop("XPath: " + theRow.xpath, children[config.codecell]);
 //					stStopPropagation(e); return false; 
 //				});
-		var xpathStr = "";
-		if((!window.surveyOfficial) || stdebug_enabled) {
-			xpathStr = "XPath: " + theRow.xpath;
+		if(!children[config.codecell].isSetup) {
+			var xpathStr = "";
+			if( /* (!window.surveyOfficial) || */ stdebug_enabled) {
+				xpathStr = "XPath: " + theRow.xpath;
+			}
+			listenToPop(xpathStr, tr, children[config.codecell]);
+			children[config.codecell].isSetup = true;
 		}
-		listenToPop(xpathStr, tr, children[config.codecell]);
-		tr.anch = anch;
-	}
+	//	tr.anch = anch;
 	
+	if(tr.iebs) {
+		for(var qq in tr.iebs) {
+			stdebug("Destroying " + tr.iebs[qq]);
+			stdebug("Destroying ieb " + tr.iebs[qq].id);
+			tr.iebs[qq].destroy();
+		}
+	}
+	tr.iebs=[];
 	
 	if(!children[config.comparisoncell].isSetup) {
 		if(theRow.displayName) {
@@ -2136,32 +2473,33 @@ function updateRow(tr, theRow) {
 		children[config.comparisoncell].isSetup=true;
 	}
 	removeAllChildNodes(children[config.proposedcell]); // win
+	children[config.proposedcell].dir = tr.theTable.json.dir;
 	tr.proposedcell = children[config.proposedcell];
+	if(theRow.items && theRow.winningVhash == "") {
+		// find the bailey value
+		var theBaileyValue = null;
+		for(var k in theRow.items) {
+			if(theRow.items[k].isBailey) {
+				theBaileyValue = k;
+			}
+		}
+		if(theBaileyValue !== null) {
+			theRow.winningVhash = theBaileyValue;
+			theRow.items[theBaileyValue].pClass = "fallback";
+		}
+	}
 	if(theRow.items&&theRow.winningVhash) {
 		addVitem(children[config.proposedcell],tr,theRow,theRow.items[theRow.winningVhash],theRow.winningVhash,cloneAnon(protoButton));
 	} else {
-		children[config.proposedcell].showFn = null;  // nothing else to show
+		children[config.proposedcell].showFn = function(){};  // nothing else to show
 	}
 	listenToPop(null,tr,children[config.proposedcell], children[config.proposedcell].showFn);
-	tr.selectThisRow = function(e) {
-		// select the proposed cell:
-		//showInPop(null, tr, tr.proposedcell, tr.proposedcell.showFn, true);
-		
-		// select the 'approved' cell
-		//popInfoInto(tr,theRow,children[config.statuscell],true);
-
-		// select the approved cell - no message.
-		showInPop('', tr, children[config.statuscell], null, true);
-
-
-		stStopPropagation(e); return false; 
-	};
-
 	listenToPop(null,tr,children[config.errcell], children[config.proposedcell].showFn);
 	//listenFor(children[config.errcell],"mouseover",function(e){return children[config.errcell]._onmove(e);});
 	
 	var hadOtherItems  = false;
 	removeAllChildNodes(children[config.othercell]); // other
+	children[config.othercell].dir = tr.theTable.json.dir;
 	for(k in theRow.items) {
 		if(k == theRow.winningVhash) {
 			continue; // skip the winner
@@ -2178,58 +2516,6 @@ function updateRow(tr, theRow) {
 	} else {
 		tr.myProposal=null; // not needed
 	}
-
-	if(!children[config.changecell].isSetup) {
-		removeAllChildNodes(children[config.changecell]);
-		tr.inputTd = children[config.changecell]; // TODO: use  (getTagChildren(tr)[tr.theTable.config.changecell])
-		
-		if(ticketOnly) { // ticket link
-			children[config.changecell].className="d-change-confirmonly";
-			var link = createChunk(stui.str("file_a_ticket"),"a");
-			var newUrl = BUG_URL_BASE+"/newticket?component=data&summary="+surveyCurrentLocale+":"+theRow.xpath+"&locale="+surveyCurrentLocale+"&xpath="+theRow.xpstrid+"&version="+surveyVersion;
-				link.href = newUrl;
-				link.target = TARGET_DOCS;
-				theRow.proposedResults = createChunk(stui.str("file_ticket_must"), "a","fnotebox");
-				theRow.proposedResults.href = newUrl;
-				if(!window.surveyOfficial) {
-					children[config.changecell].appendChild(createChunk(" (Note: this is not the production SurveyTool!) ","p"));
-					link.href = link.href + "&description=NOT+PRODUCTION+SURVEYTOOL!";
-				}
-			children[config.changecell].appendChild(link);
-        } else if(!canChange) { // nothing
-        	//if(!canModify) {  // if not showing any other votes..
-        	if(!tr.theTable.json.canModify) { // only if hidden in the header
-        		children[config.changecell].style.display="none"; // hide the cell 
-        	}
-        	//}
-		} else { // can change
-			var changeButton = cloneAnon(protoButton);
-			children[config.changecell].appendChild(changeButton);
-			var changeBox = cloneAnon(dojo.byId("proto-inputbox"));
-			wireUpButton(changeButton,tr, theRow, "[change]",changeBox);
-			tr.inputBox = changeBox;
-			
-			changeBox.onfocus = function() {
-				setDefer(true);
-				return true;
-			};
-			changeBox.onblur = function() {
-				setDefer(false);
-				return true;
-			};
-			
-			children[config.changecell].appendChild(changeBox);
-			children[config.changecell].isSetup=true;
-			children[config.changecell].theButton = changeButton;
-			listenToPop(null, tr, children[config.changecell]);
-		}
-		
-	} else {
-		if(children[config.changecell].theButton) {
-			children[config.changecell].theButton.className="ichoice-o";
-		}
-	}
-			
 	
 	if(canModify) {
 		removeAllChildNodes(children[config.nocell]); // no opinion
@@ -2238,15 +2524,30 @@ function updateRow(tr, theRow) {
 		noOpinion.value=null;
 		children[config.nocell].appendChild(noOpinion);
 		listenToPop(null, tr, children[config.nocell]);
-	} else if (!ticketOnly) {
+	}  else if(ticketOnly) { // ticket link
     	if(!tr.theTable.json.canModify) { // only if hidden in the header
-    		children[config.nocell].style.display="none";
+    		setDisplayed(children[config.nocell], false);
+    	}
+		children[config.proposedcell].className="d-change-confirmonly";
+		var link = createChunk(stui.str("file_a_ticket"),"a");
+		var newUrl = "http://unicode.org/cldr/trac"+"/newticket?component=data&summary="+surveyCurrentLocale+":"+theRow.xpath+"&locale="+surveyCurrentLocale+"&xpath="+theRow.xpstrid+"&version="+surveyVersion;
+		link.href = newUrl;
+		link.target = "cldr-target-trac";
+		theRow.proposedResults = createChunk(stui.str("file_ticket_must"), "a","fnotebox");
+		theRow.proposedResults.href = newUrl;
+		if(!window.surveyOfficial) {
+			link.appendChild(createChunk(" (Note: this is not the production SurveyTool! Do not submit a ticket!) ","p"));
+			link.href = link.href + "&description=NOT+PRODUCTION+SURVEYTOOL!";
+		}
+		children[config.proposedcell].appendChild(createChunk(stui.str("file_ticket_notice"), "i", "fnotebox"));
+		tr.ticketLink = link; 
+	} else  { // no change possible
+    	if(!tr.theTable.json.canModify) { // only if hidden in the header
+    		setDisplayed(children[config.nocell], false);
     	}
 	}
 	
-	tr.className='vother';
-	
-	
+	tr.className='vother cov'+theRow.coverageValue;
 }
 
 function findPartition(partitions,partitionList,curPartition,i) {
@@ -2288,12 +2589,23 @@ function insertRowsIntoTbody(theTable,tbody) {
 				newHeading[0].innerHTML = newPartition.name;
 				newHeading[0].id = newPartition.name;
 				tbody.appendChild(newPar);
+				newPar.origClass = newPar.className;
+				newPartition.tr = newPar; // heading
 			}
 			curPartition = newPartition;
 		}
 		
 		var k = rowList[i];
 		var theRow = theRows[k];
+		
+		var theRowCov = parseInt(theRow.coverageValue);
+		if(!newPartition.minCoverage || newPartition.minCoverage > theRowCov) {
+			newPartition.minCoverage = theRowCov;
+                        if(newPartition.tr) {
+                            // only set coverage of the header if there's a header
+			    newPartition.tr.className = newPartition.origClass+" cov"+newPartition.minCoverage;
+                        }
+		}
 		
 		var tr = theTable.myTRs[k];
 		if(!tr) {
@@ -2333,6 +2645,10 @@ function reSort(theTable,k) {
 		}
 	}
 }
+/**
+ * 
+ * Setup the 'sort' popup menu.
+ */
 function setupSortmode(theTable) {
 	var theSortmode = theTable.sortMode;
 	// ignore what's there
@@ -2396,23 +2712,118 @@ function setupSortmode(theTable) {
 	}
 }
 
+/**
+ * get numeric, given string
+ * @method covValue
+ * @param {String} lev
+ * @return {Number} or 0
+ */
+function covValue(lev) {
+	lev = lev.toUpperCase();
+	if(window.surveyLevels && window.surveyLevels[lev]) {
+		return parseInt(window.surveyLevels[lev].level);
+	} else {
+		return 0;
+	}
+}
+
+function covName(lev) {
+	if(!window.surveyLevels) return null;
+	
+	for(var k in window.surveyLevels) {
+		if(parseInt(window.surveyLevels[k].level) == lev) {
+			return k.toLowerCase();
+		}
+	}
+	return null;
+}
+
+function effectiveCoverage() {
+	if(!window.surveyOrgCov) {
+		throw new Error( "surveyOrgCov not yet initialized");
+	}
+	
+	if(surveyUserCov) {
+		return covValue(surveyUserCov);
+	} else {
+		return covValue(surveyOrgCov);
+	}
+}
+
+function updateCovFromJson(json) {
+
+	if(json.covlev_user && json.covlev_user != 'default') {
+		window.surveyUserCov = json.covlev_user;
+	} else {
+		window.surveyUserCov = null;
+	}
+	
+	if(json.covlev_org) {
+		window.surveyOrgCov = json.covlev_org;
+	} else {
+		window.surveyOrgCov = null;
+	}
+}
+
+
+/**
+ * Update the coverage classes, show and hide things in and out of coverage
+ * @method updateCoverage
+ */
+function updateCoverage(theDiv) {
+	
+/*	
+	store.push({label: '-',  // stui.str("coverage_auto_msg"), // stui.str('coverage_'+ level.name)
+		selected: false,
+		value: 0});
+	*/
+	
+	if(theDiv == null) return;
+	var theTable = theDiv.theTable;
+	if(theTable==null) return;
+	if(!theTable.origClass) {
+		theTable.origClass = theTable.className;
+	}
+	if(window.surveyLevels!=null) {
+		var effective = effectiveCoverage();
+		var newStyle = theTable.origClass;
+		for(var k in window.surveyLevels) {
+			var level = window.surveyLevels[k];
+			
+			if(effective <  parseInt(level.level)) {
+				newStyle = newStyle + " hideCov"+level.level;
+			}
+		}
+		if(newStyle != theTable.className) {
+			theTable.className = newStyle;
+		}
+	}
+}
+
+/**
+ * Prepare rows to be inserted into theDiv
+ * @method insertRows
+ */
 function insertRows(theDiv,xpath,session,json) {
 	var theTable = theDiv.theTable;
 
 	var doInsertTable = null;
 	
+	removeAllChildNodes(theDiv);
+	window.insertLocaleSpecialNote(theDiv);
 	if(!theTable) {
 		theTable = cloneLocalizeAnon(dojo.byId('proto-datatable'));
+		updateCoverage(theDiv);
 		localizeFlyover(theTable);
 		theTable.theadChildren = getTagChildren(theTable.getElementsByTagName("tr")[0]);
 		var toAdd = dojo.byId('proto-datarow');
-		if(!theTable.config) {
+		/*if(!surveyConfig)*/ {
 			var rowChildren = getTagChildren(toAdd);
-			theTable.config={};
+			theTable.config = surveyConfig ={};
 			for(var c in rowChildren) {
 				rowChildren[c].title = theTable.theadChildren[c].title;
 				if(rowChildren[c].id) {
-					theTable.config[rowChildren[c].id] = c;
+					surveyConfig[rowChildren[c].id] = c;
 					stdebug("  config."+rowChildren[c].id+" = children["+c+"]");
 					if(false&&stdebug_enabled) {
 						removeAllChildNodes(rowChildren[c]);
@@ -2428,7 +2839,7 @@ function insertRows(theDiv,xpath,session,json) {
 		theTable.toAdd = toAdd;
 
 		if(!json.canModify) {
-				theTable.theadChildren[theTable.config.changecell].style.display=theTable.theadChildren[theTable.config.nocell].style.display="none";
+			setDisplayed(theTable.theadChildren[theTable.config.nocell], false);
 		}
 		theTable.sortMode = cloneAnon(dojo.byId('proto-sortmode'));
 		theDiv.appendChild(theTable.sortMode);
@@ -2436,8 +2847,8 @@ function insertRows(theDiv,xpath,session,json) {
 		theDiv.theTable = theTable;
 		theTable.theDiv = theDiv;
 		doInsertTable=theTable;
-//		listenFor(theTable,"mouseout",
-//				hidePopHandler);
+	} else {
+		theDiv.appendChild(theDiv.theTable);
 	}
 	// append header row
 	
@@ -2461,20 +2872,34 @@ function insertRows(theDiv,xpath,session,json) {
 	insertRowsIntoTbody(theTable,tbody);
 	if(doInsertTable) {
 		theDiv.appendChild(doInsertTable);
-		if(theDiv.theLoadingMessage) {
-			theDiv.theLoadingMessage.style.display="none";
-		}
+//		if(theDiv.theLoadingMessage) {
+//			theDiv.theLoadingMessage.style.display="none";
+//			theDiv.removeChild(theDiv.theLoadingMessage);
+//			theDiv.theLoadingMessage=null;
+//		}
+	} else {
+		setDisplayed(theTable, true);
+//		if(theDiv.theLoadingMessage) {
+//			theDiv.theLoadingMessage.style.display="none";
+//			theDiv.removeChild(theDiv.theLoadingMessage);
+//			theDiv.theLoadingMessage=null;
+//		}
 	}
+
+	
 	hideLoader(theDiv.loader);
 }
-
-// move this into showRows to handle multiple containers.
 
 function loadStui(loc) {
 	if(!stui.ready) {
 		stui  = dojo.i18n.getLocalization("surveyTool", "stui");
-		stui.sub = function(x,y) { return dojo.string.substitute(stui[x], y);};
-		stui.str = function(x) { if(stui[x]) return stui[x]; else return x; };
+		if(!stuidebug_enabled) {
+			stui.str = function(x) { if(stui[x]) return stui[x]; else return x; };
+			stui.sub = function(x,y) { return dojo.string.substitute(stui.str(x), y);};
+		} else {
+			stui.str = stui_str; // debug
+			stui.sub = function(x,y) { return stui_str(x) + '{' +  Object.keys(y) + '}'; };
+		}
 		stui.htmlbaseline = BASELINE_LANGUAGE_NAME;
 		stui.ready=true;
 	}
@@ -2503,7 +2928,7 @@ function hideAfter(whom, when) {
 		whom.style.opacity="0.5";
 	}, when/2);
 	setTimeout(function() {
-		whom.style.display="none";
+		setDisplayed(whom, false);
 	}, when);
 	return whom;
 }
@@ -2569,133 +2994,1640 @@ function appendInputBox(parent, which) {
 	return input;
 }
 
-function scrollToItem(tr) {
-//	window.location.hash=tr.id; // scroll!
-	window.scrollTo(0,getAbsolutePosition(tr).top-50);
-}
-
-// interpret the #hash to see if we need to do something...
-function processHash() {
-	var hash = window.location.hash;
-	if(hash&&hash.toString().indexOf("#x@")==0) {
-		// see if there's such an item
-		var strid = (hash.split('@')[1]);
-		var tr = dojo.byId('r@'+strid);
-		if(tr) {
-			scrollToItem(tr);
-			if(tr.selectThisRow) {
-				tr.selectThisRow(null);
+/**
+ * Show the surveyCurrentId row
+ * @method scrollToItem
+ */
+function scrollToItem() {
+	if(surveyCurrentId!=null && surveyCurrentId!='') {
+		require(["dojo/window"], function(win) {
+			var xtr = dojo.byId("r@"+surveyCurrentId);
+			if(xtr!=null) {
+				console.log("Scrolling to " + surveyCurrentId);
+				win.scrollIntoView("r@"+surveyCurrentId);
 			}
-			window.location.hash = "#x@"+strid;
-		} else {
-			if(window.location.search.indexOf("&strid=")<0 && (hash.toString().indexOf('@redir')<0)) {
-				window.location.search=window.location.search+"&strid="+strid;
-			} else {
-				showInPop(stopIcon+" Could not locate the requested data item. There may be an error in your URL, or else the data item may no longer be available.", null, null, null, true);
-				window.location.hash = "#x@"+strid;
-			}
-		}
-	}
-	window.processHash = function(){};
-}
-////////
-/// showRows() ..
-function showRows(container,xpath,session,coverage) {
- dojo.ready(function(){
-	if(!coverage) coverage="";
-	var theDiv = dojo.byId(container);
-
-	theDiv.stui = loadStui();
-	theDiv.theLoadingMessage = createChunk(stui_str("loading"), "i", "loadingMsg");
-	theDiv.appendChild(theDiv.theLoadingMessage);
-	
-	var shower = null;
-	var theTable = theDiv.theTable;
-	shower = function() {
-	
-		if(!theTable) {
-			var theTableList = theDiv.getElementsByTagName("table");
-			if(theTableList) {
-				theTable = theTableList[0];
-				theDiv.theTable = theTable;
-			}
-		}
-
-		var theLoader = theDiv.loader;
-		if(!theLoader) {
-			theLoader =  cloneAnon(dojo.byId("proto-loading"));
-			theDiv.appendChild(theLoader);
-			theDiv.loader = theLoader;
-		}
-		
-		showLoader(theDiv.loader, theDiv.stui.loading);
-		
-		dojo.ready(function() {
-		    var errorHandler = function(err, ioArgs){
-		    	console.log('Error: ' + err + ' response ' + ioArgs.xhr.responseText);
-		        showLoader(theDiv.loader,stopIcon + "<h1>Could not refresh the page - you may need to <a href='javascript:window.location.reload(true);'>refresh</a> the page if the SurveyTool has restarted..</h1> <hr>Error while fetching : "+err.name + " <br> " + err.message + "<div style='border: 1px solid red;'>" + ioArgs.xhr.responseText + "</div>");
-		    };
-		    var loadHandler = function(json){
-		        try {
-		        	showLoader(theDiv.loader,stui.loading2);
-		        	if(!json) {
-		        		console.log("!json");
-				        showLoader(theDiv.loader,"Error while  loading: <br><div style='border: 1px solid red;'>" + "no data!" + "</div>");
-		        	} else if(json.err) {
-		        		console.log("json.err!" + json.err);
-		        		showLoader(theDiv.loader,"Error while  loading: <br><div style='border: 1px solid red;'>" + json.err + "</div>");
-		        		handleDisconnect("while loading",json);
-				    } else if(!json.section) {
-		        		console.log("!json.section");
-				        showLoader(theDiv.loader,"Error while  loading: <br><div style='border: 1px solid red;'>" + "no section" + "</div>");
-		        		handleDisconnect("while loading- no section",json);
-				    } else if(!json.section.rows) {
-		        		console.log("!json.section.rows");
-				        showLoader(theDiv.loader,"Error while  loading: <br><div style='border: 1px solid red;'>" + "no rows" + "</div>");				        
-		        		handleDisconnect("while loading- no rows",json);
-		        	} else {
-		        		stdebug("json.section.rows OK..");
-		        		showLoader(theDiv.loader, "loading..");
-		        		if(json.dataLoadTime) {
-		        			updateIf("dynload", json.dataLoadTime);
-		        		}
-		        		showInPop2("", null, null, null, true); /* show the box the first time */
-		        		doUpdate(theDiv.id, function() {
-		        				showLoader(theDiv.loader,stui.loading3);
-		        				insertRows(theDiv,xpath,session,json);
-		        				processHash(theDiv);
-		        		});
-		        	}
-		        	
-		           }catch(e) {
-		               console.log("Error in ajax post [showRows]  " + e.message + " / " + e.name );
-				        handleDisconnect("Exception while  loading: " + e.message + ", n="+e.name, null); // in case the 2nd line doesn't work
-//				        showLoader(theDiv.loader,"Exception while  loading: "+e.name + " <br> " +  "<div style='border: 1px solid red;'>" + e.message+ "</div>");
-//			               console.log("Error in ajax post [showRows]  " + e.message);
-		           }
-		    };
-		    var xhrArgs = {
-		            url: contextPath + "/RefreshRow.jsp?json=t&_="+surveyCurrentLocale+"&s="+session+"&xpath="+xpath+"&p_covlev="+coverage+cacheKill(),
-		            handleAs:"json",
-		            load: loadHandler,
-		            error: errorHandler
-		        };
-		    //window.xhrArgs = xhrArgs;
-//		    console.log('xhrArgs = ' + xhrArgs);
-		    queueXhr(xhrArgs);
 		});
-	};
-	
-	shower(); // first load
-	theDiv.shower = shower;
-	showers[theDiv.id]=shower;
-//	console.log("Wrote shower " + theDiv.id + " as " + shower);
-  });
+	}
 }
 
+
+/**
+ * copy of menu data
+ * @property _thePages
+ */
+var _thePages = null;
+
+
+window.locmap = new LocaleMap(null);
+
+/**
+ * Utilities for the 'v.jsp' (new dispatcher) page.  Call this once in the page. It expects to find a node #DynamicDataSection
+ * @method showV
+ */
+function showV() {
+	// REQUIRES
+	require([
+	         "dojo/ready",
+	         "dojo/dom",
+	         "dojo/parser", 
+	         "dijit/DropDownMenu",
+	         "dijit/form/DropDownButton",
+	         "dijit/MenuSeparator",
+	         "dijit/MenuItem",
+	         "dijit/form/TextBox",
+	         "dijit/form/Button",
+	         "dijit/CheckedMenuItem",
+	         "dijit/Dialog",
+	         "dijit/registry",
+	         "dijit/PopupMenuItem",
+	         "dijit/form/Select",
+	         "dojox/form/BusyButton",
+	         "dijit/layout/StackContainer",
+	         "dojo/hash",
+	         "dojo/topic",
+	         "dojo/dom-construct",
+	         "dojo/number",
+	         "dojo/domReady!"
+	         ],
+	         // HANDLES
+	         function(
+	        		 ready,
+	        		 dom,
+	        		 parser,
+	        		 DropDownMenu,
+	        		 DropDownButton,
+	        		 MenuSeparator,
+	        		 MenuItem,
+	        		 TextBox,
+	        		 Button,
+	        		 CheckedMenuItem,
+	        		 Dialog,
+	        		 registry,
+	        		 PopupMenuItem,
+	        		 Select,
+	        		 BusyButton,
+	        		 StackContainer,
+	        		 dojoHash,
+	        		 dojoTopic,
+	        		 domConstruct,
+	        		 dojoNumber
+	         ) {
+
+		
+		/* trace for dijit leak */
+		if(!surveyOfficial) window.TRL=function() {
+			var sec = 5;
+			console.log("Tracing dijit registry leaks every "+sec+"s");
+			window.setInterval(function() {
+				document.title = "[dijit:"+registry.length+"] | ";
+			}, 1000 * sec);
+		};
+		
+		/**
+		 * list of pages to use with the flipper
+		 * @property pages
+		 */
+		var pages = { 
+				loading: "LoadingMessageSection",
+				data: "DynamicDataSection",
+				other: "OtherSection"
+		};
+		var flipper = new Flipper( [pages.loading, pages.data, pages.other] );
+
+		{
+			var pucontent = dojo.byId("itemInfo");
+			var theDiv = flipper.get(pages.data);
+			theDiv.pucontent = pucontent;
+			theDiv.stui = loadStui();
+			
+			pucontent.appendChild(createChunk(stui.str("itemInfoBlank"),"i"));
+		}
+
+		/**
+		 * List of buttons/titles to set.
+		 * @property menubuttons
+		 */
+		var menubuttons = {
+			locale: "title-locale",
+			section: "title-section",
+			page: "title-page",
+//			item: "title-item",
+			dcontent: "title-dcontent",
+			
+			set: function(x,y) {
+				stdebug("menuset " + x + " = " + y);
+				var cnode = dojo.byId(x+"-container");
+				var wnode = this.getRegistry(x);
+				var dnode = this.getDom(x);
+				if(!cnode) cnode = dnode; // for Elements that do their own stunts 
+				if(y && y !== '-' && y !== '') {
+					if(wnode != null) {
+						wnode.set('label',y);
+					} else  {
+						updateIf(x,y); // non widget
+					}
+					setDisplayed(cnode, true);
+				} else {
+					setDisplayed(cnode, false);
+					if(wnode != null) {
+						wnode.set('label','-');
+					} else  {
+						updateIf(x,'-'); // non widget
+					}
+				}
+			},
+			getDom: function(x) {
+				return dojo.byId(x);
+			},
+			getRegistry: function(x) {
+				return registry.byId(x);
+			},
+			getContainer: function(x) {
+				return dojo.byId(x+"-container");
+			}
+		};
+		
+		// TODO remove this debug item
+		window.__FLIPPER = flipper;
+		
+		/**
+		 * parse the hash string into surveyCurrent___ variables. 
+		 * @method parseHash
+		 * @param {String} id
+		 */
+		window.parseHash = function parseHash(hash) {
+			if(hash) {
+				var pieces = hash.substr(0).split("/");
+				if(pieces.length > 1) {
+					surveyCurrentLocale = pieces[1]; // could be null
+				} else {
+					surveyCurrentLocale = '';
+				}				
+				if(pieces[0].length==0 && surveyCurrentLocale!=''&&surveyCurrentLocale!=null) {
+					if(pieces.length>2) {
+						surveyCurrentPage = pieces[2];
+						if(pieces.length>3){
+							surveyCurrentId = pieces[3];
+							if(surveyCurrentId.substr(0,2)=='x@') {
+								surveyCurrentId=surveyCurrentId.substr(2);
+							}
+						} else {
+							surveyCurrentId = '';
+						}
+					} else {
+						surveyCurrentPage='';
+						surveyCurrentId='';
+					}
+					window.surveyCurrentSpecial=null;
+				} else {
+					window.surveyCurrentSpecial = pieces[0];
+					if(surveyCurrentSpecial=='') {
+						surveyCurrentSpecial='none';
+					}
+					surveyCurrentPage = '';
+					surveyCurrentId = '';
+				}
+			} else {
+				surveyCurrentLocale = '';
+				surveyCurrentSpecial='none';
+				surveyCurrentId='';
+				surveyCurrentPage='';
+				surveyCurrentSection='';
+			}
+		};
+
+
+		/**
+		 * update hash (and title)
+		 * @method replaceHash
+		 * @param doPush {Boolean} if true, do a push (instead of replace)
+		 */
+		window.replaceHash = function replaceHash(doPush) {
+			if(!doPush) doPush = false; // by default -replace. 
+			var theId = window.surveyCurrentId;
+			if(theId == null) theId = '';
+			var theSpecial = window.surveyCurrentSpecial;
+			if(theSpecial == null) theSpecial = '';
+			var thePage = window.surveyCurrentPage;
+			if(thePage == null) thePage = '';
+			var theLocale = window.surveyCurrentLocale;
+			if(theLocale==null) theLocale = '';
+			var newHash =  '#' + theSpecial + '/' + theLocale + '/' + thePage + '/' + theId;
+			if(newHash != dojoHash()) {
+				dojoHash(newHash , !doPush);
+			}
+//			itemBox  = dojo.byId("title-item");
+//			if(itemBox!=null) {
+//			    if(theLocale=='') {
+//			    	menubuttons.set(menubuttons.item);
+//    			    //itemBox.set('value', '');
+//			    } else if(theId=='' && thePage!='') {
+//			    	menubuttons.set(menubuttons.item, theLocale+'/'+thePage+'/');
+//			        //itemBox.set('value', theLocale+'/'+thePage+'/');
+//			    } else {
+//			    	menubuttons.set(menubuttons.item,theLocale+'//'+theId);
+//    			    //itemBox.set('value', theLocale+'//'+theId);
+//			    }
+//			}
+			document.title = document.title.split('|')[0] + " | " + theSpecial + '/' + theLocale + '/' + thePage + '/' + theId;
+		};
+		
+		window.updateCurrentId = function updateCurrentId(id) {
+			if(id==null) id = '';
+		    if(surveyCurrentId != id) { // don't set if already set.
+			    surveyCurrentId = id;
+			    replaceHash(false); // usually dont want to save
+		    }
+		};
+
+		// (back to showV) some setup.
+		// click on the title to copy (permalink)
+//		clickToSelect(dojo.byId("title-item"));
+		clickToSelect(dojo.byId("ariScroller"));
+		updateIf("title-dcontent-link",stui.str("defaultContent_titleLink"));
+		
+		// TODO - rewrite using AMD
+		/**
+		 * @param postData optional - makes this a POST
+		 */
+		function myLoad(url, message, handler, postData, headers) {
+			var otime = new Date().getTime();
+			console.log("MyLoad: " + url + " for " + message);
+			var errorHandler = function(err, ioArgs){
+				console.log('Error: ' + err + ' response ' + ioArgs.xhr.responseText);
+				handleDisconnect("Could not fetch " + message + " - error " + err.name + " / " + err.message + "\n" + ioArgs.xhr.responseText + "\n url: " + url + "\n", null, "disconnect");
+			};
+			var loadHandler = function(json){
+				console.log("        "+url+" loaded in "+(new Date().getTime()-otime)+"ms");
+				try {
+					handler(json);
+				}catch(e) {
+					console.log("Error in ajax post ["+message+"]  " + e.message + " / " + e.name );
+					handleDisconnect("Exception while  loading: " + message + " - "  + e.message + ", n="+e.name, null); // in case the 2nd line doesn't work
+				}
+			};
+			var xhrArgs = {
+					url: url,
+					handleAs:"json",
+					load: loadHandler,
+					error: errorHandler,
+					postData: postData,
+					headers: headers
+			};
+			queueXhr(xhrArgs);
+		}
+		
+		/**
+		 * Verify that the JSON returned is as expected.
+		 * @method verifyJson
+		 * @param json the returned json
+		 * @param subkey the key to look for,  json.subkey
+		 * @return true if OK, false if bad
+		 */
+		function verifyJson(json, subkey) {
+			if(!json) {
+				console.log("!json");
+				showLoader(null,"Error while  loading "+subkey+":  <br><div style='border: 1px solid red;'>" + "no data!" + "</div>");
+				return false;
+			} else if(json.err_code) {
+				var msg_fmt = formatErrMsg(json, subkey);
+				console.log(msg_fmt);
+				var loadingChunk;
+				flipper.flipTo(pages.loading, loadingChunk = createChunk(msg_fmt, "p", "errCodeMsg"));
+				var retryButton = createChunk(stui.str("loading_reload"),"button");
+				loadingChunk.appendChild(retryButton);
+				retryButton.onclick = function() { 	window.location.reload(true); };
+				return false;
+			} else if(json.err) {
+				console.log("json.err!" + json.err);
+				showLoader(null,"Error while  loading "+subkey+": <br><div style='border: 1px solid red;'>" + json.err + "</div>");
+				handleDisconnect("while loading "+subkey+"" ,json);
+				return false;
+			} else if(!json[subkey]) {
+				console.log("!json.oldvotes");
+				showLoader(null,"Error while  loading "+subkey+": <br><div style='border: 1px solid red;'>" + "no data" + "</div>");
+				handleDisconnect("while loading- no "+subkey+"",json);	
+			} else {
+				return true;
+			}
+		}
+
+		window.showCurrentId = function() {
+			if(surveyCurrentId != '') {
+			    var xtr = dojo.byId('r@' + surveyCurrentId);
+			    if(!xtr) {
+			        console.log("Warning could not load id " + surveyCurrentId + " does not exist");
+			        window.updateCurrentId(null);
+			    } else if(xtr.proposedcell && xtr.proposedcell.showFn) {
+			        // TODO: visible? coverage?
+			        window.showInPop("",xtr,xtr.proposedcell, xtr.proposedcell.showFn, true);
+			        console.log("Changed to " + surveyCurrentId);
+			        scrollToItem();
+			    } else {
+			        console.log("Warning could not load id " + surveyCurrentId + " - not setup - " + xtr.toString() + " pc=" + xtr.proposedcell + " sf = " + xtr.proposedcell.showFn);
+			    }
+			}
+		};
+		
+		
+		window.ariRetry = function() {
+//			if(didUnbust) {
+				ariDialog.hide();
+				flipper.flipTo(pages.loading, loadingChunk = createChunk(stui_str("loading_reloading"), "i", "loadingMsg"));
+				window.location.reload(true);
+//			} else {
+//				flipper.flipTo(pages.loading, loadingChunk = createChunk(stui_str("loading_retrying"), "i", "loadingMsg"));
+//				unbust(); // low level unbust
+//				ariDialog.hide(); // hide abort, retry, ignore dialog
+//				reloadV(); // may end right up busted, but oh well
+//			}
+		};
+		
+		window.showARIDialog = function(why, json, word, oneword, p, what) {
+			console.log('showARIDialog');
+			p.parentNode.removeChild(p);
+			
+			if(didUnbust) {
+				why = why + "\n\n" + stui.str('ari_force_reload');
+			}
+			
+			// setup with why
+			var ari_message;
+			
+			if(json && json.session_err) {
+				ari_message = stui_str("ari_sessiondisconnect_message");
+			} else {
+				ari_message = stui.str('ari_message');
+			}
+			
+			var ari_submessage = formatErrMsg(json, what);
+			
+			updateIf('ariMessage', ari_message.replace(/\n/g,"<br>"));
+			updateIf('ariSubMessage', ari_submessage.replace(/\n/g,"<br>"));
+			updateIf('ariScroller',window.location + '<br>' + why.replace(/\n/g,"<br>"));
+			// TODO: update  ariMain and ariRetryBtn
+			
+			ariDialog.show();
+			var oneword = dojo.byId("progress_oneword");
+			oneword.onclick = function() {
+				if(disconnected) {
+					ariDialog.show();
+				}
+			};
+		};
+		
+		function updateCoverageMenuTitle() {
+			var menuSelect = registry.byId('menu-select');
+			menuSelect.getOptions()[0].label = stui.sub('coverage_auto_msg', {surveyOrgCov: stui.str('coverage_' + surveyOrgCov)});
+		}
+		function updateCoverageMenuValue() 	
+		{
+			var menuSelect = registry.byId('menu-select');
+			if(surveyUserCov !== null) {
+				console.log('Setting menu to value ' + surveyUserCov  );
+				menuSelect.setValue(surveyUserCov); // user cov
+			} else {
+				console.log('Setting menu to value auto');
+				menuSelect.setValue('auto'); // org cov
+			}
+			console.log("Menu value is now: "   + menuSelect.getValue());
+		}
+		
+		function updateLocaleMenu() {
+            if(surveyCurrentLocale!=null && surveyCurrentLocale!='' && surveyCurrentLocale!='-') {
+        		surveyCurrentLocaleName = locmap.getLocaleName( surveyCurrentLocale);
+        		var bund = locmap.getLocaleInfo(surveyCurrentLocale);
+        		if(bund) {
+        			if( bund.readonly) {
+        				addClass(menubuttons.getDom(menubuttons.locale), "locked");
+        			} else {
+            			removeClass(menubuttons.getDom(menubuttons.locale), "locked");
+        			}
+        			
+        			if(bund.dcChild) {
+        				menubuttons.set(menubuttons.dcontent, stui.sub("defaultContent_header_msg", {info: bund, locale: surveyCurrentLocale, dcChild: locmap.getLocaleName(bund.dcChild)}));
+        			} else {
+        				menubuttons.set(menubuttons.dcontent);
+        			}
+        		} else {
+        			removeClass(menubuttons.getDom(menubuttons.locale), "locked");
+    				menubuttons.set(menubuttons.dcontent);
+        		}
+            } else {
+            	surveyCurrentLocaleName = '';
+            	removeClass(menubuttons.getDom(menubuttons.locale), "locked");
+				menubuttons.set(menubuttons.dcontent);
+            }
+            menubuttons.set(menubuttons.locale, surveyCurrentLocaleName);
+		}
+		/**
+		 * Update the #hash and menus to the current settings.
+		 * @method updateHashAndMenus
+		 * @param doPush {Boolean} if false, do not add to history
+		 */
+		function updateHashAndMenus(doPush) {
+			if(!doPush) {doPush = false;}
+			replaceHash(doPush); // update the hash
+			updateLocaleMenu();
+
+			if(surveyCurrentLocale==null) {
+				menubuttons.set(menubuttons.section);
+				if(surveyCurrentSpecial!=null) {
+					menubuttons.set(menubuttons.page, stui_str("special_"+surveyCurrentSpecial));
+				} else {
+					menubuttons.set(menubuttons.page);
+				}
+//				menubuttons.set(menubuttons.item);
+				return; // nothing to do.
+			}
+			var titlePageContainer = dojo.byId("title-page-container");
+
+			/**
+			 * Just update the titles of the menus. Internal to updateHashAndMenus
+			 * @method updateMenuTitles
+			 */
+			function updateMenuTitles(menuMap) {
+			    updateLocaleMenu(menuMap);
+				if(surveyCurrentSpecial!= null && surveyCurrentSpecial != '') {
+//					menubuttons.set(menubuttons.section /*,stui_str("section_special") */);
+					menubuttons.set(menubuttons.section,stui_str("special_"+surveyCurrentSpecial));
+					setDisplayed(titlePageContainer, false);
+				} else if(!menuMap) {
+					menubuttons.set(menubuttons.section);
+					setDisplayed(titlePageContainer, false);
+//					menubuttons.set(menubuttons.page, surveyCurrentPage); 
+				} else {
+					if(menuMap.sectionMap[window.surveyCurrentPage]) {
+						surveyCurrentSection = surveyCurrentPage; // section = page
+						menubuttons.set(menubuttons.section, menuMap.sectionMap[surveyCurrentSection].name);
+						setDisplayed(titlePageContainer, false); // will fix title later
+					} else if(menuMap.pageToSection[window.surveyCurrentPage]) {
+						var mySection = menuMap.pageToSection[window.surveyCurrentPage];
+						//var myPage = mySection.pageMap[window.surveyCurrentPage];
+						surveyCurrentSection = mySection.id;
+						menubuttons.set(menubuttons.section, mySection.name);
+						setDisplayed(titlePageContainer, false); // will fix title later
+//						menubuttons.set(menubuttons.page, myPage.name);
+					} else {
+						menubuttons.set(menubuttons.section, stui_str("section_general"));
+						setDisplayed(titlePageContainer, false);
+//						menubuttons.set(menubuttons.page);
+					}
+				}
+			}
+
+			/**
+			 * @method updateMenus
+			 */
+			function updateMenus(menuMap) {
+				// initializE menus
+
+				if(!menuMap.menusSetup) {
+					menuMap.menusSetup=true;
+					menuMap.setCheck = function(menu, checked,disabled) {
+						menu.set('iconClass',   (checked)?"dijitMenuItemIcon menu-x":"dijitMenuItemIcon menu-o");
+						menu.set('disabled', disabled);
+					};
+					var menuSection = registry.byId("menu-section");
+					//menuSection.destroyDescendants(false);
+					menuMap.section_general = new MenuItem({
+						label: stui_str("section_general"),
+						//checked:   (surveyCurrentPage == ''),
+						iconClass:  "dijitMenuItemIcon ",
+						disabled: true,
+						//    iconClass:"dijitEditorIcon dijitEditorIconSave",
+						onClick: function(){ 
+							if(surveyCurrentPage!='' || (surveyCurrentSpecial!='' && surveyCurrentSpecial != null)) {
+								surveyCurrentId = ''; // no id if jumping pages
+								surveyCurrentPage = '';
+								surveyCurrentSection = '';
+								surveyCurrentSpecial = '';
+								updateMenuTitles(menuMap);
+								reloadV();
+							}
+						}
+					});
+					menuSection.addChild(menuMap.section_general);
+					for(var j in menuMap.sections) {
+						(function (aSection){
+							aSection.menuItem = new MenuItem({
+								label: aSection.name,
+								iconClass: "dijitMenuItemIcon",
+								onClick: function(){ 
+										surveyCurrentId = '!'; // no id if jumping pages
+										surveyCurrentPage = aSection.id;
+										surveyCurrentSpecial = '';
+										updateMenus(menuMap);
+										//updateMenuTitles(menuMap);
+										reloadV();
+								},
+								disabled: true
+							});
+							
+							menuSection.addChild(aSection.menuItem);
+						})(menuMap.sections[j]);
+					}
+					
+					menuSection.addChild(new MenuSeparator());
+
+					menuMap.forumMenu = new MenuItem({
+						label: stui_str("section_forum"),
+						iconClass: "dijitMenuItemIcon", // menu-chat
+						disabled: true,
+						onClick: function(){ 
+							// TODO:  make this a real section
+							window.open(survURL + '?forum=' + locmap.getLanguage(surveyCurrentLocale));
+						}
+					});
+					menuSection.addChild(menuMap.forumMenu);
+										
+				}
+				
+				
+				updateMenuTitles(menuMap);
+
+				var myPage = null;
+				var mySection = null;
+				if(surveyCurrentSpecial==null || surveyCurrentSpecial=='') {
+					// first, update display names
+					if(menuMap.sectionMap[window.surveyCurrentPage]) { // page is really a section
+						mySection = menuMap.sectionMap[surveyCurrentPage];
+						myPage = null;
+					} else if(menuMap.pageToSection[window.surveyCurrentPage]) {
+						mySection = menuMap.pageToSection[surveyCurrentPage];
+						myPage = mySection.pageMap[surveyCurrentPage];
+					}
+					if(mySection!==null) {
+						// update menus under 'page' - peer pages
+
+						if(!titlePageContainer.menus) {
+							titlePageContainer.menus = {};
+						}
+						
+						// hide all. TODO use a foreach model?
+						for(var zz in titlePageContainer.menus) {
+							var aMenu = titlePageContainer.menus[zz];
+							aMenu.set('label','-');
+							setDisplayed(aMenu, false);
+						}
+						
+
+						var showMenu = titlePageContainer.menus[mySection.id];
+
+						if(!showMenu) {
+							// doesn't exist - add it.
+
+							var menuPage = new DropDownMenu();
+							
+							for(var k in mySection.pages) { // use given order
+								(function(aPage) {
+									var pageMenu = aPage.menuItem =  new MenuItem({
+										label: aPage.name,
+										iconClass:  (aPage.id == surveyCurrentPage)?"dijitMenuItemIcon menu-x":"dijitMenuItemIcon menu-o",
+//										checked:   (aPage.id == surveyCurrentPage),
+										//    iconClass:"dijitEditorIcon dijitEditorIconSave",
+										onClick: function(){ 
+											surveyCurrentId = ''; // no id if jumping pages
+											surveyCurrentPage = aPage.id;
+											updateMenuTitles(menuMap);
+											reloadV();
+										},
+										disabled: (effectiveCoverage()<parseInt(aPage.levs[surveyCurrentLocale]))
+									});
+									menuPage.addChild(pageMenu);
+								})(mySection.pages[k]);
+							}
+
+							var theButton = new DropDownButton({label: '-', dropDown: menuPage});
+
+							
+							theButton.placeAt(titlePageContainer);
+							
+							showMenu = theButton;
+							
+							titlePageContainer.menus[mySection.id] = mySection.pagesMenu = showMenu;
+						}
+						
+						if(myPage !== null) {
+							showMenu.set('label', myPage.name);
+						} else {
+							showMenu.set('label', stui.str('section_subpages')); // no page selected
+						}
+						setDisplayed(showMenu, true);
+						setDisplayed(titlePageContainer, true); // will fix title later
+					}
+
+				}
+				
+				stdebug('Updating menus.. ecov = ' + effectiveCoverage());
+
+				menuMap.setCheck(menuMap.section_general,  (surveyCurrentPage == '' && (surveyCurrentSpecial=='' || surveyCurrentSpecial==null)),false);
+
+				// Update the status of the items in the Section menu
+				for(var j in menuMap.sections) {
+					var aSection = menuMap.sections[j];
+					// need to see if any items are visible @ current coverage
+					stdebug("for " + aSection.name + " minLev["+surveyCurrentLocale+"] = "+ aSection.minLev[surveyCurrentLocale]);
+					menuMap.setCheck(aSection.menuItem,  (surveyCurrentSection == aSection.id),effectiveCoverage()<aSection.minLev[surveyCurrentLocale]);
+					
+					// update the items in that section's Page menu
+					if(surveyCurrentSection == aSection.id) {
+						for(var k in aSection.pages ) {
+							var aPage = aSection.pages[k];
+							if(!aPage.menuItem) {
+								console.log("Odd - " + aPage.id + " has no menuItem");
+							} else {
+								menuMap.setCheck(aPage.menuItem,  (aPage.id == surveyCurrentPage),  (effectiveCoverage()<parseInt(aPage.levs[surveyCurrentLocale])));
+							}
+						}
+					}
+				}
+				
+				menuMap.setCheck(menuMap.forumMenu,  (surveyCurrentSpecial == 'forum'),(surveyUser	===null));				
+			}
+
+			if(_thePages == null || _thePages.loc != surveyCurrentLocale ) {
+				// show the raw IDs while loading.
+				updateMenuTitles(null);
+				
+				if(surveyCurrentLocale!=null&&surveyCurrentLocale!='') {
+					var needLocTable = false;
+				
+					var url = contextPath + "/SurveyAjax?_="+surveyCurrentLocale+"&s="+surveySessionId+"&what=menus&locmap="+needLocTable+cacheKill();
+					myLoad(url, "menus", function(json) {
+						if(!verifyJson(json, "menus")) {
+							return; // busted?
+						}
+						
+						{
+							
+							if(json.locmap) {
+								locmap = new LocaleMap(locmap); // overwrite with real data
+							}
+							
+							updateCovFromJson(json);
+							
+							
+							updateCoverageMenuTitle();
+							updateCoverageMenuValue();
+							updateCoverage(flipper.get(pages.data)); // update CSS and auto menu title
+						}
+						
+						
+						function unpackMenus(json) {
+							var menus = json.menus;
+							
+							if(_thePages) {
+								stdebug("Updating cov info into menus for " + json.loc);
+								for(var k in menus.sections) {
+									var oldSection = _thePages.sectionMap[menus.sections[k].id];
+									// _thePages.sections[k].minCov[locale] = ...
+									for(var j in menus.sections[k].pages) {
+										var oldPage = oldSection.pageMap[menus.sections[k].pages[j].id];
+
+										// copy over levels
+										oldPage.levs[json.loc] = menus.sections[k].pages[j].levs[json.loc];
+									}
+								}
+							} else {
+								stdebug("setting up new hashes for " + json.loc);
+								// set up some hashes
+								menus.haveLocs = {};
+								menus.sectionMap = {};
+								menus.pageToSection = {};
+								for(var k in menus.sections) {
+									menus.sectionMap[menus.sections[k].id] = menus.sections[k];
+									menus.sections[k].pageMap = {};
+									menus.sections[k].minLev = {};
+									for(var j in menus.sections[k].pages) {
+										menus.sections[k].pageMap[menus.sections[k].pages[j].id] = menus.sections[k].pages[j];
+										menus.pageToSection[menus.sections[k].pages[j].id] = menus.sections[k];
+									}
+								}
+								_thePages = menus;
+							}
+							
+							stdebug("Calculating minimum section coverage for " + json.loc);
+							for(var k in _thePages.sectionMap) {
+								var min = 200;
+								for(var j in _thePages.sectionMap[k].pageMap) {
+									var thisLev = parseInt(_thePages.sectionMap[k].pageMap[j].levs[json.loc]);
+									if(min > thisLev) {
+										min = thisLev;
+									}
+								}
+								_thePages.sectionMap[k].minLev[json.loc] = min;
+							}
+							
+							_thePages.haveLocs[json.loc] = true;
+						}
+
+						unpackMenus(json);
+
+						updateMenus(_thePages);
+					});
+				}
+			} else {
+				// go ahead and update
+				updateMenus(_thePages);
+			}
+		}
+
+		window.insertLocaleSpecialNote = function insertLocaleSpecialNote(theDiv) {
+			var bund = locmap.getLocaleInfo(surveyCurrentLocale);
+			
+			if(bund) {
+				if(bund.readonly) {
+					var msg = null;
+					if(bund.readonly_why) {
+						msg = bund.readonly_why;
+					} else {
+						msg = stui.str("readonly_unknown");
+					}
+					var theChunk = domConstruct.toDom(stui.sub("readonly_msg", { info: bund, locale: surveyCurrentLocale, msg: msg}));
+					var subDiv = document.createElement("div");
+					subDiv.appendChild(theChunk);
+					subDiv.className = 'warnText';
+					theDiv.appendChild(subDiv);
+				} else if(bund.dcChild) {
+					var theChunk = domConstruct.toDom(stui.sub("defaultContentChild_msg", { info: bund, locale: surveyCurrentLocale, dcChildName: locmap.getLocaleName(bund.dcChild)}));
+					var subDiv = document.createElement("div");
+					subDiv.appendChild(theChunk);
+					subDiv.className = 'warnText';
+					theDiv.appendChild(subDiv);
+				}
+			}
+		};
+		
+		
+		/**
+		 * Show the "possible problems" section which has errors for the locale
+		 * @method showPossibleProblems
+		 */
+		function showPossibleProblems(flipper,flipPage,loc, session, effectiveCov, requiredCov) {
+			surveyCurrentLocale = loc;
+			dojo.ready(function(){
+
+				var url = contextPath + "/SurveyAjax?what=possibleProblems&_="+surveyCurrentLocale+"&s="+session+"&eff="+effectiveCov+"&req="+requiredCov+  cacheKill();
+				myLoad(url, "possibleProblems", function(json) {
+					if(verifyJson(json, 'possibleProblems')) {
+						stdebug("json.possibleProblems OK..");
+						//showLoader(theDiv.loader, "loading..");
+						if(json.dataLoadTime) {
+							updateIf("dynload", json.dataLoadTime);
+						}
+						
+						var theDiv = flipper.flipToEmpty(flipPage);
+
+						insertLocaleSpecialNote(theDiv);
+
+						if(json.possibleProblems.length > 0) {
+							var subDiv = createChunk("","div");
+							subDiv.className = "possibleProblems";
+
+							var h3 = createChunk(stui_str("possibleProblems"), "h3");
+							subDiv.appendChild(h3);
+
+							var div3 = document.createElement("div");
+							var newHtml = "";
+							newHtml += testsToHtml(json.possibleProblems);
+							div3.innerHTML = newHtml;
+							subDiv.appendChild(div3);
+							theDiv.appendChild(subDiv);
+						} else if(surveyCurrentPage=='' && surveyCurrentId=='') {
+							// "no problems"
+						}
+						var theInfo;
+						theDiv.appendChild(theInfo = createChunk("","p","special_general"));
+						theInfo.innerHTML = stui_str("special_general"); // TODO replace with … ? 
+						hideLoader(null);
+					}
+				});
+			});
+		}
+		
+		var isLoading = false;
+		
+		/**
+		 * This is the main entrypoint to the 'new' view system, based in /v.jsp
+		 * @method reloadV
+		 */
+		window.reloadV = function reloadV() {
+			
+			if(disconnected) {
+				unbust();
+			}
+			
+			isLoading = false;
+			showers[flipper.get(pages.data).id]=function(){ console.log("reloadV()'s shower - ignoring reload request, we are in the middle of a load!"); };
+			
+			// assume parseHash was already called, if we are taking input from the hash
+			ariDialog.hide();
+
+			updateHashAndMenus(true);
+
+			if(surveyCurrentLocale!=null && surveyCurrentLocale!=''&&surveyCurrentLocale!='-'){
+				var bund = locmap.getLocaleInfo(surveyCurrentLocale);
+				if(bund!==null && bund.dcParent) {
+					var theChunk = domConstruct.toDom(stui.sub("defaultContent_msg", { info: bund, locale: surveyCurrentLocale, dcParentName: locmap.getLocaleName(bund.dcParent)}));
+					var theDiv = document.createElement("div");
+					theDiv.appendChild(theChunk);
+					theDiv.className = 'ferrbox';
+					flipper.flipTo(pages.other, theDiv);
+					return;
+				}
+			}
+
+			
+			// todo dont even flip if it's quick.
+			var loadingChunk;
+			flipper.flipTo(pages.loading, loadingChunk = createChunk(stui_str("loading"), "i", "loadingMsg"));
+			var loadingPane = flipper.get(pages.loading);
+
+			var itemLoadInfo = createChunk("","div","itemLoadInfo");			
+			loadingPane.appendChild(itemLoadInfo);
+			
+			var serverLoadInfo = createChunk("","div","serverLoadInfo");			
+			loadingPane.appendChild(serverLoadInfo);
+
+			var lastServerLoadTxt  = '';
+			var startTime = new Date().getTime();
+			
+			{
+				window.setTimeout(function(){
+						 updateStatus(); // will restart regular status updates
+				}, 5000); // get a status update about 5s in.
+				
+				var timerToKill = null;
+				flipper.addUntilFlipped(function() {
+//					console.log("Starting throbber");
+					var frag = document.createDocumentFragment();
+					var k = 0;
+					timerToKill = window.setInterval(function() {
+						k++;
+						loadingChunk.style.opacity =   0.5 + ((k%10) * 0.05);
+//						console.log("Throb to " + loadingChunk.style.opacity);
+						
+						// update server load txt?
+						if(lastJsonStatus) {
+							lastJsonStatus.sysloadpct =  dojoNumber.format(parseFloat( lastJsonStatus.sysload), {places: 0, type: "percent"});
+							
+							var now = new Date().getTime();
+							var waitms = now - startTime;
+							var waits = waitms / 1000.0;
+							
+							lastJsonStatus.waitTime = dojoNumber.format(waits, { round: 0, fractional: false});
+							
+							var newLoadTxt = stui.sub("jsonStatus_msg",lastJsonStatus);
+							
+							if(waits > 5 && newLoadTxt != lastServerLoadTxt) {
+								removeAllChildNodes(serverLoadInfo);
+								serverLoadInfo.appendChild(document.createTextNode(newLoadTxt));
+								lastServerLoadTxt = newLoadTxt;
+							}
+						}
+						
+					}, 100);
+					
+					return frag;
+				}, function() {
+//					console.log("Kill throbber");
+					window.clearInterval(timerToKill);
+				});
+			}
+
+			// now, load. Use a show-er function for indirection.
+			var shower = null;
+
+			shower = function() {
+				if(isLoading) {
+					console.log("reloadV inner shower: already isLoading, exitting.");
+					return;
+				}
+				isLoading = true;
+				var theDiv = flipper.get(pages.data);
+				var theTable = theDiv.theTable;
+
+				if(!theTable) {
+					var theTableList = theDiv.getElementsByTagName("table");
+					if(theTableList) {
+						theTable = theTableList[0];
+						theDiv.theTable = theTable;
+					}
+				}
+
+				showLoader(null, theDiv.stui.loading);
+				
+				if((surveyCurrentSpecial == null||surveyCurrentSpecial=='') && surveyCurrentLocale!=null && surveyCurrentLocale!='') {
+					if((surveyCurrentPage==null || surveyCurrentPage=='') && (surveyCurrentId==null||surveyCurrentId=='')) {
+						// the 'General Info' page.
+						itemLoadInfo.appendChild(document.createTextNode(locmap.getLocaleName(surveyCurrentLocale)));
+						showPossibleProblems(flipper, pages.other, surveyCurrentLocale, surveySessionId, covName(effectiveCoverage()), covName(effectiveCoverage()));
+						showInPop2(stui.str("generalPageInitialGuidance"), null, null, null, true); /* show the box the first time */
+						isLoading=false;
+					} else if(surveyCurrentId=='!') {
+						var frag = document.createDocumentFragment();
+						frag.appendChild(createChunk(stui.str('section_help'),"p", "helpContent"));
+						var infoHtml = stui.str('section_info_'+surveyCurrentPage);
+						var infoChunk  = document.createElement("div");
+						infoChunk.innerHTML = infoHtml;
+						frag.appendChild(infoChunk);
+						flipper.flipTo(pages.other, frag);
+						hideLoader(null);
+						isLoading=false;
+
+					} else {
+						// (common case) this is an actual locale data page.
+						itemLoadInfo.appendChild(document.createTextNode(locmap.getLocaleName(surveyCurrentLocale) + '/' + surveyCurrentPage + '/' + surveyCurrentId));
+						var url = contextPath + "/RefreshRow.jsp?json=t&_="+surveyCurrentLocale+"&s="+surveySessionId+"&x="+surveyCurrentPage+"&strid="+surveyCurrentId+cacheKill();
+							
+						myLoad(url, "section", function(json) {
+							isLoading=false;
+							showLoader(theDiv.loader,stui.loading2);
+							if(!verifyJson(json, 'section')) {
+								return;
+							} else if(json.section.nocontent) {
+								surveyCurrentSection = '';
+								if(json.pageId) {
+									surveyCurrentPage = json.pageId;
+								} else {
+									surveyCurrentPage= '';
+								}
+								showLoader(null);
+								flipper.flipTo(pages.other, createChunk(stui_str("loading_nocontent"),"i","loadingMsg"));
+								updateHashAndMenus(); // find out why there's no content. (locmap)
+							} else if(!json.section.rows) {
+								console.log("!json.section.rows");
+								showLoader(theDiv.loader,"Error while  loading: <br><div style='border: 1px solid red;'>" + "no rows" + "</div>");				        
+								handleDisconnect("while loading- no rows",json);
+							} else {
+								stdebug("json.section.rows OK..");
+								showLoader(theDiv.loader, "loading..");
+								if(json.dataLoadTime) {
+									updateIf("dynload", json.dataLoadTime);
+								}
+
+								surveyCurrentSection = '';
+								surveyCurrentPage = json.pageId;
+								updateHashAndMenus(); // now that we have a pageid
+								if(!surveyUser) {
+									showInPop2(stui.str("loginGuidance"), null, null, null, true); /* show the box the first time */
+								} else if(!json.canModify) {
+									showInPop2(stui.str("readonlyGuidance"), null, null, null, true); /* show the box the first time */
+								} else {
+									showInPop2(stui.str("dataPageInitialGuidance"), null, null, null, true); /* show the box the first time */
+								}
+								doUpdate(theDiv.id, function() {
+									showLoader(theDiv.loader,stui.loading3);
+									insertRows(theDiv,json.pageId,surveySessionId,json); // pageid is the xpath..
+									updateCoverage(flipper.get(pages.data)); // make sure cov is set right before we show.
+									flipper.flipTo(pages.data); // TODO now? or later?
+									window.showCurrentId(); // already calls scroll
+								});
+							}
+						});
+					}
+				} else if(surveyCurrentSpecial =='oldvotes') {
+					var url = contextPath + "/SurveyAjax?what=oldvotes&_="+surveyCurrentLocale+"&s="+surveySessionId+"&"+cacheKill();
+					myLoad(url, "(loading oldvotes " + surveyCurrentLocale + ")", function(json) {
+						isLoading=false;
+						showLoader(null,stui.loading2);
+						if(!verifyJson(json, 'oldvotes')) {
+							return;
+						} else {
+							showLoader(null, "loading..");
+							if(json.dataLoadTime) {
+								updateIf("dynload", json.dataLoadTime);
+							}
+							
+							var theDiv = flipper.flipToEmpty(pages.other); // clean slate, and proceed..
+
+							removeAllChildNodes(theDiv);
+							
+							var h2var = {votesafter:json.oldvotes.votesafter, newVersion:json.status.newVersion};
+							var h2txt = stui.sub("v_oldvotes_title",h2var);
+							theDiv.appendChild(createChunk(h2txt, "h2", "v-title"));
+							
+							if(!json.oldvotes.locale) {
+								surveyCurrentLocale='';
+								updateHashAndMenus();
+								
+								var ul = document.createElement("div");
+								ul.className = "oldvotes_list";
+								var data = json.oldvotes.locales.data;
+								var header = json.oldvotes.locales.header;
+								
+								if(data.length > 0) {
+									for(var k in data) {
+										var li = document.createElement("li");
+										
+										var link = createChunk(data[k][header.LOCALE_NAME],"a");
+										link.href = "#"+data[k][header.LOCALE];
+										(function(loc,link) {
+											return (function() {
+												var clicky;
+											listenFor(link, "click", clicky = function(e) {
+												surveyCurrentLocale = loc;
+												reloadV();
+												stStopPropagation(e);
+												return false;
+											});
+											link.onclick = clicky;
+											}); })(data[k][header.LOCALE],link)();
+										li.appendChild(link);
+										li.appendChild(createChunk(" "));
+										li.appendChild(createChunk("("+data[k][header.COUNT]+")"));
+										
+										ul.appendChild(li);
+									}
+									
+									theDiv.appendChild(ul);
+									
+									theDiv.appendChild(createChunk(stui.sub("v_oldvotes_locale_list_help_msg", {version: surveyOldVersion}),"p", "helpContent")); 
+								} else {
+									theDiv.appendChild(createChunk(stui.str("v_oldvotes_no_old"),"i")); // TODO fix
+								}
+							} else {
+								surveyCurrentLocale=json.oldvotes.locale;
+								updateHashAndMenus();
+								var loclink;
+								theDiv.appendChild(loclink=createChunk(stui.str("v_oldvotes_return_to_locale_list"),"a", "notselected"));
+								listenFor(loclink, "click", function(e) {
+									surveyCurrentLocale='';
+									reloadV();
+									stStopPropagation(e);
+									return false;
+								});
+								//loclink.href='#';
+								theDiv.appendChild(createChunk(json.oldvotes.localeDisplayName,"h3","v-title2"));
+								theDiv.appendChild(createChunk(stui.sub("v_oldvotes_locale_msg", {version: surveyOldVersion, locale: json.oldvotes.localeDisplayName}), "p", "helpContent"));
+								if(json.oldvotes.contested.length > 0 || json.oldvotes.uncontested.length > 0) {
+
+									function showVoteTable(voteList, type) {
+										var t = document.createElement("table");
+										t.id = 'oldVotesAcceptList';
+										var th = document.createElement("thead");
+										var tb = document.createElement("tbody");
+										{
+											var tr = document.createElement("tr");
+											tr.appendChild(createChunk(stui.str("v_oldvotes_path"),"th","code"));
+											tr.appendChild(createChunk(json.BASELINE_LANGUAGE_NAME,"th","v-comp"));
+											tr.appendChild(createChunk(stui.sub("v_oldvotes_winning_msg", {version: surveyOldVersion}),"th","v-win"));
+											tr.appendChild(createChunk(stui.str("v_oldvotes_mine"),"th","v-mine"));
+											var accept;
+											tr.appendChild(accept=createChunk(stui.str("v_oldvotes_accept"),"th","v-accept"));
+/*
+											accept.appendChild(createLinkToFn("v_oldvotes_all", function() {
+												for(var k in json.oldvotes.contested) {
+													var row = json.oldvotes.contested[k];
+													row.box.checked = true;
+												}
+											}));
+											accept.appendChild(createLinkToFn("v_oldvotes_none", function() {
+												for(var k in json.oldvotes.contested) {
+													var row = json.oldvotes.contested[k];
+													row.box.checked = false;
+												}
+											}));
+*/
+											th.appendChild(tr);
+										}
+										t.appendChild(th);
+										var oldPath = '';
+										var oldSplit = [];
+										for(var k in voteList) {
+											var row = voteList[k];
+											var tr = document.createElement("tr");
+											var tdp;
+											var rowTitle = '';
+											
+											// delete common substring
+											var pathSplit = row.pathHeader.split('	');
+											for(var nn in pathSplit) {
+												if(pathSplit[nn] != oldSplit[nn]) {
+													break;
+												}
+											}
+											if(nn != pathSplit.length-1) {
+												// need a header row.
+												var trh = document.createElement('tr');
+												trh.className='subheading';
+												var tdh = document.createElement('th');
+												tdh.colSpan = 5;
+												for(var nn in pathSplit) {
+													if(nn < pathSplit.length-1) {
+														tdh.appendChild(createChunk(pathSplit[nn],"span","pathChunk"));
+													}
+												}
+												trh.appendChild(tdh);
+												tb.appendChild(trh);
+											}
+											oldSplit = pathSplit;
+											rowTitle = pathSplit[pathSplit.length - 1];
+											
+											tdp = createChunk("","td","v-path");
+											
+													var dtpl = createChunk(rowTitle, "a");
+													dtpl.href = "v#/"+surveyCurrentLocale+"//"+row.strid;
+													dtpl.target='_CLDR_ST_view';
+													tdp.appendChild(dtpl);
+											
+											tr.appendChild(tdp);
+											var td00 = createChunk(row.baseValue,"td","v-comp"); // english
+											tr.appendChild(td00);
+											var td0 = createChunk("","td","v-win");
+											if(row.winValue) {
+												var span0 = appendItem(td0, row.winValue, "winner");
+												span0.dir = json.oldvotes.dir;
+											} else {
+												//tr.appendChild(createChunk("","td","v-win"));
+											}
+											tr.appendChild(td0);
+											var td1 = createChunk("","td","v-mine");
+											var label  = createChunk("","label","");
+											//label["for"] ='c_'+row.strid;
+											var span1 = appendItem(label, row.myValue, "value");
+											td1.appendChild(label);
+											span1.dir = json.oldvotes.dir;
+											tr.appendChild(td1);
+											var td2 = createChunk("","td","v-accept");
+											var box = createChunk("","input","");
+											//box.name='c_'+row.strid;
+											box.type="checkbox";
+											if(type=='uncontested') { // uncontested true by default
+												box.checked=true;
+											}
+											row.box = box; // backlink
+											td2.appendChild(box);
+											tr.appendChild(td2);
+
+											(function(tr,box,tdp){return function(){
+                                                                                            // allow click anywhere
+											    listenFor(tr, "click", function(e) {
+
+													box.checked = !box.checked;
+
+													stStopPropagation(e);
+													return false;
+												});
+                                                                                            // .. but not on the path.  Also listem to the box and do nothing
+												listenFor([tdp,box], "click", function(e) {
+
+													//box.checked = !box.checked;
+
+													stStopPropagation(e);
+													return false;
+												});
+											};})(tr,box,tdp)();
+
+											tb.appendChild(tr);
+										}
+										t.appendChild(tb);
+										return t;
+									}
+
+									
+									var frag = document.createDocumentFragment();
+
+									var summaryMsg = stui.sub("v_oldvotes_count_msg",{uncontested:json.oldvotes.uncontested.length,  contested: json.oldvotes.contested.length });
+																		
+									frag.appendChild(createChunk(summaryMsg, "div", "helpHtml"));
+
+									if(json.oldvotes.bad > 0) {
+										var summaryMsg2 = stui.sub("v_oldvotes_bad_msg",json.oldvotes);
+										
+										frag.appendChild(createChunk(summaryMsg2, "div", "helpHtml"));
+									}
+
+									var navChunk = document.createElement("div");
+									navChunk.className = 'v-oldVotes-nav';
+									frag.appendChild(navChunk);
+									
+									var uncontestedChunk = null;
+									var contestedChunk = null;
+									
+									function addOldvotesType(type, jsondata, frag, navChunk) {
+										var content = createChunk("","div","v-oldVotes-subDiv");
+										
+										content.strid = "v_oldvotes_title_"+type;
+
+										var title = stui.str(content.strid);
+										
+										content.title = title;
+										
+										content.appendChild(createChunk(title,"h2","v-oldvotes-sub"));
+										
+										var descr = stui.sub("v_oldvotes_desc_"+type+"_msg", {version: surveyOldVersion});
+										content.appendChild(createChunk(descr, "p", "helpContent"));
+										
+										
+										content.appendChild(showVoteTable(jsondata, type));
+
+										var submit = BusyButton({
+//											id: 'oldVotesSubmit',
+											label: stui.sub("v_submit_msg", {type: title}),
+											busyLabel: stui.str("v_submit_busy")
+										});
+
+
+										submit.on("click",function(e) {
+											setDisplayed(navChunk, false);
+											var confirmList= []; // these will be revoted with current params
+											var deleteList = []; // these will be deleted
+
+											// explicit confirm/delete list -  save us desync hassle
+											for(var kk in jsondata ) {
+												if(jsondata[kk].box.checked) {
+													confirmList.push(jsondata[kk].strid);
+//												} else {
+//													deleteList.push(jsondata[kk].strid);
+												}
+											}
+
+											var saveList = {
+													locale: surveyCurrentLocale,
+													confirmList: confirmList,
+													deleteList: deleteList
+											};
+
+											console.log(saveList.toString());
+											console.log("Submitting " + type + " " +  confirmList.length + " for confirm and " + deleteList.length + " for deletion");
+
+											var url = contextPath + "/SurveyAjax?what=oldvotes&_="+surveyCurrentLocale+"&s="+surveySessionId+"&doSubmit=true&"+cacheKill();
+											myLoad(url, "(submitting oldvotes " + surveyCurrentLocale + ")", function(json) {
+												showLoader(theDiv.loader,stui.loading2);
+												if(!verifyJson(json, 'oldvotes')) {
+													handleDisconnect("Error submitting votes!", json, "Error");
+													return;
+												} else {
+													reloadV();
+												}
+											},  JSON.stringify(saveList), { "Content-Type": "application/json"} );
+										});
+										
+										submit.placeAt(content);
+										// hide by default
+										setDisplayed(content, false);
+										
+										frag.appendChild(content);
+										return content;
+									}
+									
+									
+									
+									if(json.oldvotes.uncontested.length > 0){
+										uncontestedChunk = addOldvotesType("uncontested",json.oldvotes.uncontested, frag, navChunk);
+									}
+									if(json.oldvotes.contested.length > 0){
+										contestedChunk = addOldvotesType("contested",json.oldvotes.contested, frag, navChunk);
+									}
+
+									if(contestedChunk==null && uncontestedChunk != null) {
+										setDisplayed(uncontestedChunk, true); // only item
+									} else if(contestedChunk!=null && uncontestedChunk == null) {
+										setDisplayed(contestedChunk, true); // only item
+									} else {
+										// navigation
+										navChunk.appendChild(createChunk(stui.str('v_oldvotes_show')));
+										navChunk.appendChild(createLinkToFn(uncontestedChunk.strid, function() {
+											setDisplayed(contestedChunk, false);
+											setDisplayed(uncontestedChunk, true);
+										}, 'button'));
+										navChunk.appendChild(createLinkToFn(contestedChunk.strid, function() {
+											setDisplayed(contestedChunk, true);
+											setDisplayed(uncontestedChunk, false);
+										}, 'button'));
+										
+										contestedChunk.appendChild(createLinkToFn("v_oldvotes_hide", function() {
+											setDisplayed(contestedChunk, false);
+										}, 'button'));
+										uncontestedChunk.appendChild(createLinkToFn("v_oldvotes_hide", function() {
+											setDisplayed(uncontestedChunk, false);
+										}, 'button'));
+										
+									}
+
+									theDiv.appendChild(frag);
+								} else if(json.oldvotes.bad > 0) {
+									if(json.oldvotes.bad > 0) {
+										var summaryMsg2 = stui.sub("v_oldvotes_only_bad_msg",json.oldvotes);
+										
+										theDiv.appendChild(createChunk(summaryMsg2, "div", "helpHtml"));
+									}
+								} else {
+									theDiv.appendChild(createChunk(stui.str("v_oldvotes_no_old_here"),"i",""));
+								}
+							}
+						}
+						hideLoader(null);
+					});
+				} else if(surveyCurrentSpecial == 'mail') {
+					var url = contextPath + "/SurveyAjax?what=mail&s="+surveySessionId+"&fetchAll=true&"+cacheKill();
+					myLoad(url, "(loading mail " + surveyCurrentLocale + ")", function(json) {
+						hideLoader(null,stui.loading2);
+						isLoading=false;
+						if(!verifyJson(json, 'mail')) {
+							return;
+						} else {
+							if(json.dataLoadTime) {
+								updateIf("dynload", json.dataLoadTime);
+							}
+							
+							var theDiv = flipper.flipToEmpty(pages.other); // clean slate, and proceed..
+
+							removeAllChildNodes(theDiv);
+							
+							var listDiv = createChunk("","div","mailListChunk");
+							var contentDiv = createChunk("","div","mailContentChunk");
+							
+							
+							theDiv.appendChild(listDiv);
+							theDiv.appendChild(contentDiv);
+							
+							setDisplayed(contentDiv,false);
+							var header = json.mail.header;
+							var data = json.mail.data;
+							
+							if(data.length == 0) {
+								listDiv.appendChild(createChunk(stui.str("mail_noMail"),"p","helpContent"));
+							} else {
+								for(var ii in data) {
+									var row = data[ii];
+									var li = createChunk(row[header.QUEUE_DATE] + ": " + row[header.SUBJECT], "li", "mailRow");
+									if(row[header.READ_DATE]) {
+										addClass(li,"readMail");
+									}
+									if(header.USER !== undefined) {
+										li.appendChild(document.createTextNode("(to "+row[header.USER]+")"));
+									}
+									if(row[header.SENT_DATE] !== false) {
+										li.appendChild(createChunk("(sent)", "span", "winner"));
+									} else  if(row[header.TRY_COUNT]>=3) {
+										li.appendChild(createChunk("(try#"+row[header.TRY_COUNT]+")", "span", "loser"));
+									} else  if(row[header.TRY_COUNT]> 0) {
+										li.appendChild(createChunk("(try#"+row[header.TRY_COUNT]+")", "span", "warning"));
+									}
+									listDiv.appendChild(li);
+									
+									li.onclick = (function(li,row,header) {
+										return function() {
+									 	  if(!row[header.READ_DATE])
+											myLoad(contextPath + "/SurveyAjax?what=mail&s="+surveySessionId+"&markRead="+row[header.ID]+"&"+cacheKill(), 'Marking mail read', function(json) {
+												if(!verifyJson(json, 'mail')) {
+													return;
+												} else {
+													addClass(li, "readMail"); // mark as read when server answers
+													row[header.READ_DATE]=true; // close enough
+												}
+											});
+									 	  
+									 	  setDisplayed(contentDiv, false);
+									 	  
+									 	  removeAllChildNodes(contentDiv);
+									 	  
+									 	  contentDiv.appendChild(createChunk("Date: " + row[header.QUEUE_DATE], "h2", "mailHeader"));
+									 	  contentDiv.appendChild(createChunk("Subject: " + row[header.SUBJECT], "h2", "mailHeader"));
+									 	  contentDiv.appendChild(createChunk("Message-ID: " + row[header.ID], "h2", "mailHeader"));
+											if(header.USER !== undefined) {
+											 	  contentDiv.appendChild(createChunk("To: " + row[header.USER], "h2", "mailHeader"));
+											}
+									 	  contentDiv.appendChild(createChunk(row[header.TEXT], "p", "mailContent"));
+									 	  
+									 	  setDisplayed(contentDiv, true);
+										};
+									})(li, row, header);
+								}
+							}
+							
+						}
+					});
+				} else if(surveyCurrentSpecial == 'none') {
+					//for now - redurect
+					hideLoader(null);
+					isLoading=false;
+					window.location = survURL; // redirect home
+				} else {
+					var msg_fmt = stui.sub("v_bad_special_msg",
+							{special: surveyCurrentSpecial });
+
+					var loadingChunk;
+					flipper.flipTo(pages.loading, loadingChunk = createChunk(msg_fmt, "p", "errCodeMsg"));
+					var retryButton = createChunk(stui.str("loading_reload"),"button");
+					loadingChunk.appendChild(retryButton);
+					retryButton.onclick = function() { 	window.location.reload(true); };
+					showLoader(theDiv.loader);
+					isLoading=false;
+				}
+			}; // end shower
+
+			shower(); // first load
+//			flipper.get(pages.data).shower = shower;
+			
+			// set up the "show-er" function so that if this locale gets reloaded, the page will load again
+			showers[flipper.get(pages.data).id]=shower;
+
+		};  // end reloadV
+
+		function trimNull(x) {
+			if(x==null) return '';
+			try {
+				x = x.toString().trim();
+			} catch(e) {
+				// do nothing
+			}
+			return x;
+		}
+
+		ready(function(){
+			window.parseHash(dojoHash()); // get the initial settings
+			// load the menus - first.
+			
+			var theLocale = surveyCurrentLocale;
+			if(surveyCurrentLocale===null || surveyCurrentLocale=='') {
+				theLocale = 'und';
+			}
+			var xurl = contextPath + "/SurveyAjax?_="+theLocale+"&s="+surveySessionId+"&what=menus&locmap="+true+cacheKill();
+			myLoad(xurl, "initial menus for " + surveyCurrentLocale, function(json) {
+				if(!verifyJson(json,'locmap')) {
+					return;
+				} else {
+					locmap = new LocaleMap(json.locmap);
+
+					// any special message? "oldVotesRemind":{"count":60,"pref":"oldVoteRemind24", "remind":"* | ##"}
+					if(json.oldVotesRemind && surveyCurrentSpecial!='oldvotes') {
+						var vals = { count: dojoNumber.format(json.oldVotesRemind.count) };
+
+						function updPrefTo(target) {
+							var updurl  = contextPath + "/SurveyAjax?_="+theLocale+"&s="+surveySessionId+"&what=pref&pref=oldVoteRemind&_v="+target+cacheKill();                             myLoad(updurl, "updating coldremind " + target, function(json2) {
+								if(!verifyJson(json2,'pref')) {
+									return;
+								} else {
+									console.log('Server set  coldremind successfully.');
+								}
+							});
+						}						
+						var oldVoteRemindDialog = new Dialog({
+							title: stui.sub("v_oldvote_remind_msg",vals), 
+							content: stui.sub("v_oldvote_remind_desc_msg", vals)});
+
+						oldVoteRemindDialog.addChild(new Button({
+							label: stui.str("v_oldvote_remind_yes"),
+							onClick: function() {
+								updPrefTo(new Date().getTime() + (1000 * 3600));// hide for 1 hr
+								oldVoteRemindDialog.hide();
+								surveyCurrentSpecial="oldvotes";
+								surveyCurrentLocale='';
+								surveyCurrentPage='';
+								surveyCurrentSection='';
+								reloadV();
+							}
+
+						}));
+						oldVoteRemindDialog.addChild(new Button({
+							label: stui.str("v_oldvote_remind_no"),
+							onClick: function() {
+								updPrefTo(new Date().getTime() + (1000 * 86400)); // hide for 24 hours
+								oldVoteRemindDialog.hide();
+							}                            	
+						}));
+						oldVoteRemindDialog.addChild(new Button({
+							label: stui.str("v_oldvote_remind_dontask"),
+							onClick: function() {
+								updPrefTo('*'); // hide permanently
+								oldVoteRemindDialog.hide();
+							}
+						}));
+
+						var now = new Date();
+						if(json.oldVotesRemind.remind && now.getTime()<=parseInt(json.oldVotesRemind.remind)) {
+							console.log("Have " + json.oldVotesRemind.count + " old votes, but will remind again in " + (parseInt(json.oldVotesRemind.remind)-now.getTime())/1000 + " seconds.");
+						} else {
+							oldVoteRemindDialog.show();
+							console.log("Showed oldVotesRemind 6");
+						}
+					} else {
+						stdebug("Did not need to showoldvotesremind : " + Object.keys(json).toString());
+					}
+
+					updateCovFromJson(json);
+					// setup coverage level
+					//if(!window.surveyLevels) {
+						window.surveyLevels = json.menus.levels;
+
+						var titleCoverage = dojo.byId("title-coverage"); // coverage label
+
+						var levelNums = [];  // numeric levels
+						for(var k in window.surveyLevels) {
+							levelNums.push( { num: parseInt(window.surveyLevels[k].level), level: window.surveyLevels[k] } );
+						}
+						levelNums.sort(function(a,b){return a.num-b.num;});
+
+						var store = [];
+
+						store.push({
+								label: '-',
+								value: 'auto',
+								title: stui.str('coverage_auto_desc')
+							});
+
+						store.push({
+							type: "separator"
+						});
+						
+						for(var j in levelNums) { // use given order
+							if(levelNums[j].num==0) continue; // none - skip
+							if(levelNums[j].num < covValue('minimal')) continue; // don't bother showing these
+							if(window.surveyOfficial && levelNums[j].num==101) continue; // hide Optional in production
+							var level = levelNums[j].level;
+							store.push({
+									label: stui.str('coverage_'+ level.name), 
+									value: level.name,
+									title: stui.str('coverage_'+ level.name + '_desc')
+							});
+						}
+						// TODO have to move this out of the DOM..
+						var covMenu = flipper.get(pages.data).covMenu = new Select({name: "menu-select", 
+								id: 'menu-select',
+								title: stui.str('coverage_menu_desc'),
+								options: store,
+								onChange: function(newValue) {
+									var setUserCovTo = null;
+									if(newValue == 'auto') {
+										setUserCovTo = null; // auto
+									} else {
+										setUserCovTo = newValue;
+									}
+									
+									if(setUserCovTo === window.surveyUserCov) {
+										console.log('No change in user cov: ' + setUserCovTo);
+									} else {
+										window.surveyUserCov = setUserCovTo;
+										var updurl  = contextPath + "/SurveyAjax?_="+theLocale+"&s="+surveySessionId+"&what=pref&pref=p_covlev&_v="+window.surveyUserCov+cacheKill(); // SurveyMain.PREF_COVLEV
+										myLoad(updurl, "updating covlev to  " + surveyUserCov, function(json) {
+											if(!verifyJson(json,'pref')) {
+												return;
+											} else {
+												console.log('Server set  covlev successfully.');
+											}
+										});
+									}
+									// still update these.
+									updateCoverage(flipper.get(pages.data)); // update CSS and 'auto' menu title
+									updateHashAndMenus(false); // TODO: why? Maybe to show an item?
+								}
+								});
+						covMenu.placeAt(titleCoverage);
+					//}	
+
+						
+						
+					
+				window.reloadV(); // call it
+			
+				// watch for hashchange to make other changes.. 
+				dojoTopic.subscribe("/dojo/hashchange", function(changedHash){
+					//alert("hashChange…" + changedHash);
+					if(true) {
+						
+						
+						var oldLocale = trimNull(surveyCurrentLocale);
+						var oldSpecial = trimNull(surveyCurrentSpecial);
+						var oldPage = trimNull(surveyCurrentPage);
+						var oldId = trimNull(surveyCurrentId);
+						
+						window.parseHash(changedHash);
+						
+						surveyCurrentId = trimNull(surveyCurrentId);
+						
+						// did anything change?
+						if(oldLocale!=trimNull(surveyCurrentLocale) ||								oldSpecial!=trimNull(surveyCurrentSpecial) ||								oldPage != trimNull(surveyCurrentPage) ) {
+							console.log("# hash changed, (loc, etc) reloadingV..");
+							reloadV();
+						} else if(oldId != surveyCurrentId && surveyCurrentId != '') {
+							console.log("# just ID changed, to " + surveyCurrentId);
+						    // surveyCurrentID and the hash have already changed.
+						    // just call showInPop if the item is present. If not present, make sure it's visible.
+							window.showCurrentId();						
+						}
+					} else {
+					    console.log("Ignoring hash change " + changedHash);
+					}
+				});
+				}
+		});
+		});
+
+	});  // end require()
+} // end showV
+
+
+/**
+ * reload a specific row
+ * @method refreshRow2
+ */
 function refreshRow2(tr,theRow,vHash,onSuccess, onFailure) {
 	showLoader(tr.theTable.theDiv.loader,stui.loadingOneRow);
-    var ourUrl = contextPath + "/RefreshRow.jsp?what="+WHAT_GETROW+"&xpath="+theRow.xpid +"&_="+surveyCurrentLocale+"&fhash="+tr.rowHash+"&vhash="+vHash+"&s="+tr.theTable.session +"&json=t";
+    var ourUrl = contextPath + "/RefreshRow.jsp?what="+WHAT_GETROW+"&xpath="+theRow.xpid +"&_="+surveyCurrentLocale+"&fhash="+tr.rowHash+"&vhash="+vHash+"&s="+tr.theTable.session +"&json=t&automatic=t";
     var loadHandler = function(json){
         try {
 	    		if(json&&json.dataLoadTime) {
@@ -2709,9 +4641,9 @@ function refreshRow2(tr,theRow,vHash,onSuccess, onFailure) {
         			onSuccess(theRow);
         		} else {
         	        tr.className = "ferrbox";
-        	        tr.innerHTML="No content found "+tr.rowHash+ "  while  loading";
+//        	        tr.innerHTML="No content found "+tr.rowHash+ "  while  loading"; // this just obscures the row
         	        console.log("could not find " + tr.rowHash + " in " + json);
-        	        onFailure("no content");
+        	        onFailure("refreshRow2: Could not refresh this single row: Server failed to return xpath #"+theRow.xpid+" for locale "+surveyCurrentLocale);
         		}
            }catch(e) {
                console.log("Error in ajax post [refreshRow2] ",e.message);
@@ -2737,6 +4669,10 @@ function refreshRow2(tr,theRow,vHash,onSuccess, onFailure) {
     queueXhr(xhrArgs);
 }
 
+/**
+* bottleneck for voting buttons
+ * @method handleWiredClick
+ */
 function handleWiredClick(tr,theRow,vHash,box,button,what) {
 	var value="";
 	var valToShow;
@@ -2753,7 +4689,9 @@ function handleWiredClick(tr,theRow,vHash,box,button,what) {
 			}
 			return; // nothing entered.
 		}
-		tr.inputTd.className="d-change"; // TODO: use  (getTagChildren(tr)[tr.theTable.config.changecell])
+//		if(tr.inputTd) {
+//    		tr.inputTd.className="d-change"; // TODO: use  (getTagChildren(tr)[tr.theTable.config.changecell])
+//    	}
 	} else {
 		valToShow=button.value;
 	}
@@ -2767,6 +4705,11 @@ function handleWiredClick(tr,theRow,vHash,box,button,what) {
 		showLoader(tr.theTable.theDiv.loader, stui.checking);
 	}
 
+	// select
+	updateCurrentId(theRow.xpstrid);
+	// and scroll
+	showCurrentId();
+	
 	if(tr.myProposal) {
 		// move these 2 up if needed
 		var children = getTagChildren(tr);
@@ -2806,24 +4749,27 @@ function handleWiredClick(tr,theRow,vHash,box,button,what) {
 				if(json.submitResultRaw) { // if submitted..
 					tr.className='tr_checking2';
 					refreshRow2(tr,theRow,vHash,function(theRow){
-						tr.inputTd.className="d-change"; // TODO: use  inputTd=(getTagChildren(tr)[tr.theTable.config.changecell])
+//						tr.inputTd.className="d-change"; // TODO: use  inputTd=(getTagChildren(tr)[tr.theTable.config.changecell])
 
 						// submit went through. Now show the pop.
 						button.className='ichoice-o';
+						button.checked=false;
 						hideLoader(tr.theTable.theDiv.loader);
 						if(json.testResults && (json.testWarnings || json.testErrors)) {
 							// tried to submit, have errs or warnings.
 							showProposedItem(tr.inputTd,tr,theRow,valToShow,json.testResults); // TODO: use  inputTd= (getTagChildren(tr)[tr.theTable.config.changecell])
 						} else {
-							hidePop(tr);
-							// TODO: hidden after submit - should instead update.
+							//  submit OK.
 						}
 						if(box) {
 							box.value=""; // submitted - dont show.
 						}
 						//tr.className = 'vother';
 						myUnDefer();
-					}, myUnDefer); // end refresh-loaded-fcn
+					}, function(err) {
+						myUnDefer();
+						handleDisconnect(err, json);
+					}); // end refresh-loaded-fcn
 					// end: async
 				} else {
 					// Did not submit. Show errors, etc
@@ -2832,14 +4778,14 @@ function handleWiredClick(tr,theRow,vHash,box,button,what) {
 						|| (json.testResults && (json.testWarnings || json.testErrors ))) {
 						showProposedItem(tr.inputTd,tr,theRow,valToShow,json.testResults,json); // TODO: use  inputTd= (getTagChildren(tr)[tr.theTable.config.changecell])
 					} else {
-						hidePop(tr);
-						// TODO: not submitted, but no errors.  Refresh row and show?
+						// no errors, not submitted.  Nothing to do.
 					}
 					if(box) {
 						box.value=""; // submitted - dont show.
 					}
 					//tr.className='vother';
 					button.className='ichoice-o';
+					button.checked = false;
 					hideLoader(tr.theTable.theDiv.loader);
 					myUnDefer();
 				}
@@ -2879,8 +4825,11 @@ function handleWiredClick(tr,theRow,vHash,box,button,what) {
 }
 
 
-///////////////////
-// admin
+// TODO move admin panel to separate module
+/**
+ * Load the Admin Panel
+ * @method loadAdminPanel
+ */
 function loadAdminPanel() {
 	if(!vap) return;
 	loadStui();
@@ -2986,7 +4935,7 @@ function loadAdminPanel() {
 			var frag2 = document.createDocumentFragment();
 			
 			if(!json || !json.users || Object.keys(json.users)==0) {
-				frag2.appendChild(document.createTextNode(stui.str("No users.")))
+				frag2.appendChild(document.createTextNode(stui.str("No users.")));
 			} else {
 				for(sess in json.users) {
 					var cs = json.users[sess];
@@ -2997,7 +4946,7 @@ function loadAdminPanel() {
 					} else {
 						user.appendChild(createChunk("(anonymous)","div","adminUserUser"));
 					}
-					user.appendChild(createChunk("Last: " + cs.last + ", IP: " + cs.ip, "span","adminUserInfo"));
+					user.appendChild(createChunk("Last: " + cs.last  + "LastAction: " + cs.lastAction + ", IP: " + cs.ip + ", ttk:"+(parseInt(cs.timeTillKick)/1000).toFixed(1)+"s", "span","adminUserInfo"));
 					
 					frag2.appendChild(user);
 					
@@ -3035,18 +4984,35 @@ function loadAdminPanel() {
 				var frag2 = document.createDocumentFragment();
 				removeAllChildNodes(stack);
 				stack.innerHTML = stui.str("adminClickToViewThreads");
+				deadThreads={};
 				if(json.threads.dead) {
-					frag2.appendChunk(json.threads.dead.toString(),"span","adminDeadThreads");
-					// TODO
+					var header =createChunk(stui.str("adminDeadThreadsHeader"), "div", "adminDeadThreadsHeader");
+					var deadul = createChunk("","ul","adminDeadThreads");
+					for(var jj=0;jj<json.threads.dead.length;jj++) {
+						var theThread = json.threads.dead[jj];
+						var deadLi = createChunk("#"+theThread.id, "li");
+						//deadLi.appendChild(createChunk(theThread.text,"pre"));
+						deadThreads[theThread.id] = theThread.text;
+						deadul.appendChild(deadLi);
+					}
+					header.appendChild(deadul);
+					stack.appendChild(header);
 				}
 				for(id in json.threads.all) {
 					var t = json.threads.all[id];
 					var thread = createChunk(null,"div","adminThread");
-					thread.appendChild(createChunk(id,"span","adminThreadId"));
+					var tid;
+					thread.appendChild(tid=createChunk(id,"span","adminThreadId"));
+					if(deadThreads[id]) {
+						tid.className = tid.className+" deadThread";
+					}
 					thread.appendChild(createChunk(t.name,"span","adminThreadName"));
 					thread.appendChild(createChunk(stui.str(t.state),"span","adminThreadState_"+t.state));
 					thread.onclick=(function (t,id){return (function() {
 						stack.innerHTML = "<b>"+id+":"+t.name+"</b>\n";
+						if(deadThreads[id]) {
+							stack.appendChild(createChunk(deadThreads[id],"pre","deadThreadInfo"));
+						}
 						stack.appendChild(createChunk("\n\n{{{\n","span","textForTrac"));
 						for(var q in t.stack) {
 							stack.innerHTML = stack.innerHTML + t.stack[q] + "\n";
@@ -3055,7 +5021,7 @@ function loadAdminPanel() {
 					});})(t,id);
 					frag2.appendChild(thread);
 				}
-				
+
 				removeAllChildNodes(u);
 				u.appendChild(frag2);
 			}
@@ -3633,4 +5599,176 @@ function showRecent(divName, locale, user) {
 		
 	div.update();
 	});
+}
+
+// for the admin page
+function showUserActivity(list, tableRef) {
+	require([
+	         "dojo/ready",
+	         "dojo/dom",
+	         "dojo/dom-construct",
+	         "dojo/request",
+	         "dojo/number",
+	         "dojo/domReady!"
+	         ],
+	         // HANDLES
+	         function(
+	        		 ready,
+	        		 dom,
+	        		 dcons,
+	        		 request,
+	        		 dojoNumber
+	        ) { ready(function(){
+	        	
+	        	loadStui();
+	        	
+	        	window._userlist = list; // DEBUG
+	        	var table = dom.byId(tableRef);
+	        	
+	        	var rows = [];
+	        	var theadChildren = getTagChildren(table.getElementsByTagName("thead")[0].getElementsByTagName("tr")[0]);
+	        	
+	        	setDisplayed(theadChildren[1],false);
+	        	var rowById = [];
+	        	
+	        	for(var k in list ) {
+	        		var user = list[k];
+	        		//console.log("Info for user " + JSON.stringify(user));
+	        		var tr = dom.byId('u@' + user.id);
+	        		
+	        		rowById[user.id] = parseInt(k); // ?!
+
+	        		var rowChildren = getTagChildren(tr);
+	        		
+	        		removeAllChildNodes(rowChildren[1]); // org
+	        		removeAllChildNodes(rowChildren[2]); // name
+	        		
+	        		var theUser;
+		        	setDisplayed(rowChildren[1],false);
+	        		rowChildren[2].appendChild(theUser = createUser(user));
+	        		
+	        		rows.push( {user: user, tr: tr, userDiv: theUser, seen: rowChildren[5], stats: [], total: 0  } );
+	        	}
+	        	
+	        	window._rrowById = rowById;
+	        	
+	        	var loc2name={};
+        		request
+    			.get(contextPath + "/SurveyAjax?what=stats_bydayuserloc", {handleAs: 'json'})
+    			.then(function(json) {
+    				/*
+    				  COUNT: 1120,  DAY: 2013-04-30, LOCALE: km, LOCALE_NAME: khmer, SUBMITTER: 2
+    				  */
+    			//	console.log(JSON.stringify(json))
+    				var stats = json.stats_bydayuserloc;
+    				var header = stats.header;
+    				for(var k in stats.data) {
+    					var row = stats.data[k];
+    					var submitter = row[header.SUBMITTER];
+    					var submitterRow = rowById[submitter];
+    					if(submitterRow !== undefined) {
+    						var userRow = rows[submitterRow];
+    						
+//    						console.log(userRow.user.name + " = " + row);
+    						// Kotoistus-koordinaattori  = 292,2013-04-30,fi,3330,Finnish
+    						
+    						userRow.stats.push({day: row[header.DAY], count: row[header.COUNT], locale: row[header.LOCALE]});
+    						userRow.total = userRow.total + row[header.COUNT];
+    						loc2name[row[header.LOCALE]]=row[header.LOCALE_NAME];
+    					}
+    				}
+    				
+    				function appendMiniChart(userRow, count) {
+    					if(count > userRow.stats.length) {
+    						count = userRow.stats.length;
+    					}
+    					removeAllChildNodes(userRow.seenSub);
+						for(var k=0;k<count;k++) {
+							var theStat = userRow.stats[k];
+							var chartRow = createChunk('','div','chartRow');
+						
+							var chartDay = createChunk(theStat.day, 'span', 'chartDay');
+							var chartLoc = createChunk(theStat.locale, 'span', 'chartLoc');
+							chartLoc.title = loc2name[theStat.locale];
+							var chartCount = createChunk(dojoNumber.format(theStat.count), 'span', 'chartCount');
+
+							chartRow.appendChild(chartDay);
+							chartRow.appendChild(chartLoc);
+							chartRow.appendChild(chartCount);
+							
+							userRow.seenSub.appendChild(chartRow);
+						}
+						if(count < userRow.stats.length) {
+							chartRow.appendChild(document.createTextNode('...'));
+						}
+    				}
+    				
+    				for(var k in rows) {
+    					var userRow = rows[k];
+						if(userRow.total > 0) {
+							addClass(userRow.tr, "hadActivity");
+							userRow.tr.getElementsByClassName('recentActivity')[0].appendChild(document.createTextNode(' ('+dojoNumber.format(userRow.total)+')'));
+							
+							userRow.seenSub = document.createElement('div');
+							userRow.seenSub.className = 'seenSub';
+							userRow.seen.appendChild(userRow.seenSub);
+							
+							appendMiniChart(userRow, 3);
+							if(userRow.stats.length > 3) {
+								var chartMore, chartLess;
+								chartMore = createChunk('+', 'span','chartMore');
+								chartLess = createChunk('-', 'span','chartMore');
+								chartMore.onclick = (function(chartMore, chartLess, userRow) { 
+									return function () {
+										setDisplayed(chartMore, false);
+										setDisplayed(chartLess, true);
+										appendMiniChart(userRow, userRow.stats.length);
+										return false;
+									};})(chartMore, chartLess, userRow);
+								chartLess.onclick = (function(chartMore, chartLess, userRow) { 
+									return function () {
+										setDisplayed(chartMore, true);
+										setDisplayed(chartLess, false);
+										appendMiniChart(userRow, 3);
+										return false;
+									};})(chartMore, chartLess, userRow);
+								userRow.seen.appendChild(chartMore);
+								setDisplayed(chartLess, false);
+								userRow.seen.appendChild(chartLess);
+							}
+							
+						} else {
+							addClass(userRow.tr, "noActivity");
+						}
+    				}
+    			});
+
+   		/*
+   		 *  If we need any per item load:
+   		 *	        	// now lazy load each item.
+	        	var loadmore = null; 
+	        	var loadInterval = null;
+	        	var processRow = 0;
+	        	loadmore = function() {
+	        		console.log('loadmore r#' + processRow + '/' + rows.length);	
+    				window.clearTimeout(loadInterval);
+    				
+    				var row = rows[processRow];
+    				
+	        		request
+	        			.get(contextPath + "/SurveyAjax?what=recent_items&_="+1+"&user="+2+"&limit="+15, {handleAs: 'json'})
+	        			.then(function(json) {
+	        				console.log('..loaded');
+	        				// fetch next
+	        				if( (++processRow) < rows.length ) {
+	        					loadInterval = window.setTimeout(loadmore, 1000);
+	        				} else {
+	        					console.log('loadmore done');
+	        				}
+	        			});
+	        	};
+	        	loadInterval = window.setTimeout(loadmore, 1000);
+*/	        
+	        });
+		});
 }

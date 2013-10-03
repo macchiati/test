@@ -1,22 +1,10 @@
-/* Copyright (c) 2004-2012 IBM and others. All Rights Reserved. */
-
 /* @override 
 	http://127.0.0.1:8080/cldr-apps/surveytool.css
-	http://nestor.priv:8080/cldr-apps/surveytool.css
-	http://tintin.priv:8080/cldr-apps/surveytool.css
-	http://nestor.local:8080/cldr-apps/surveytool.css
-	http://unicode.org/cldr/apps/surveytool.css
-	http://kwanyin.unicode.org/cldr-apps/surveytool.css
-	http://localhost:8080/cldr-apps/surveytool.css
-	http://10.0.0.112:8080/cldr-apps/surveytool.css
-	http://naf.priv:8080/cldr-apps/surveytool.css
-	http://127.0.0.1:8081/cldr-apps/surveytool.css
-	http://st.unicode.org/smoketest/surveytool.css
-	http://10.0.0.148:8080/cldr-apps/surveytool.css
-	http://10.0.0.158:8080/cldr-apps/surveytool.css
-	http://st.unicode.org:8080/cldr-apps/surveytool.css
+	http://naf.:8080/cldr-apps/surveytool.css
 	http://st.unicode.org/cldr-apps/surveytool.css
-*/
+	http://naf:8080/cldr-apps/surveytool.css */
+/* Copyright (c) 2004-2013 IBM and others. All Rights Reserved. */
+/* Made with CSSEdit and Espresso2 */
 
 span.age {
 	font-weight: bold;
@@ -47,6 +35,10 @@ ul.adminList li.notselected {
 	border-right:  1px solid #ddd;
 }
 
+#small_login_shower button {
+    float:  right;
+}
+
 div.adminPanel {
 	border:  1px solid gray;
 	box-shadow: 3px 3px 5px gray;
@@ -56,6 +48,48 @@ div.adminPanel {
 h3.adminTitle {
 	font-size: x-large;	
 	border-bottom:  2px solid black;
+}
+.userlist .seenSub::before {
+    content: 'Activity';
+    font-size: xx-small;
+}
+.userlist .seenSub {
+    display: block;
+    margin-top:  0.5em;
+}
+
+.userlist .seenSub .chartRow{
+    display:  table-row;
+}
+.userlist .seenSub .chartRow span{
+    display:  table-cell;
+    font-size: small;
+    padding-right: 0.25em;
+}
+
+.seenSub .chartDay {
+    white-space: nowrap;
+}
+.seenSub .chartLoc {
+    font-family: "Courier New", Courier, mono;
+}
+.seenSub .chartCount {
+    font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+    text-align: right;
+}
+
+.userlist .chartMore {
+    float: right;
+    border: 1px solid black;
+    padding:  2px;
+    margin:  1px;
+    background-color: silver;
+    display: run-in;
+}
+
+.userlist div.adminUserUser {
+    padding: 0;
+    margin: 0;
 }
 
 div.adminUserUser i {
@@ -67,6 +101,13 @@ div.adminUserUser i {
 	background-color: black;
 	margin:  0.5em;
 	padding:  3px;
+}
+
+.adminUserUser img {
+    margin-top:  0.25em;
+    margin-left:  0.25em;
+    margin-right:  0.25em;
+    float: left;
 }
 
 .adminSettingsList {
@@ -124,6 +165,24 @@ div.adminUserUser i {
 	box-shadow: 3px 3px 2px gray;
 }
 
+.userlist .noActivity a.recentActivity {
+    opacity:  0.5;
+}
+
+.userlist .hadActivity a.recentActivity {
+    font-weight: bold;
+    opacity:  1.0;
+    color:  white;
+    background-color:  navy;
+}
+
+.userlist  .noActivity .adminUserUser {
+    opacity:  0.75;
+}
+.userlist  .hadActivity .adminUserUser {
+    border:  2px solid black;
+}
+
 i.userlevel_street {
 	background-color: navy !important;
 	color:  white !important;
@@ -139,6 +198,11 @@ i.userlevel_locked {
 i.userlevel_expert {
 	background-color: teal !important;
 	color:  black !important;
+}
+
+i.userlevel_manager{
+	background-color: #e77de7 !important;
+	color: white !important;
 }
 i.userlevel_admin {
 	background-color: maroon !important;
@@ -179,12 +243,23 @@ div.adminUserUser {
 	margin:  1em;
 }
 
+div.forumDiv div.adminUserUser {
+    width:  inherit !important;
+}
+
 span.adminUserName {
-	font-size:  x-large;
+	font-size:  large;
+	display:  block;
+}
+span.adminOrgName {
+	font-size: small;
+	display:  block;
+    font-style: italic;
 }
 
 address.adminUserAddress {
 	font: normal smaller "Courier New", Courier, mono;
+    white-space: nowrap;
 }
 
 
@@ -311,6 +386,26 @@ A.nodraft:visited {
 	font-size: smaller;
 }
 
+
+#itemInfo div.xpath {
+    position: fixed;
+    left: 0.1em;
+    bottom: 0.1em;
+    color: #a19a9a;
+    padding:  2px;
+    border:  1px solid white;
+    font-family: "Courier New", Courier, mono;
+    font-weight: bold;
+}
+
+#itemInfo div.xpath:hover {
+    opacity: 1;
+    color: navy;
+    border:  1px solid silver;
+    background-color: white;
+}
+
+
 .alias {
 	/*	font-size: smaller;
 	*/
@@ -322,20 +417,20 @@ A.nodraft:visited {
 
 .fallback {
 	background-color: #b8ffff;
-	border: 1px groove #0079cb;
+	border: 1px groove #0079cb  !important;
 }
 
 .fallback_root, .fallback_code {
-	border: 1px dotted #f00;
-	background-color: #FFDDDD;
+	border: 1px dotted #f00 !important;
+	background-color: #FFDDDD ;
 }
 
 .draft {
-	background-color: #88FFAA;
+	background-color: #88FFAA  !important;
 }
 
 .proposed {
-	background-color: #88DDAA;
+	background-color: #88DDAA  !important;
 }
 
 .selected {
@@ -415,9 +510,38 @@ span.adminExceptionUptime {
 	margin-top: 0;
 }
 
+
+.deadThread, .adminDeadThreadsHeader, ul.adminDeadThreads {
+    background-color: red;
+    color: black;
+}
+.adminDeadThreadsHeader {
+    padding-left: 30px;
+    margin:0;
+    white-space: nowrap;
+    background: url(stop.png) no-repeat 0 top;
+    display: block;
+}
+
+ul.adminDeadThreads {
+    display: inline;
+    padding-left: 40px;
+    margin:0;
+    margin-bottom: 1em;
+}
+
+ul.adminDeadThreads li {
+    display: inline;
+    padding-left: 0.25em;
+}
+
+.adminThreadStack {
+    vertical-align: top;
+}
+
 pre.adminExceptionLogsite {
-	padding-left:  20px;
-	background: url(conf2.png) no-repeat 0 top;
+    padding-left:  20px;
+    background: url(conf2.png) no-repeat 0 top;
 }
 
 pre.adminExceptionSQL {
@@ -454,14 +578,14 @@ div.adminException span.adminExceptionHeader {
 	background: url(stop.png) no-repeat 0 top;
 }
 
- span.adminExceptionDate {
+span.adminExceptionDate {
 	white-space: nowrap;
 	font: small "Lucida Grande", Lucida, Verdana, sans-serif;
 	float: right;
 	display: block
 }
 
-span.adminThreadState_RUNNABLE {
+span.adminThreadse_RUNNABLE {
 	background-color: lime;
 }
 
@@ -689,6 +813,74 @@ table.list {
 	display: inline;
 }
 
+table#statisticsTable {
+    border-collapse: collapse;
+}
+
+table#statisticsTable thead th {
+    font-weight: bold;
+    border-bottom: 1px solid gray
+}
+
+table#statisticsTable td.locid {
+    font: bold small "Courier New", Courier, mono;
+    text-align: right;
+}
+
+table#statisticsTable a {
+    text-decoration: none;
+}
+
+table#statisticsTable td.locname a,
+table#statisticsTable td.selfname.dirltr a {
+    padding-left:  18px;
+}
+
+table#statisticsTable td.selfname.dirrtl a {
+    padding-right:  18px;
+}
+
+
+table#statisticsTable td.locname a:hover {
+    background: url(zoom.png) no-repeat;
+    text-decoration: underline;
+}
+
+table#statisticsTable td.selfname.dirltr a:hover
+{
+    background: url(dnah.png) left no-repeat;
+    text-decoration: underline;
+}
+table#statisticsTable td.selfname.dirrtl a:hover
+{
+    background: url(hand.png) right no-repeat;
+    text-decoration: underline;
+}
+
+table#statisticsTable .olddata {
+    opacity: .8;
+    color: #1561b7;
+}
+
+table#statisticsTable .olddata:hover {
+    color: red;
+}
+
+table#statisticsTable tbody tr.r0 {
+    
+}
+table#statisticsTable tbody tr.r1 {
+    background-color: #d2eee1;
+}
+
+table#statisticsTable tbody tr:hover {
+    background-color: #ecd290;
+}
+
+table#statisticsTable td.count {
+    text-align: right;
+}
+
 div.minimenu {
 	border-collapse: collapse;
 	border-top: 1px solid black;
@@ -726,11 +918,13 @@ h2.thisItem {
 }
 
 i.loadingMsg {
-	font-size: x-large;
+	font-size: xx-large;
 	text-align: justify;
 	font-weight: bold;
 	font-variant: small-caps;
 	margin-left:  2em;
+	color: #17800d;
+    text-shadow: 1px 1px 1px black;
 }
 
 .small_login_hot {
@@ -744,6 +938,11 @@ i.loadingMsg {
 	right: 0;
 	z-index: 4;
 	line-height: 1.34em;
+}
+
+.serverLoadInfo {
+    margin-top:  5em;
+    font: normal normal small "Lucida Grande", Lucida, Verdana, sans-serif;
 }
 
 div#smalllogin {
@@ -827,25 +1026,6 @@ table.userlist {
 	margin: 2px;	
 }
 
-.user1 {
-	color: navy;
-	background: #a0ff66;
-}
-
-.user5 {
-	color: purple;
-}
-
-.user10 {
-	color: olive;
-	background: #bbd4ff;
-}
-
-.user999 {
-	color: #dddddd;
-	background: #5d3cff;
-}
-
 .topbar {
 	border-top: 3px solid #040;
 }
@@ -863,7 +1043,7 @@ td.botgray {
 }
 
 th.topgray, table.data tr.vother td, table.data tr.vother th {
-	border-top: 2px solid #ccf;
+	border-top: 1px solid #ccf;
 }
 
 td.topgray {
@@ -889,15 +1069,28 @@ tr.heading th.partsection {
 	z-index: 0;
 }
 
+th.partsection {
+	border-top: 2px solid gray;
+	padding: 0.5em;
+}
+
+.userlist th.partsection {
+	border-top: 2px solid gray !important;
+	padding: 0.5em !important;
+	background: silver;
+}
+.userlist th.partsection  h4{
+	margin: 0;
+}
+
 th.partsection, th.partsection a {
 	font-weight: bold;
 	font-style: italic;
 	background-color: #9edbec;
 	color: #111111;
-	font-size: 1.1em;
 	text-align: left;
-	border-top: 2px solid gray;
 	z-index: 0;
+    text-transform: capitalize;
 }
 
 tr.headingb {
@@ -924,7 +1117,12 @@ padding: 1px;
 	padding: 0.5em;
 }
 
-.respbox h3 {
+div.respbox:target {
+	border: 4px solid goldenrod !important;
+	padding: 1em;
+}
+
+.respbox h3, .respbox h3 a {
 	color: #084610;
 	margin: 2px;
 }
@@ -993,7 +1191,6 @@ td.d-code.hasPosts {
 div.forumDiv div.subpost {
 	border:  1px solid black;
 	background-color: #f5e3c2;
-	margin-right:  2em;
 	margin-top:  0.25em;
 	padding:  0.25em;
 }
@@ -1028,16 +1225,17 @@ div.forumDiv .adminUserUser i {
 }
 
 div.postHeaderInfoGroup {
-	display:  table;
+	display:  block;
 }
 
 
 div.postHeaderLine {
 	display:  table-row;
+	font-size: small;
 }
 
 div.postHeaderLine div {
-	display:  table-cell;
+	display:  table-row;
 }
 
 div.postHeaderLine div.postHeaderItem {
@@ -1046,7 +1244,7 @@ div.postHeaderLine div.postHeaderItem {
 
 div.forumDiv div.subpost div.postContent {	
 	padding-top:  0.5em;
-	font: medium Georgia, "Times New Roman", Times, serif;
+	font: small Georgia, "Times New Roman", Times, serif;
 }
 
 .disabledbox {
@@ -1206,6 +1404,27 @@ table.sqlbox form {
 
 /* @end */
 
+.manageSubpages {
+	padding-left: 2em;
+	display: block;
+	width: 50em;
+}
+
+.manageSubpages a,
+.manageSubpages b {
+    display:  block;
+    border-radius: 5px;
+    border:  1px solid gray;
+    padding: 0.25em;
+    color:  blue;
+}
+
+.manageSubpages a:hover,
+.manageSubpages b:hover {
+    background: silver;
+    color: red;
+}
+
 .ferrbox {
 	background-color: #ddd;
 	border: 1px solid red;
@@ -1220,6 +1439,10 @@ div#toparea {
 padding: 0;
 }
 
+.stNormalPage #toparea {
+margin-top:  1em;
+}
+
 div#toparea img#stlogo {
 	float: right;
 	margin-left: auto;
@@ -1230,13 +1453,16 @@ div#toparea img#stlogo {
 }
 
 #toptitle {
+	font-size: medium;
+}
+
+#toparea #toptitle {
 	padding-top: 0;
 	margin-top: 0;
 	margin-bottom: 0;
 	line-height: 2.5em;
 	font-weight: normal;
 	padding-bottom:  0;
-	font-size: medium;
 }
 
 #toptitle span.title-cldr {
@@ -1338,10 +1564,8 @@ a.dcLocale {
 }
 
 .winner {
-	
-
 /*	border: 4px groove #0f0;*/
-   border: 1px solid #0f0;
+   border: 1px solid #0f0 !important;
 	background-color: #DDFFDD;
 }
 
@@ -1596,16 +1820,39 @@ div.loading {
 	display: none;
 }
 
-.cldr_substituted {
-	background-color: #ddd;
+p.errCodeMsg {
+    font-family: Georgia, "Times New Roman", Times, serif;
+    font-weight: normal;
+    font-style: normal;
+    padding-left:  20px;
+    background: url(stop.png) no-repeat left top;
+    margin-left:  3em;
+    margin-right:  3em;
+    border:  2px solid silver;
 }
 
+#LoadingMessageSection p.errCodeMsg button {
+    display:  block;
+    margin-top: 1em;
+    font-size: x-large;
+}
+
+.cldr_substituted {
+	background-color: #ddd;
+    font-weight: normal;
+    font-style: normal;
+}
+
+
+
 .cldr_example {
-    border: 1px solid #ccf;
+    border: 1px solid #4c4cca;
 }
 
 div.d-example {
-    border: 1px solid #ccf;
+    font: small "Lucida Grande", Lucida, Verdana, sans-serif;
+    padding:  1px;
+    background-color: #f0f0d7;
 }
 
 #stchanged_loc {
@@ -1623,14 +1870,17 @@ div.topnotices div.unofficial {
 	display: none;
 }
 
-div.topnotices #betanotice {
-    background-color: yellow;
-    padding:  2px;
-    padding-top:  3px;
-	box-shadow: 1px 1px 1px gray;
+body > div.topnotices #betanotice {
 }
 
-div.topnotices div.beta {
+body > div.topnotices div.beta {
+clear: right;
+position: fixed;
+left: 0;
+top: 0;
+z-index: 0;
+}
+div.beta {
 	/*
 -webkit-transform: rotate(-90deg);
 	-webkit-transform-origin: right bottom;
@@ -1642,16 +1892,26 @@ div.topnotices div.beta {
 -khtml-transform-origin: right bottom;
 */
 /* filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3); */
+    opacity: 0.9;
 	float: right;
 	font-size: smaller;
-	clear: right;
-	position: fixed;
-	left: 0;
-	top: 0;
-	opacity: 0.9;
-	z-index: 0;
 	margin-top:  2px;
 	margin-left:  2px;
+background-color: yellow;
+padding:  2px;
+padding-top:  3px;
+box-shadow: 1px 1px 1px gray;
+line-height:  12px;
+}
+
+body.claro div.beta {
+    position: fixed;
+    right: 0;
+    top: 0;
+}
+
+#betanotice img {
+    height:  50%;
 }
 
 div.debugJsp {
@@ -1734,13 +1994,17 @@ span#visitors td.remain {
 	border: none !important;
 }
 
+
 div#progress {
+	background-color: #e0f4ea;
+}
+
+body > div#progress {
 	position: fixed;
 	top: 0;
 	right: 0;
 	margin-left: 0.2em;
 	margin-bottom: 0.2em;
-	background-color: #e0f4ea;
 	padding-top: 2px;
 	padding-left:  0.2em;
 	padding-bottom: 0.2em;
@@ -1895,12 +2159,12 @@ label.menutop-active, label.menutop-other,
 }
 
 tr.tr_checking {
-	background-color: silver;
+	background-color: #f1ecec;
 	opacity: 0.5;
 }
 
 tr.tr_checking2 {
-	background-color: gray;
+	background-color: #d4edd9;
 	opacity: 0.75;
 }
 
@@ -1920,6 +2184,14 @@ tr.tr_submit {
 	background-color: #dfd;
 }
 
+div.v-oldVotes-subDiv {
+    margin-left:  1em;
+}
+
+h2.v-oldvotes-sub {
+    border-top:  2px solid silver;
+}
+
 /*
  Unknown status
 */
@@ -1928,12 +2200,9 @@ tr.tr_unknown {
 	
 }
 
-div.helpHtml {
-	margin-top:  0.4em;
-	margin-left: 1em;
-	padding-left: 0.5em;
-	font-family: Georgia, "Times New Roman", Times, serif;
-	background: #eed;
+div.helpHtml, .helpContent {
+    background: #eed;
+    font: medium Georgia, "Times New Roman", Times, serif;
 }
 
 div.helpHtml table {
@@ -1941,7 +2210,7 @@ div.helpHtml table {
     border-collapse: collapse;
 }
 
-div.helpHtml td,th {
+div.helpHtml td,div.helpHtml td th {
     border: 1px solid black;
     padding: 3px;
 }
@@ -1967,7 +2236,27 @@ div.helpHtml td,th {
 	margin-top: 2px;
 	font-size: smaller;
 	display:  table;
-	width:  100% !important;
+	display:  none;
+}
+
+#oldVotesAcceptList tr.subheading th{
+    text-align: left;
+    background-color: rgba(85, 193, 193, 0.58);
+}
+
+span.pathChunk {
+    margin-right:  1em;    
+    font: italic normal small Georgia, "Times New Roman", Times, serif;
+}
+
+#oldVotesAcceptList tbody tr td.v-path {
+    font-family: "Courier New", Courier, mono;
+    font-weight: bold;
+}
+
+span.pathChunk:after
+{
+    content: ':';
 }
 
 /*.d-sortmode:before {
@@ -2063,6 +2352,10 @@ span.d-sort-size {
 	width: inherit !important;
 }
 
+#title-locale {
+    font-size: large;
+}
+
 .voteDiv .lastReleaseStatus1 {
     background: none !important;
 }
@@ -2114,6 +2407,10 @@ h3.voteInfo_key_title {
     text-align: center;
 }
 
+.d-no, .d-status {
+    width:  32px;
+}
+
 /*.d-vo-false:hover, .d-vo-true:hover,
 .d-st-warn:hover, .d-st-stop:hover, .d-st-okay:hover {
 	border: 2px solid navy;
@@ -2124,8 +2421,12 @@ h3.voteInfo_key_title {
 
 .d-item {
 	border: 2px solid white;
+	display:  inline-box;
 }
 
+.d-item span span {
+     display:  inline !important;
+}
 /*.d-item:hover {
 	border: 2px solid navy;
 	background: url(zoom.png) no-repeat right center;
@@ -2153,12 +2454,58 @@ tr.d-inforow td h3.span {
 	font-size: large;
 }
 
+table.data tr td {
+     border: 1px solid #d1d1c1;
+     padding:  3px;
+     margin:  3px;
+ }
+
+.pu-select {
+	border: 2px double black !important;
+	padding:  2px !important;
+	margin:  2px !important;
+	padding-top: 3px !important;
+	padding-bottom: 3px !important;
+	padding-left: 3px !important;
+}
+
+
+.selectShow {
+    background-color: #f4f3ee;
+}
+
+
 .d-item-selected {
 	border: 2px solid navy;
 }
 
 tr.d-inforow-hid {
 	display: none;
+}
+
+.menu-o {
+    background: white url(rado.png) no-repeat center center;
+    width: 16px;
+    height: 16px;
+    margin-top: 5px;
+}
+
+.menu-chat {
+    background: white url(chat.png) no-repeat center center;
+    width: 16px;
+    height: 16px;
+    margin-top: 5px;
+}
+
+.menu-x {
+    background: white url(radx.png) no-repeat center center;
+    width: 16px;
+    height: 16px;
+    margin-top: 5px;
+}
+
+.dijitMenuExpand {
+	margin-top: 5px !important;
 }
 
 button.ichoice-o {
@@ -2262,6 +2609,37 @@ textarea.errorMessage {
 	height: 10em;
 }
 
+
+div.possibleProblems {
+	border: 1px dashed olive;
+	padding: 0.2em;
+	background-color: cream;
+	overflow: auto;
+}
+
+div.possibleProblems h3 {
+	margin:  0;
+}
+
+
+div.possibleProblems div {
+	display: block;
+}
+
+div.possibleProblems div p {
+	margin-top: .2em;
+	margin-bottom: .2em;
+	padding-left:  0.5em;
+	font-size:  larger;
+	list-style-type: square;
+	display:  list-item;
+	list-style-position: inside;
+}
+
+div.possibleProblems div p img {
+	padding-right:  0.25em;
+}
+
 body.disconnected div#progress button#progress-refresh {
 	display: block !important;
 }
@@ -2336,21 +2714,31 @@ button.d-inforow-hider {
 td.d-change,td.d-change-err,td.d-change-warn {
 	vertical-align: top;
 	/*padding-left:  18px;*/
-	padding-bottom: 16px !important;
 }
 
 td.d-change-err, td.d-win-err, .d-item-err {
 	background: #fa9092 url(stop.png) no-repeat left bottom !important;
 	border: 2px solid red !important;
+	padding-bottom: 16px !important;
 }
 
 td.d-change-confirmonly {
 	background: #ddfafa ;
 }
 
+td.d-change-confirmonly .fnotebox {
+	display: block;
+	border: 0 !important;
+	margin-top: 0.5em;
+}
+
 td.d-change-warn, td.d-win-warn, .d-item-warn {
 	border: 2px solid yellow !important;
 	background: #fbfea1 url(warn.png) no-repeat left bottom !important;
+	padding-bottom: 16px !important;
+}
+
+td.d-win {
 }
 
 /* @end */
@@ -2380,7 +2768,6 @@ div#pu-peak {
 }
 
 
-
 div#pu-content {
 	display: none;
 	height: 180px;
@@ -2404,9 +2791,6 @@ div#pu-content {
 	margin-bottom: 0;
 }
 
-.pu-select {
-	border:  3px solid black !important; /* or f8c871 */
-}
 
 /* @end */
 
@@ -2497,3 +2881,239 @@ div.voterList .voterOrg {
 	background-color: navy !important;
 }
 
+#itemInfo {
+	width:  30%;
+}
+
+button.forumShow {
+    background: url(chat.png) no-repeat left center;
+    padding-left: 20px;
+}
+
+.stSplitPane .scrollingContent {
+/*	width: 100%;*/
+}
+
+body.claro > table#usertable,
+body.claro > div#toparea,
+body.claro > div#sectionmenu,
+body.claro > div#footer {
+	display:  none;
+}
+
+#topstuff {
+}
+
+
+#st-menubar  {
+    width: 40em;
+    display:  inline-block;
+}
+
+#botstuff > div#progress {
+}
+
+
+html.claro, body.claro {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow:hidden;
+}
+
+#borderContainer {
+	top:  0;
+    height: 100%;
+}
+
+span.editableHere {
+    padding:  2px;
+}
+.titlePart {
+}
+
+.titlePart::before {
+}
+
+#oldVotesAcceptList th {
+    background-color: #ddd;
+}
+
+#oldVotesAcceptList tbody tr:hover {
+    background-color: #d7ca90;
+}
+th.v-accept a {
+    padding: .5em;
+    font-size: small;
+}
+
+td.v-path {
+    white-space: nowrap;
+    font: small Georgia, "Times New Roman", Times, serif;
+    border:  1px solid black;
+    background-color:  white;
+}
+
+td.v-win {
+    
+}
+
+#oldVotesAcceptList {
+    border-collapse: collapse;
+}
+
+#OtherSection p.special_general {
+    font-family: Georgia, "Times New Roman", Times, serif;
+    padding:  3em;
+	background: url(vote.png) no-repeat 1em center;
+	line-height: 2em
+}
+
+#oldVotesAcceptList td {
+    padding:  0.4em;
+    border-bottom:  1px solid gray;
+    vertical-align: bottom;
+}
+
+#title-item {
+    font-family: "Courier New", Courier, mono;
+    font-size: small;
+}
+
+span.editableHere:hover {
+    background-color: yellow;
+    border:  1px solid black;
+}
+
+.menu-container {
+    display:  inline;
+}
+
+.menu-container::before{
+    content: "»";
+    color:  black;
+}
+
+/*
+  TODO: make this dynamic.
+  */
+.hideCov101 .cov101,
+.hideCov100 .cov100,
+.hideCov80 .cov80,
+.hideCov60 .cov60,
+.hideCov40 .cov40,
+.hideCov30 .cov30,
+.hideCov10 .cov10 {
+	display: none;
+}
+
+.hideCov101 .selectShow.cov101,
+.hideCov100 .selectShow.cov100,
+.hideCov80 .selectShow.cov80,
+.hideCov60 .selectShow.cov60,
+.hideCov40 .selectShow.cov40,
+.hideCov30 .selectShow.cov30,
+.hideCov10 .selectShow.cov10 {
+    display: table-row !important;
+    background-color: silver !important;
+}
+
+#OtherSection {
+	/* TODO:: center vertically */
+}
+
+#LoadingMessageSection {
+    text-align: center;
+    padding-top:  3em;
+    font: italic bold x-large Georgia, "Times New Roman", Times, serif;
+}
+
+#loginlink {
+    color:  maroon;
+    font-size: large;
+    font-weight: bold;
+}
+
+#ariHelp  {
+    float: right;
+}
+
+#ariMessage {
+    padding-left:  20px;
+    background: url(stop.png) no-repeat left top;
+    font-family: "Lucida Grande", Lucida, Verdana, sans-serif;
+    font-weight: bold;
+}
+
+.fakebutton {
+    border-style: outset;
+}
+
+#ariSub {
+    font: small "Lucida Grande", Lucida, Verdana, sans-serif;
+    margin-bottom: 0;
+}
+
+.dijitCheckedMenuItemIcon {
+/*  background-image: url("radx.png") !important; */
+}
+
+
+#ariScroller {
+    white-space: pre;
+    overflow: scroll;
+    font: small "Courier New", Courier, mono;
+    padding-left:  32px;
+    padding-top:  0;
+}
+
+.dijitDialogUnderlay, .claro .dijitDialogUnderlay {
+    opacity: 0.5 !important;
+    background-color: #b1b56a !important;
+}
+
+.locked {
+    padding-left:  20px;
+    background: url(lock.png) no-repeat 0 top;
+}
+
+.mailListChunk, .mailContentChunk {
+    width: 48%;
+    display:  inline-block;
+    vertical-align: top;
+}
+
+.mailListChunk .loser {
+    border: 1px dashed red;
+    background-color: #fdd;
+}
+.mailListChunk .warning {
+    border: 1px solid yellow;
+}
+
+.mailContentChunk {
+    border:  1px solid gray;
+    padding:  0.5em;
+}
+
+h2.mailHeader {
+    margin: 0;
+    font: bold medium Georgia, "Times New Roman", Times, serif;
+}
+
+p.mailContent {
+    line-height: 1em;
+}
+
+.mailListChunk li:hover {
+    background-color: gold;
+}
+
+.mailListChunk li.mailRow {
+    font-weight: bold;
+    list-style-type: decimal;
+}
+
+.mailListChunk li.mailRow.readMail {
+    font-weight: normal;
+}

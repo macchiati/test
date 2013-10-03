@@ -577,7 +577,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 	<numbers>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
 					<pattern>¤#,##0.00</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
@@ -741,7 +741,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<displayName>heleri sa Afrika Kusini</displayName>
 			</currency>
 			<currency type="ZMK">
-				<displayName>heleri sa Zambia (1968-2012)</displayName>
+				<displayName>heleri sa Zambia (1968–2012)</displayName>
 			</currency>
 			<currency type="ZMW">
 				<displayName>heleri sa Zambia</displayName>

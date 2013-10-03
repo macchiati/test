@@ -18,12 +18,18 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</symbols>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
+					<pattern>¤ #,##0.00</pattern>
+				</currencyFormat>
+				<currencyFormat type="accounting">
 					<pattern>¤ #,##0.00;(¤ #,##0.00)</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
 		</currencyFormats>
 		<currencies>
+			<currency type="USD">
+				<symbol>US$</symbol>
+			</currency>
 			<currency type="UYU">
 				<symbol>$</symbol>
 			</currency>

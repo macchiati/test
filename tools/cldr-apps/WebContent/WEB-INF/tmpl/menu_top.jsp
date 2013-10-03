@@ -37,9 +37,9 @@ static void writeMenu(JspWriter jout, WebContext wCtx, SurveyMenus.Section sec, 
             + (any ? "menutop-active" : "menutop-other") + "' >");
     
     if(!any) {
-        WebContext ssc = new WebContext(wCtx);
-        ssc.setQuery(SurveyMain.QUERY_SECTION, pages.get(0).toString());
-        jout.println("<a href='"+ssc.url()+"' style='text-decoration: none;'>");
+//        WebContext ssc = new WebContext(wCtx);
+//        ssc.setQuery(SurveyMain.QUERY_SECTION, pages.get(0).toString());
+        jout.println("<a href='"+wCtx.vurl(wCtx.getLocale(), pages.get(0).getKey(), null, null)+"' style='text-decoration: none;'>");
     }
     jout.println(sec.toString());
     if(!any) {
@@ -55,7 +55,7 @@ static void writeMenu(JspWriter jout, WebContext wCtx, SurveyMenus.Section sec, 
     for (int i = 0; i < pages.size(); i++) {
         String key = pages.get(i).getKey().name();
         WebContext ssc = new WebContext(wCtx);
-        ssc.setQuery(SurveyMain.QUERY_SECTION, key);
+        //ssc.setQuery(SurveyMain.QUERY_SECTION, key);
         jout.print("<option ");
         if(pages.get(i).getCoverageLevel(wCtx.getLocale())>covlev) {
             jout.print(" disabled ");
@@ -63,7 +63,7 @@ static void writeMenu(JspWriter jout, WebContext wCtx, SurveyMenus.Section sec, 
         if (key.equals(which)) {
             jout.print(" selected ");
         } else {
-            jout.print("value=\"" + ssc.url() + "\" ");
+            jout.print("value=\"" +wCtx.vurl(wCtx.getLocale(), pages.get(i).getKey(), null, null) + "\" ");
         }
         jout.print(">" + pages.get(i).toString());
 //        jout.print( " c="+pages.get(i).getCoverageLevel(wCtx.getLocale()));
@@ -138,15 +138,12 @@ static void writeMenu(JspWriter jout, WebContext wCtx, String title,
 		/* ctx.includeFragment("report_menu.jsp");  don't use JSP include, because of variables */
 %>
 	      <br><b>Review:</b> 
-	      <label class='menutop-other'><a href="<%= ctx.base() %>?_=<%= ctx.getLocale() %>&amp;<%= SurveyMain.QUERY_SECTION %>=<%= SurveyMain.R_VETTING %>" 
-	      					class="notselected">Priority Items</a></label>
-	      | <label class='menutop-other'><a href="<%= ctx.base() %>?_=<%= ctx.getLocale() %>&amp;<%= SurveyMain.QUERY_SECTION %>=r_datetime&calendar=gregorian"
-	                        class="notselected">Date/Time</a></label>
-	      | <label class='menutop-other'><a href="<%= ctx.base() %>?_=<%= ctx.getLocale() %>&amp;<%= SurveyMain.QUERY_SECTION %>=r_zones"
-	                        class="notselected">Zones</a></label>
-	      | <label class='menutop-other'><a href="<%= ctx.base() %>?_=<%= ctx.getLocale() %>&amp;<%= SurveyMain.QUERY_SECTION %>=r_compact"
-	                        class="notselected">Numbers</a></label>
-        </p>
+	      <% for (SurveyMain.ReportMenu m : SurveyMain.ReportMenu.values()) { %>
+	      <label class='menutop-other'><a href="<%= m.urlFull(ctx.base(), ctx.getLocale().getBaseName()).replace("&", "&amp;")%>" class="<%=
+	    		     request.getQueryString().contains(m.urlQuery())?"selected":"notselected"
+	               %>"><%= m.display() %></a></label> 
+	      <% } %>
+        <br />
         <%
         	/* END NON JAVASCRIPT */
 			out.flush();
