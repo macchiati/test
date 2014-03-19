@@ -5,19 +5,15 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Date;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Logger;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.unicode.cldr.unittest.web.TestAll.WebTestInfo;
-import org.unicode.cldr.util.CLDRConfig;
 import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.CLDRFile.DraftStatus;
 import org.unicode.cldr.util.CLDRLocale;
-import org.unicode.cldr.util.CldrUtility;
+import org.unicode.cldr.util.CLDRPaths;
 import org.unicode.cldr.util.StackTracker;
 import org.unicode.cldr.util.VoteResolver;
 import org.unicode.cldr.util.VoteResolver.Status;
@@ -38,11 +34,8 @@ import org.unicode.cldr.web.XPathTable;
 import com.ibm.icu.dev.test.TestFmwk;
 import com.ibm.icu.dev.util.BagFormatter;
 import com.ibm.icu.dev.util.ElapsedTimer;
-import com.ibm.icu.text.SimpleDateFormat;
 
 public class TestSTFactory extends TestFmwk {
-
-    private static final String CACHETEST = "cachetest";
 
     TestAll.WebTestInfo testInfo = WebTestInfo.getInstance();
 
@@ -195,12 +188,12 @@ public class TestSTFactory extends TestFmwk {
     public void TestDenyVote() throws SQLException, IOException {
         STFactory fac = getFactory();
         final String somePath2 = "//ldml/localeDisplayNames/keys/key[@type=\"numbers\"]";
-        String originalValue2 = null;
+        //String originalValue2 = null;
         String changedTo2 = null;
         // test votring for a bad locale
         {
             CLDRLocale locale2 = CLDRLocale.getInstance("mt_MT");
-            CLDRFile mt_MT = fac.make(locale2, false);
+            //CLDRFile mt_MT = fac.make(locale2, false);
             BallotBox<User> box = fac.ballotBoxForLocale(locale2);
 
             try {
@@ -212,7 +205,7 @@ public class TestSTFactory extends TestFmwk {
         }
         {
             CLDRLocale locale2 = CLDRLocale.getInstance("en");
-            CLDRFile mt_MT = fac.make(locale2, false);
+            //CLDRFile mt_MT = fac.make(locale2, false);
             BallotBox<User> box = fac.ballotBoxForLocale(locale2);
 
             try {
@@ -224,7 +217,7 @@ public class TestSTFactory extends TestFmwk {
         }
         {
             CLDRLocale locale2 = CLDRLocale.getInstance("nb");
-            CLDRFile nb = fac.make(locale2, false);
+            //CLDRFile nb = fac.make(locale2, false);
             BallotBox<User> box = fac.ballotBoxForLocale(locale2);
             final String bad_xpath = "//ldml/units/unitLength[@type=\"format\"]/unit[@type=\"murray\"]/unitPattern[@count=\"many\"]";
 
@@ -354,7 +347,7 @@ public class TestSTFactory extends TestFmwk {
                         proto.email = email;
                         proto.name = name;
                         proto.org = org;
-                        proto.password = fac.sm.reg.makePassword(proto.email);
+                        proto.password = UserRegistry.makePassword(proto.email);
                         proto.userlevel = level.getSTLevel();
                         proto.locales = UserRegistry.normalizeLocaleList(locales);
                         System.err.println("locale list was  " + proto.locales);
@@ -626,64 +619,73 @@ public class TestSTFactory extends TestFmwk {
         }
     }
 
-    public void TestVotingAge() throws SQLException, IOException, InterruptedException, JSONException, InvalidXPathException {
-        CLDRConfig config = CLDRConfig.getInstance();
-        config.setProperty(SurveyMain.CLDR_NEWVERSION_AFTER, SurveyMain.NEWVERSION_EPOCH);
-        STFactory fac = resetFactory();
+    /*
+     * 
+     * !!! Can't work this way.. 
+        public void TestVotingAge() throws SQLException, IOException, InterruptedException, JSONException, InvalidXPathException {
+            CLDRConfig config = CLDRConfig.getInstance();
+            // "Old" version
+            config.setProperty(SurveyMain.CLDR_NEWVERSION_AFTER, SurveyMain.NEWVERSION_EPOCH);
+            config.setProperty(SurveyMain.CLDR_NEWVERSION, "111x");
+            config.setProperty(SurveyMain.CLDR_OLDVERSION, "000x");
 
-        final String somePath = "//ldml/localeDisplayNames/keys/key[@type=\"collation\"]";
-        final String somePath2 = "//ldml/localeDisplayNames/keys/key[@type=\"calendar\"]";
-        final CLDRLocale loc = CLDRLocale.getInstance("und");
-        final String aValueOld = "oldValue";
-        final String aValueNew = "newValue";
-        String origBase = ANY;
+            STFactory fac = resetFactory();
 
-        {
-            CLDRFile file = fac.make(loc, false);
-            BallotBox<User> box = fac.ballotBoxForLocale(loc);
-            box.voteForValue(getMyUser(), somePath, null); // unvote
-            origBase = expect(somePath, ANY, false, file, box);
-            logln(loc + ":" + somePath + " = " + origBase);
+            final String somePath = "//ldml/localeDisplayNames/keys/key[@type=\"collation\"]";
+            final String somePath2 = "//ldml/localeDisplayNames/keys/key[@type=\"calendar\"]";
+            final CLDRLocale loc = CLDRLocale.getInstance("und");
+            final String aValueOld = "oldValue";
+            final String aValueNew = "newValue";
+            String origBase = ANY;
 
-            box.voteForValue(getMyUser(), somePath, aValueOld); // unvote
-            expect(somePath, aValueOld, true, file, box);
-
-        }
-
-        logln("Sleeping at .." + new Date());
-        Thread.sleep(2000); // so that the 'old' vote is prior to the cut
-        Date cutTime = new Date();
-        String cutEpoch = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss'.00000'").format(cutTime);
-        config.setProperty(SurveyMain.CLDR_NEWVERSION_AFTER, cutEpoch);
-
-        logln("Sleeping.. (set old release cut to " + cutEpoch);
-        Thread.sleep(2000); // so that the 'new' vote is after the cut
-        logln("Retesting at " + new Date());
-        fac = resetFactory();
-
-        {
-            CLDRFile file = fac.make(loc, false);
-            BallotBox<User> box = fac.ballotBoxForLocale(loc);
-            box.voteForValue(getMyUser(), somePath2, aValueNew); // vote on 2nd path
-            final String votesAfter = SurveyMain.getSQLVotesAfter();
-            logln("votesAfter = " + votesAfter);
             {
-                JSONObject query = DBUtils
-                    .queryToJSON("select xpath,value,last_mod from " + STFactory.CLDR_VBV + " where locale=?", loc);
-                logln("*: " + query.toString());
+                CLDRFile file = fac.make(loc, false);
+                BallotBox<User> box = fac.ballotBoxForLocale(loc);
+                box.voteForValue(getMyUser(), somePath, null); // unvote
+                origBase = expect(somePath, ANY, false, file, box);
+                logln(loc + ":" + somePath + " = " + origBase);
+
+                box.voteForValue(getMyUser(), somePath, aValueOld); // unvote
+                expect(somePath, aValueOld, true, file, box);
+
             }
 
-            logln("Expect to find the old value gone (too old)");
-            expect(somePath, origBase, false, file, box);
-            logln("Expect to find the new value  in the new path OK gone (new)");
-            expect(somePath2, aValueNew, true, file, box);
+            logln("Sleeping at .." + new Date());
+            Thread.sleep(2000); // so that the 'old' vote is prior to the cut
+            Date cutTime = new Date();
+            String cutEpoch = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss'.00000'").format(cutTime);
+            config.setProperty(SurveyMain.CLDR_NEWVERSION_AFTER, cutEpoch);
+            config.setProperty(SurveyMain.CLDR_NEWVERSION, "222x");  // new version
+            config.setProperty(SurveyMain.CLDR_OLDVERSION, "111x");
 
-            logln("Expect to find the new value after revoting");
-            box.voteForValue(getMyUser(), somePath, aValueNew);
-            expect(somePath, aValueNew, true, file, box);
-        }
+            logln("Sleeping.. (set old release cut to " + cutEpoch);
+            Thread.sleep(2000); // so that the 'new' vote is after the cut
+            logln("Retesting at " + new Date());
+            fac = resetFactory();
 
-    }
+            {
+                CLDRFile file = fac.make(loc, false);
+                BallotBox<User> box = fac.ballotBoxForLocale(loc);
+                box.voteForValue(getMyUser(), somePath2, aValueNew); // vote on 2nd path
+                final String votesAfter = SurveyMain.getSQLVotesAfter();
+                logln("votesAfter = " + votesAfter);
+                {
+                    JSONObject query = DBUtils
+                        .queryToJSON("select xpath,value,last_mod from " + DBUtils.Table.VOTE_VALUE.toString() + " where locale=?", loc);
+                    logln("*: " + query.toString());
+                }
+
+                logln("Expect to find the old value gone (too old)");
+                expect(somePath, origBase, false, file, box);
+                logln("Expect to find the new value  in the new path OK gone (new)");
+                expect(somePath2, aValueNew, true, file, box);
+
+                logln("Expect to find the new value after revoting");
+                box.voteForValue(getMyUser(), somePath, aValueNew);
+                expect(somePath, aValueNew, true, file, box);
+            }
+
+        }*/
 
     private void verifyReadOnly(CLDRFile f) {
         String loc = f.getLocaleID();
@@ -715,7 +717,7 @@ public class TestSTFactory extends TestFmwk {
             logln("Set up test DB: " + ElapsedTimer.elapsedTime(start));
 
             ElapsedTimer et0 = new ElapsedTimer("clearing directory");
-            File cacheDir = TestAll.getEmptyDir(CACHETEST);
+            //File cacheDir = TestAll.getEmptyDir(CACHETEST);
             logln(et0.toString());
 
             et0 = new ElapsedTimer("setup SurveyMain");
@@ -723,9 +725,9 @@ public class TestSTFactory extends TestFmwk {
             CookieSession.sm = sm; // hack - of course.
             logln(et0.toString());
 
-            sm.fileBase = CldrUtility.MAIN_DIRECTORY;
-            sm.fileBaseSeed = new File(CldrUtility.BASE_DIRECTORY, "seed/main/").getAbsolutePath();
-            sm.setFileBaseOld(CldrUtility.BASE_DIRECTORY);
+            SurveyMain.fileBase = CLDRPaths.MAIN_DIRECTORY;
+            SurveyMain.fileBaseSeed = new File(CLDRPaths.BASE_DIRECTORY, "seed/main/").getAbsolutePath();
+            SurveyMain.setFileBaseOld(CLDRPaths.BASE_DIRECTORY);
             // sm.twidPut(Vetting.TWID_VET_VERBOSE, true); // set verbose
             // vetting
             SurveyLog.logger = Logger.getAnonymousLogger();
@@ -767,6 +769,6 @@ public class TestSTFactory extends TestFmwk {
 
     static final Map<String, Object> noDtdPlease = new TreeMap<String, Object>();
     static {
-        noDtdPlease.put("DTD_DIR", CldrUtility.COMMON_DIRECTORY + File.separator + "dtd" + File.separator);
+        noDtdPlease.put("DTD_DIR", CLDRPaths.COMMON_DIRECTORY + File.separator + "dtd" + File.separator);
     }
 }

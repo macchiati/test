@@ -130,7 +130,7 @@ if(false) { // if we need to redirect for some reason..
 	 return;
  }
 %>
-<html class='claro'>
+<html lang='<%= SurveyMain.BASELINE_LOCALE.toLanguageTag() %>' class='claro'>
 <head class='claro'>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>CLDR  <%= ctx.sm.getNewVersion() %> SurveyTool | view</title>
@@ -153,7 +153,7 @@ surveyUser =  <%= ctx.session.user.toJSONString() %>;
   showV();
 </script>
 </head>
-<body class='claro'>
+<body lang='<%= SurveyMain.BASELINE_LOCALE.toLanguageTag() %>' class='claro'>
 
 <div data-dojo-type="dijit/Dialog" data-dojo-id="ariDialog" title="CLDR Survey Tool"
     execute="" data-dojo-props="onHide: function(){ariReload.style.display='';ariRetry.style.display='none';   if(disconnected) { unbust();}}">
@@ -207,7 +207,7 @@ surveyUser =  <%= ctx.session.user.toJSONString() %>;
         <%-- abbreviated form of usermenu  --%>
         <div id='toptitle'>
         <div id='title-cldr-container' class='menu-container' >
-        <a href='<%= survURL %>'>
+        <a id='st-link' href='<%= /* survURL */ "#locales///" %>'>
          <span class='title-cldr'>CLDR <%= ctx.sm.getNewVersion() %> Survey Tool
         <%=  (ctx.sm.phase()!=SurveyMain.Phase.SUBMIT)?ctx.sm.phase().toString():"" %>
          </span>
@@ -215,7 +215,7 @@ surveyUser =  <%= ctx.session.user.toJSONString() %>;
          </div>
       
          <div id='title-locale-container' class='menu-container'>
-                <span id='title-locale'></span>
+                <a href='#locales///' id='title-locale'></a>
                 <span id='title-dcontent-container'><a href='http://cldr.unicode.org/translation/default-content' id='title-dcontent'></a></span>
          </div>
          
@@ -251,13 +251,26 @@ surveyUser =  <%= ctx.session.user.toJSONString() %>;
                <span class='user_name'><%= ctx.session.user.name %></span>
                <span class='user_org'>(<%= ctx.session.user.org %>)</span>
               </span>
-              
+              <% Integer reducedLevelVote =ctx.session.user.getLevel().canVoteAtReducedLevel(); 
+              	 int regularVote = ctx.session.user.getLevel().getVotes(); %>
+              <% if(reducedLevelVote != null) { %>
+              	<select title="vote with a reduced number of votes" id="voteReduced" name="voteReduced" data-dojo-type="dijit/form/Select" >
+              		<option selected="selected" value="<%= regularVote %>"><%= regularVote %> votes</option>
+              		<option value="<%= reducedLevelVote %>"><%= reducedLevelVote %> votes</option>
+             		</select>
+              	 |
+              <% } %>
                <a class='notselected' href='<%= survURL + "?do=logout" %>'>Logout<%= cookieMessage %></a>
                |
             <% } else { %>
                 <a href='<%= request.getContextPath() %>/login.jsp' id='loginlink' class='notselected'>Login…</a> |
             <% } %>
-            <a class='notselected' href='<%= survURL  %>?do=options'>Manage</a> 
+            <a class='notselected' href='<%= survURL  %>?do=options'>
+            	Manage 
+		 	            <% if(ctx.session != null && ctx.session.user != null && UserRegistry.userIsTC(ctx.session.user) &&  sm.getSTFactory().haveFlags()) { %>
+		 	            	<img src='flag.png' border='0' title='Flagged items' />
+		 	            <% } %>
+            		</a> 
             |
             <a id='generalHelpLink' class='notselected'  href='<%= SurveyMain.GENERAL_HELP_URL %>'><%= SurveyMain.GENERAL_HELP_NAME %></a>
 					|
@@ -268,9 +281,23 @@ surveyUser =  <%= ctx.session.user.toJSONString() %>;
 					         <% for (SurveyMain.ReportMenu m : SurveyMain.ReportMenu.values()) { %>
 						<div data-dojo-type="dijit/MenuItem"
 							data-dojo-props="<%-- iconClass:menu-o  --%>onClick:function(){
+									<% if(m.hasQuery()) { %>
                                                 window.location='<%= survURL + "?" + m.urlQuery() %>&_=' + surveyCurrentLocale;
+                                     <% } else {
+                                    	 	// can do in 'embedded' mode
+                                    	 	%>
+                                     			surveyCurrentSpecial = '<%= m.urlStub() %>';
+                                     			surveyCurrentId = '';
+                                     			surveyCurrentPage = '';
+                                     			reloadV();
+                                     <% } %>
                                         }"><%= m.display() %></div>
           <% } %>
+
+						<div data-dojo-type="dijit/MenuItem"
+							data-dojo-props="onClick:function(){ surveyCurrentSpecial = 'search'; surveyCurrentId = ''; surveyCurrentPage = ''; reloadV();}">Search...</div>
+
+
                     </div>
                    </div>
 

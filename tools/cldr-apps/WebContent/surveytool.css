@@ -2,11 +2,53 @@
 	http://127.0.0.1:8080/cldr-apps/surveytool.css
 	http://naf.:8080/cldr-apps/surveytool.css
 	http://st.unicode.org/cldr-apps/surveytool.css
-	http://naf:8080/cldr-apps/surveytool.css */
+	http://naf:8080/cldr-apps/surveytool.css
+	http://localhost:8080/cldr-apps/surveytool.css */
 /* Copyright (c) 2004-2013 IBM and others. All Rights Reserved. */
 /* Made with CSSEdit and Espresso2 */
+@charset "UTF-8";
 
-span.age {
+
+/* lang specific CSS */
+
+/*
+NOTE: See http://www.w3.org/International/questions/qa-css-lang
+Right now, none by default.
+
+add following to ajax_status.jsp:
+>>	 <link href='http://fonts.googleapis.com/css?family=UnifrakturCook:bold' rel='stylesheet' type='text/css'>
+
+The the following can work here:
+:lang(de) {
+  font-family: UnifrakturCook;
+}
+
+Color english brown
+:lang(en) {
+	color: brown !important;
+}
+*/
+
+/* The following is directly includeable as per https://github.com/saturngod/mmwebfonts/issues/4 */
+@font-face {
+font-family:'MON3 Anonta 1';
+src:local('MON3 Anonta 1'),url('http://mmwebfonts.comquas.com/fonts/mon3.ttf');
+}
+
+/* 
+Remove these to save load time.
+@import url('http://mmwebfonts.comquas.com/fonts/?font=padauk');
+@import url('http://mmwebfonts.comquas.com/fonts/?font=myanmar3');
+*/
+
+/*
+Use padauk or MM3 if available, otherwise Mon3.
+*/
+:lang(my) {
+  font-family:padauk,Myanmar3,'MON3 Anonta 1';
+}
+
+span.age  {
 	font-weight: bold;
 	font-style: italic;
 }
@@ -386,6 +428,29 @@ A.nodraft:visited {
 	font-size: smaller;
 }
 
+div.search div.results h3, div.search div.results h4 {
+    display:  inline;
+    padding-right:  2em;
+}
+
+div.search div.results li {
+    display:  block;
+}
+
+div.search a.xpath {
+    display: block;
+    color:  gray;
+}
+
+div.search div.results li {
+    border-top:  1px solid silver;
+    list-style: none;
+    padding-bottom: 0.5em;
+}
+
+div.search div.results li a.codebox {
+    font-size:  larger;
+}
 
 #itemInfo div.xpath {
     position: fixed;
@@ -561,6 +626,21 @@ pre.adminExceptionMESSAGE {
 	margin-bottom: 0;
 }
 
+div.sidewaysArea {
+	font-size: smaller;
+	padding-left: 20px;
+}
+
+div.sideways_same  {
+	background: url(squo.png) no-repeat 0 top;
+}
+
+
+div.sideways_diff  {
+	background-color: #fbb;
+	background: url(zoom.png) no-repeat 0 top;
+}
+
 div.adminException {
 	display: block;
 	padding-top:  0.25em;
@@ -733,12 +813,77 @@ tr.warnrow {
 	border: 1px solid gray;
 	background-color: #fff;
 	margin: 5px;
-
-
-/*
-
-align: left;*/
+/*align: left;*/
 }
+
+.localeList {
+    display:  table;
+    width:  auto;
+}
+
+.topLocaleRow:nth-child(even) {
+    background-color: #c5deed;
+}
+
+.topLocaleRow:nth-child(odd) {
+}
+
+.topLocaleRow:nth-child(odd) .subLocale:nth-child(even) {
+    background-color: #e4e5e5;
+}
+.topLocaleRow:nth-child(even) .subLocale:nth-child(even) {
+    background-color: #b3d1d8;
+}
+
+
+.localeList .topLocaleRow {
+    display:  table-row;
+    width:  auto;
+}
+
+.topLocale a {
+    white-space: nowrap;
+    font-weight: bold;
+    font-size:  larger;
+}
+
+.localeList a:hover {
+    color:  red !important;
+    background-color: silver;
+}
+
+.topLocaleRow .topLocaleDiv {
+    display:  table-cell;
+}
+.topLocaleRow .subLocaleList {
+    display:  block;
+    padding-left:  4em;
+    padding-bottom: 0.25em;
+}
+
+.subLocaleList .subLocale {
+    display: inline-block;
+    margin-right:  0.25em;
+}
+
+.subLocale a.locked.locName {
+    color:  silver;
+}
+
+.canmodify {
+    background: url(hand.png) left no-repeat;
+    padding-left:  18px;
+}
+
+.topLocale a.locName {
+    padding-left:  20px;
+}
+
+.name_var {
+    font-style: oblique;
+}
+
+
 
 .inputbox {
 	width: 95%;
@@ -1100,7 +1245,6 @@ tr.headingb {
 tr.headingb th {
 	border-right: 1px solid black;
 	font-size: small;
-;
 }
 
 tt.codebox {
@@ -1207,6 +1351,15 @@ div.forumDiv div.subpost .postHeader {
 
 button.forumNewButton {
 	
+}
+
+button.forumNewPostFlagButton {
+    padding-left: 2em;
+}
+
+button.forumNewPostFlagButton:hover {
+    padding-left: 2em;
+    background: url(flag.png) no-repeat;
 }
 
 div.forumDiv .adminUserUser {
@@ -1532,6 +1685,10 @@ border: 1px solid red; margin: 1em; padding: 1em;	 */
     padding-left: 2em;
     background: #DDFFDD url(okay.png) no-repeat 0.25em center;
 }
+.squoText {
+    padding-left: 2em;
+    background: #DDFFDD url(squo.png) no-repeat 0.25em center;
+}
 .stopText {
     padding-left: 2em;
     background: #FFDDDD url(stop.png) no-repeat 0.25em center;
@@ -1788,10 +1945,6 @@ div.topnotices p.admin {
 	background-color: red;
 }
 
-div.topnotices p.unofficial {
-	background-color: goldenrod;
-}
-
 div#stchanged {
 	display: none;
 	background-color: yellow;
@@ -1859,8 +2012,11 @@ div.d-example {
 	font-weight: bold;
 }
 
-div.topnotices div.unofficial {
+.unofficial {
 	background-color: goldenrod;
+}
+
+div.topnotices div.unofficial {
 	padding: 3px;
 	position: fixed;
 	top: 30px;
@@ -2490,6 +2646,13 @@ tr.d-inforow-hid {
     margin-top: 5px;
 }
 
+.menu-zoom {
+    background: white url(zoom.png) no-repeat center center;
+    width: 16px;
+    height: 16px;
+    margin-top: 5px;
+}
+
 .menu-chat {
     background: white url(chat.png) no-repeat center center;
     width: 16px;
@@ -2569,6 +2732,24 @@ button.ichoice-x-ok:hover {
 	background-color: gray;
 	margin: 1px;
 }
+
+span.i-override {
+	font-size: 	x-small; 
+}
+span.i-override, .voteInfo_overrideExplain {
+	font: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+	background-color: lime;
+	foreground-color: navy;
+	border:  1px solid navy;
+	padding:  1px;
+}
+span.i-override::before {
+	content:  "(";
+}
+span.i-override::after {
+	content:  "!)";
+}
+
 
 body.disconnected table {
 
@@ -2695,7 +2876,36 @@ transition: background-color 0.5s;
 	background: url(vote.png) no-repeat center center;
 }
 
+.i-stop {
+	padding: 2px;
+	width: 17px;
+	height: 17px;
+	background: url(stop.png) no-repeat center center;
+}
+.i-flag {
+	padding: 2px;
+	width: 17px;
+	height: 17px;
+	background: url(flag.png) no-repeat center center;
+}
+.i-flag-d {
+	padding: 2px;
+	width: 17px;
+	height: 17px;
+	background: url(flag-d.png) no-repeat center center;
+}
 
+.s-flag {
+	width: 17px;
+	height: 30px;
+	background: url(flag.png) no-repeat center center ;
+}
+
+.s-flag-d {
+	width: 17px;
+	height: 30px;
+	background: url(flag-d.png) no-repeat center center ;
+}
 td.d-change,td.d-change-err,td.d-change-warn {
 	white-space: nowrap;
 }
@@ -3116,4 +3326,23 @@ p.mailContent {
 
 .mailListChunk li.mailRow.readMail {
     font-weight: normal;
+}
+
+.st_setup_text {
+	padding: 0.5em;
+	font-size: large;
+}
+
+ol.st_setup {
+	
+}
+
+ol.st_setup li {
+	margin-bottom: 1em;
+}
+
+div.st_setup  {
+	font-size: x-large;
+	padding: 1em;
+	background-color: #ddf;
 }

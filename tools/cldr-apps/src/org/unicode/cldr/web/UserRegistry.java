@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -122,7 +121,8 @@ public class UserRegistry {
             s = DBUtils
                 .prepareStatementWithArgs(
                     conn,
-                    "select distinct cldr_votevalue.locale from cldr_votevalue where exists (select * from cldr_users	where cldr_votevalue.submitter=cldr_users.id and cldr_users.org=?)",
+                    "select distinct " + DBUtils.Table.VOTE_VALUE + ".locale from " + DBUtils.Table.VOTE_VALUE
+                        + " where exists (select * from cldr_users	where " + DBUtils.Table.VOTE_VALUE + ".submitter=cldr_users.id and cldr_users.org=?)",
                     st_org);
             rs = s.executeQuery();
             while (rs.next()) {
@@ -225,7 +225,6 @@ public class UserRegistry {
     public static final String SQL_updateIntLoc = "INSERT INTO " + CLDR_INTEREST + " (uid,forum) VALUES(?,?)";
 
     private UserSettingsData userSettings;
-    private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     /**
      * This nested class is the representation of an individual user. It may not
@@ -491,6 +490,8 @@ public class UserRegistry {
                 put("emailHash", getEmailHash()).
                 put("name", name).
                 put("userlevel", userlevel).
+                put("votecount", getLevel().getVotes()).
+                put("votecount_alt", getLevel().canVoteAtReducedLevel()).
                 put("userlevelName", UserRegistry.levelAsStr(userlevel)).
                 put("org", vrOrg().name()).
                 put("orgName", vrOrg().displayName).
@@ -633,7 +634,7 @@ public class UserRegistry {
             (!DBUtils.db_Mysql ? ",primary key(id)" : "") + ")");
         s.execute(sql);
         sql = ("INSERT INTO " + CLDR_USERS + "(userlevel,name,org,email,password) " + "VALUES(" + ADMIN + "," + "'admin',"
-            + "'SurveyTool'," + "'admin@'," + "'" + sm.vap + "')");
+            + "'SurveyTool'," + "'admin@'," + "'" + SurveyMain.vap + "')");
         s.execute(sql);
         sql = null;
         SurveyLog.debug("DB: added user Admin");
@@ -720,7 +721,7 @@ public class UserRegistry {
                 PreparedStatement pstmt = null;
                 Connection conn = DBUtils.getInstance().getDBConnection();
                 try {
-                    pstmt = DBUtils.prepareForwardReadOnly(conn, this.SQL_queryIdStmt_FRO);
+                    pstmt = DBUtils.prepareForwardReadOnly(conn, UserRegistry.SQL_queryIdStmt_FRO);
                     pstmt.setInt(1, id);
                     // First, try to query it back from the DB.
                     rs = pstmt.executeQuery();
@@ -828,7 +829,7 @@ public class UserRegistry {
             return null; // nothing to do
         }
 
-        if (email.startsWith("!") && pass != null && pass.equals(sm.vap)) {
+        if (email.startsWith("!") && pass != null && pass.equals(SurveyMain.vap)) {
             email = email.substring(1);
             letmein = true;
         }
@@ -2231,9 +2232,9 @@ public class UserRegistry {
             }
         } catch (SQLException se) {
             /* logger.severe */System.err.println(/*
-                                                    * java.util.logging.Level.SEVERE
-                                                    * ,
-                                                    */"UserRegistry: SQL error trying to get orgs resultset for: VI " + " - "
+                                                     * java.util.logging.Level.SEVERE
+                                                     * ,
+                                                     */"UserRegistry: SQL error trying to get orgs resultset for: VI " + " - "
                 + DBUtils.unchainSqlException(se)/* ,se */);
         } finally {
             // close out the RS
@@ -2246,9 +2247,9 @@ public class UserRegistry {
                 }
             } catch (SQLException se) {
                 /* logger.severe */System.err.println(/*
-                                                        * java.util.logging.Level.
-                                                        * SEVERE,
-                                                        */"UserRegistry: SQL error trying to close out: "
+                                                         * java.util.logging.Level.
+                                                         * SEVERE,
+                                                         */"UserRegistry: SQL error trying to close out: "
                     + DBUtils.unchainSqlException(se)/* ,se */);
             }
         } // end try

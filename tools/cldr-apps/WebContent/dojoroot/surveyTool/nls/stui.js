@@ -1,6 +1,6 @@
 define({
 	root: ({
-		copyright: "(C) 2012-2013 IBM Corporation and Others. All Rights Reserved",
+		copyright: "(C) 2012-2014 IBM Corporation and Others. All Rights Reserved",
 		loading: "loading",
 		loading2: "loading.",
 		loading3: "loading..",
@@ -50,6 +50,7 @@ define({
 		flyoverothers: "Other non-winning items",
 		flyoverchange: "Enter new values here",
 		flyovernoopinion: "Abstain from voting on this item",
+		"i-override_desc": "You have voted on this item with a lower vote count (shown in parenthesis).",
 
 		itemInfoBlank: "This area shows further details about the selected item.",
 
@@ -146,7 +147,14 @@ define({
 		pClass_loser: "This is a proposed item which is not currently winning.",
 		pClass_fallback: "This item is inherited.", //  ${inheritFromDisplay}.", - removed in r8801
 		pClassExplain_desc: "This area shows the item's status.",
-
+		
+		override_explain_msg: "You have voted for this item with ${overrideVotes} votes instead of the usual ${votes}",
+		voteInfo_overrideExplain_desc: "",
+		mustflag_explain_msg: "The item you voted for is not winning. However, you may post a forum entry to flag the item for Committee review.",
+		voteInfo_mustflag_explain_desc: "",
+		flag_desc: "This item has been flagged for review by the CLDR Technical Committee.",
+		flag_d_desc: "Losing items may be flagged for CLDR Committee review.",
+		explainRequiredVotes: "Changes to this item require ${requiredVotes} votes.",
 		xpath_desc: "This is the XPath denoting the currently clicked item. For more information, see http://cldr.unicode.org (click to select)",
 
 		winningStatus_disputed: "Disputed",
@@ -154,8 +162,10 @@ define({
 		lastReleaseStatus_msg: "${0} Last Release Value ",
 		lastReleaseStatus1_msg: "",
 		
+		reportGuidance: "Please see the special review page at left.",
 		dataPageInitialGuidance: "Welcome to the SurveyTool.<br>Be sure to read the <a href='http://cldr.unicode.org/index/survey-tool'>Instructions</a> carefully.  To vote for items:<br><ol><li>Click on a cell in the 'Code' column.</li><li>Read the details that appear for that row.</li><li>To vote for an existing item in the Proposed or Others column of that row, click on the <input type='radio'> for that item.</li><li> To vote for a value not already shown in that row, click on any other text item in the Proposed or Others column of that row. A new editing box will open, and you can enter a new value; you will automatically be voting for it once you hit RETURN on your keyboard.</li><li>To abstain (including retracting a vote), click on the <input type='radio'> in the Abstain column.</li><li>Don’t worry about incorrect values that aren't winning (eg in the Proposed column). They will disappear later on.</li></ol>",
 		generalPageInitialGuidance: "This area will show details of items as you work with the SurveyTool. <p> You may resize this pane by dragging the dividers.",
+		localesInitialGuidance: "Choose a locale to get started.  <ul><li><span class='locked'>locked</span> locales may not be modified by anyone,</li><li><span class='canmodify'>hand icon</span> indicates editing allowed by you</li><li><span class='name_var'>Locales with (Variants)</span> may have specific differences to note.</li></ul><p>Don't see your locale? See: <a href='http://cldr.unicode.org/index/bug-reports#New_Locales'>Adding New Locales</a></p>",
 		
 		loginGuidance: "You may not make any changes, you are not logged in.",
 		readonlyGuidance: "You may not make changes to this locale.",
@@ -237,10 +247,13 @@ define({
 		v_oldvote_remind_dontask: "No, and don't ask again",
 		"v-title_desc": "This area shows the date before which votes are considered “old”.",
 		special_oldvotes: "Import Old Votes",
+		special_locales: "Locale List",
 		section_general: "General Info",
 		section_forum: "Forum",
 		section_subpages: "Subpages",
-		
+		special_search:  "Search",
+		searchNoResults: "No results found.",
+		searchGuidance: "This is a basic search facility. An exact word such as 'Monday' or 'Montag' can be entered, or an XPath or string ID like 'eeaf1f975877a5d'.  An optional locale ID can be prefixed to any search term, so 'mt:Monday' or 'mt:eeaf1f975877a5d'.",
 		section_help: "Choose an item from the 'Subpages' menu to begin working with this section.",
 		
         section_info_Core_Data:  "The Core Data is vital for proper functioning of each locale. Because changes can disrupt the survey tool, data can only be changed via tickets. Please also review the Plural Rules for your locale: they are also vital.",
@@ -253,6 +266,9 @@ define({
 		
 		forumNewPostButton: "New Post",
 		forumNewButton_desc: "Clicking this will bring up a form to reply to this particular item, in a new window. Click 'view item' after submitting to return to this item.",
+		forumNewPostFlagButton: "Flag for Review",
+		forumNewPostFlagButton_desc: "Clicking this will bring up a form to reply to this particular item, in a new window. Click 'view item' after submitting to return to this item.",
+		
 		special_general: "Please click the <b class='fakebutton'>General Info</b> button above, and choose a page to begin entering data. If you have not already done so, please read <a href='http://www.unicode.org/cldr/survey_tool.html'>Instructions</a>, particularly the Guide and the Walkthrough. You can also use the Review: Priority Items to see all the errors, warnings, and missing items in one place.",
 
 		defaultContent_msg: "This locale, ${info.name}  is the <i><a target='CLDR-ST-DOCS' href='http://cldr.unicode.org/translation/default-content'>default content locale</a></i> for <b><a class='notselected' href='#/${info.dcParent}'>${dcParentName}</a></b>, and thus editing or viewing is disabled. ",
@@ -261,6 +277,14 @@ define({
 		defaultContent_titleLink: "content",
 		readonly_msg: "This locale may not be edited.<br/> ${msg}",
 		readonly_unknown: "Reason: Administrative Policy.",
+		
+		sidewaysArea_desc: "view of what the votes are in other, sister locales",
+		sideways_loading0: " ",
+		sideways_loading1: "Comparing to other locales...",
+		sideways_same: "Other locales have the same value.",
+		sideways_diff: "Other locales have different values!",
+		sideways_noValue: "(no value)",
+		
 
 		ari_message: 'Something went wrong!',
 		ari_sessiondisconnect_message: "Your session has been disconnected.",

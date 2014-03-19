@@ -42,7 +42,7 @@ public class VettingViewerQueue {
 
     public static final boolean DEBUG = false || CldrUtility.getProperty("TEST", false);
 
-    public static CLDRLocale SUMMARY_LOCALE = CLDRLocale.getInstance(ULocale.forLanguageTag("und-x-summary"));
+    public static CLDRLocale SUMMARY_LOCALE = CLDRLocale.getInstance(ULocale.forLanguageTag("und-vetting"));
 
     static VettingViewerQueue instance = new VettingViewerQueue();
 
@@ -52,8 +52,6 @@ public class VettingViewerQueue {
      * @return
      */
     public static VettingViewerQueue getInstance() {
-        // if(DEBUG)
-        // System.err.println("SUMMARY_LOCALE="+SUMMARY_LOCALE.toString());
         return instance;
     }
 
@@ -239,7 +237,7 @@ public class VettingViewerQueue {
                     status = "Beginning Process, Calculating";
 
                     vv = new VettingViewer<VoteResolver.Organization>(sm.getSupplementalDataInfo(), sm.getSTFactory(),
-                        sm.getOldFactory(), getUsersChoice(sm), "CLDR " + sm.getOldVersion(), "Winning " + sm.getNewVersion());
+                        sm.getOldFactory(), getUsersChoice(sm), "CLDR " + SurveyMain.getOldVersion(), "Winning " + SurveyMain.getNewVersion());
                     vv.setBaseUrl(baseUrl);
                     progress.update("Got VettingViewer");
                     statusCode = Status.PROCESSING;
@@ -323,7 +321,7 @@ public class VettingViewerQueue {
                     }
 
                     if (locale.toString().length() > 0) {
-                        vv.generateHtmlErrorTables(aBuffer, choiceSet, locale.getBaseName(), usersOrg, usersLevel, true);
+                        vv.generateHtmlErrorTables(aBuffer, choiceSet, locale.getBaseName(), usersOrg, usersLevel, true, false);
                     } else {
                         if (DEBUG)
                             System.err.println("Starting summary gen..");
@@ -368,7 +366,7 @@ public class VettingViewerQueue {
          * organization c. Any locale with at least one vote by a user in that
          * organization
          */
-        final VoteResolver.Organization vr_org = CookieSession.sm.reg.computeVROrganization(st_org); /*
+        final VoteResolver.Organization vr_org = UserRegistry.computeVROrganization(st_org); /*
                                                                                                       * VoteResolver
                                                                                                       * organization
                                                                                                       * name
@@ -464,11 +462,11 @@ public class VettingViewerQueue {
         }
         usersOrg = VoteResolver.Organization.fromString(sess.user.voterOrg());
 
-        writeVettingViewerOutput(locale, baseUrl, aBuffer, usersOrg, usersLevel, sess.user.org);
+        writeVettingViewerOutput(locale, baseUrl, aBuffer, usersOrg, usersLevel, sess.user.org, ctx.hasField("quick"));
     }
 
     public void writeVettingViewerOutput(CLDRLocale locale, String baseUrl, StringBuffer aBuffer,
-        VoteResolver.Organization usersOrg, Level usersLevel, final String st_org) {
+        VoteResolver.Organization usersOrg, Level usersLevel, final String st_org, boolean quick) {
         SurveyMain sm = CookieSession.sm;
         VettingViewer<Organization> vv = new VettingViewer<Organization>(sm.getSupplementalDataInfo(), sm.getSTFactory(),
             sm.getOldFactory(), getUsersChoice(sm), "CLDR " + SurveyMain.getOldVersion(), "Winning " + SurveyMain.getNewVersion());
@@ -486,7 +484,7 @@ public class VettingViewerQueue {
         }
 
         if (locale != SUMMARY_LOCALE) {
-            vv.generateHtmlErrorTables(aBuffer, choiceSet, locale.getBaseName(), usersOrg, usersLevel, true);
+            vv.generateHtmlErrorTables(aBuffer, choiceSet, locale.getBaseName(), usersOrg, usersLevel, true, quick);
         } else {
             if (DEBUG)
                 System.err.println("Starting summary gen..");
@@ -661,7 +659,7 @@ public class VettingViewerQueue {
         private DataTester getTester(CLDRLocale loc) {
             DataTester tester = testMap.get(loc);
             if (tester == null) {
-                BallotBox<User> ballotBox = getBox(sm, loc);
+                //BallotBox<User> ballotBox = getBox(sm, loc);
                 // tester = getTester(ballotBox);
                 testMap.put(loc, tester);
             }

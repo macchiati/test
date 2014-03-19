@@ -2,7 +2,7 @@
 //  DataSection.java
 //
 //  Created by Steven R. Loomis on 18/11/2005.
-//  Copyright 2005-2012 IBM. All rights reserved.
+//  Copyright 2005-2014 IBM. All rights reserved.
 //
 
 //  TODO: this class now has lots of knowledge about specific data types.. so does SurveyMain
@@ -34,6 +34,7 @@ import org.unicode.cldr.icu.LDMLConstants;
 import org.unicode.cldr.test.CheckCLDR;
 import org.unicode.cldr.test.CheckCLDR.CheckStatus;
 import org.unicode.cldr.test.CheckCLDR.InputMethod;
+import org.unicode.cldr.test.CheckCLDR.Options;
 import org.unicode.cldr.test.CheckCLDR.StatusAction;
 import org.unicode.cldr.test.DisplayAndInputProcessor;
 import org.unicode.cldr.test.ExampleGenerator.ExampleContext;
@@ -53,7 +54,6 @@ import org.unicode.cldr.util.PathHeader.SectionId;
 import org.unicode.cldr.util.PathHeader.SurveyToolStatus;
 import org.unicode.cldr.util.PathUtilities;
 import org.unicode.cldr.util.StandardCodes;
-import org.unicode.cldr.util.SupplementalDataInfo;
 import org.unicode.cldr.util.VoteResolver;
 import org.unicode.cldr.util.VoteResolver.Status;
 import org.unicode.cldr.util.XMLSource;
@@ -121,11 +121,11 @@ public class DataSection implements JSONString {
             public List<CheckStatus> tests = null;
             final public String value; // actual value
 
-            public Set<UserRegistry.User> votes = null; // Set of Users who
+            public Set<UserRegistry.User> votes = null; // Set of Users who voted on this item
 
             private String valueHash = null;
             public boolean isOldValue = false;
-            private String dv = null;
+            //private String dv = null;
             public boolean isBailey = false; // is this the fallback value?
 
             public String getProcessedValue() {
@@ -588,7 +588,16 @@ public class DataSection implements JSONString {
                         JSONObject uu = new JSONObject();
                         uu.put("org", u.getOrganization());
                         uu.put("level", u.getLevel());
-                        uu.put("votes", u.getLevel().getVotes());
+                        Integer voteCount = null;
+                        Map<User, Integer> overrides = ballotBox.getOverridesPerUser(xpath);
+                        if (overrides != null) {
+                            voteCount = overrides.get(u);
+                        }
+                        uu.put("overridedVotes", voteCount);
+                        if (voteCount == null) {
+                            voteCount = u.getLevel().getVotes();
+                        }
+                        uu.put("votes", voteCount);
                         if (userForVotelist != null) {
                             uu.put("name", u.name);
                             uu.put("email", u.email.replace("@", " (at) "));
@@ -1740,7 +1749,7 @@ public class DataSection implements JSONString {
                 }
 
                 String displayExample = null;
-                String displayHelp = null;
+                //String displayHelp = null;
                 ExampleBuilder b = getExampleBuilder();
                 if (b != null) {
                     displayExample = b.getExampleHtml(xpath, displayName, ExampleType.ENGLISH);
@@ -1752,10 +1761,12 @@ public class DataSection implements JSONString {
                     pathCode = ph.getCode();
                 }
 
+                VoteResolver<String> resolver = ballotBox.getResolver(xpath);
                 return new JSONObject()
                     .put("xpath", xpath)
                     .put("xpid", xpathId)
-                    .put("xpstrid", sm.xpt.getStringIDString(xpath))
+                    .put("rowFlagged", sm.getSTFactory().getFlag(locale, xpathId) ? true : null)
+                    .put("xpstrid", XPathTable.getStringIDString(xpath))
                     .put("winningValue", winningValue)
                     .put("displayName", displayName)
                     .put("displayExample", displayExample)
@@ -1768,7 +1779,8 @@ public class DataSection implements JSONString {
                     .put("hasErrors", hasErrors).put("hasWarnings", hasWarnings).put("confirmStatus", confirmStatus)
                     .put("hasVoted", userForVotelist != null ? userHasVoted(userForVotelist.id) : false)
                     .put("winningVhash", winningVhash).put("ourVote", ourVote).put("voteVhash", voteVhash)
-                    .put("voteResolver", SurveyAjax.JSONWriter.wrap(ballotBox.getResolver(xpath))).put("items", itemsJson)
+                    .put("voteResolver", SurveyAjax.JSONWriter.wrap(resolver)).put("items", itemsJson)
+                    .put("canFlagOnLosing", resolver.getRequiredVotes() == VoteResolver.HIGH_BAR)
                     .toString();
             } catch (Throwable t) {
                 SurveyLog.logException(t, "Exception in toJSONString of " + this);
@@ -1790,7 +1802,7 @@ public class DataSection implements JSONString {
 
         public StatusAction getStatusAction() {
             // null because this is for display.
-            return sm.phase().getCPhase()
+            return SurveyMain.phase().getCPhase()
                 .getShowRowAction(this, InputMethod.DIRECT, getPathHeader().getSurveyToolStatus(), userForVotelist);
         }
 
@@ -2407,21 +2419,19 @@ public class DataSection implements JSONString {
      * @param locale
      * @return
      */
-    public static Map<String, String> getOptions(WebContext ctx, CookieSession session, CLDRLocale locale) {
-        Map<String, String> options;
+    public static CheckCLDR.Options getOptions(WebContext ctx, CookieSession session, CLDRLocale locale) {
+        CheckCLDR.Options options;
         if (ctx != null) {
-            options = ctx.getOptionsMap();
+            options = (ctx.getOptionsMap());
         } else {
             // ugly
-            options = session.sm.basicOptionsMap();
-            String def = session.sm
-                .getListSetting(session.settings(), SurveyMain.PREF_COVLEV, WebContext.PREF_COVLEV_LIST, false);
-            options.put("CheckCoverage.requiredLevel", def);
+            final String def = CookieSession.sm
+                .getListSetting(session.settings(), SurveyMain.PREF_COVLEV,
+                    WebContext.PREF_COVLEV_LIST, false);
 
-            String org = session.getEffectiveCoverageLevel(locale.toString());
-            if (org != null) {
-                options.put("CoverageLevel.localeType", org);
-            }
+            final String org = session.getEffectiveCoverageLevel(locale.toString());
+
+            options = new Options(locale, SurveyMain.getTestPhase(), def, org);
         }
         return options;
     }
@@ -2590,7 +2600,7 @@ public class DataSection implements JSONString {
         STFactory stf = sm.getSTFactory();
         SectionId sectionId = (pageId != null) ? pageId.getSectionId() : null;
 
-        SupplementalDataInfo sdi = sm.getSupplementalDataInfo();
+        //SupplementalDataInfo sdi = sm.getSupplementalDataInfo();
         int workingCoverageValue = Level.valueOf(workingCoverageLevel.toUpperCase()).getLevel();
         if (sectionId == SectionId.Timezones || pageId == PageId.Timezone_Cities || pageId == PageId.Timezone_Display_Patterns
             || (pageId == null && xpathPrefix.startsWith("//ldml/" + "dates/timeZoneNames"))) {
@@ -2674,7 +2684,7 @@ public class DataSection implements JSONString {
                         // podBase = "//ldml/dates/timeZoneNames/metazone";
                     }
                     // synthesize a new row..
-                    String rowXpath = zone + suff;
+                    //String rowXpath = zone + suff;
                     String base_xpath_string = podBase + ourSuffix + suff;
 
                     SurveyToolStatus ststats = SurveyToolStatus.READ_WRITE;
@@ -2831,7 +2841,7 @@ public class DataSection implements JSONString {
         STFactory stf = sm.getSTFactory();
         CLDRFile oldFile = stf.getOldFile(locale);
         diskFile = stf.getDiskFile(locale);
-        List<?> examplesResult = new ArrayList<Object>();
+        List<CheckStatus> examplesResult = new ArrayList<CheckStatus>();
         long lastTime = -1;
         String workPrefix = xpathPrefix;
         long nextTime = -1;
@@ -3261,8 +3271,8 @@ public class DataSection implements JSONString {
                 if (myItem.examples == null) {
                     myItem.examples = new Vector<ExampleEntry>();
                 }
-                for (Iterator<?> it3 = examplesResult.iterator(); it3.hasNext();) {
-                    CheckCLDR.CheckStatus status = (CheckCLDR.CheckStatus) it3.next();
+                for (Iterator<CheckStatus> it3 = examplesResult.iterator(); it3.hasNext();) {
+                    CheckCLDR.CheckStatus status = it3.next();
                     myItem.examples.add(addExampleEntry(new ExampleEntry(this, p, myItem, status)));
                 }
                 // myItem.examplesList = examplesResult;
@@ -3338,8 +3348,7 @@ public class DataSection implements JSONString {
         synchronized (ctx.session) {
             uf = ctx.getUserFile();
 
-            CheckCLDR checkCldr = uf.getCheck(ctx.getEffectiveCoverageLevel(ctx.getLocale().toString()),
-                ctx.getOptionsMap(SurveyMain.basicOptionsMap()));
+            CheckCLDR checkCldr = uf.getCheck(ctx.getEffectiveCoverageLevel(ctx.getLocale().toString()), ctx.getOptionsMap());
 
             boolean disputedOnly = ctx.field("only").equals("disputed");
 
@@ -3355,7 +3364,7 @@ public class DataSection implements JSONString {
                     subCtx2.removeQuery(SurveyMain.QUERY_LOCALE);
                     subCtx2.removeQuery(SurveyMain.QUERY_LOCALE);
                     subCtx2.removeQuery(SurveyForum.F_FORUM);
-                    sm.printMenu(subCtx2, "", "options", "My Options", SurveyMain.QUERY_DO);
+                    SurveyMain.printMenu(subCtx2, "", "options", "My Options", SurveyMain.QUERY_DO);
 
                     ctx.println("and set your coverage level to a higher value.");
                 }
@@ -3686,5 +3695,4 @@ public class DataSection implements JSONString {
     private ExampleBuilder getExampleBuilder() {
         return examplebuilder;
     }
-
 }

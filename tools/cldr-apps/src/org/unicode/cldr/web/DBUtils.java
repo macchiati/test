@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2004-2012 IBM Corporation and Others. All Rights Reserved.
+ * Copyright (C) 2004-2014 IBM Corporation and Others. All Rights Reserved.
  */
 package org.unicode.cldr.web;
 
@@ -11,6 +11,7 @@ import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Driver;
@@ -19,7 +20,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -31,7 +34,6 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
-import org.apache.tomcat.dbcp.dbcp.BasicDataSource;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -41,15 +43,11 @@ import org.unicode.cldr.util.CLDRLocale;
 import org.unicode.cldr.util.PathHeader;
 import org.unicode.cldr.util.StackTracker;
 
+import com.ibm.icu.dev.util.ElapsedTimer;
 import com.ibm.icu.text.UnicodeSet;
 
-//import org.apache.tomcat.dbcp.dbcp.BasicDataSource;
-
 /**
- * All of the database related stuff has been moved here.
- * 
- * @author srl
- * 
+ * Singleton utility class for simple(r) DB access.
  */
 public class DBUtils {
     private static final boolean DEBUG = false;// CldrUtility.getProperty("TEST",
@@ -57,6 +55,7 @@ public class DBUtils {
     private static final boolean DEBUG_QUICKLY = false;// CldrUtility.getProperty("TEST",
                                                        // false);
 
+    private static final boolean DEBUG_SQL = false; // show "all" SQL 
     private static DBUtils instance = null;
     private static final String JDBC_SURVEYTOOL = ("jdbc/SurveyTool");
     private static DataSource datasource = null;
@@ -75,7 +74,7 @@ public class DBUtils {
 
     /**
      * Return a string as to which SQL flavor is in use.
-     * 
+     *
      * @return
      */
     public static final String getDBKind() {
@@ -86,6 +85,10 @@ public class DBUtils {
         } else {
             return "Unknown";
         }
+    }
+
+    public String getDBInfo() {
+        return dbInfo;
     }
 
     // === DB workarounds :( - derby by default
@@ -323,7 +326,7 @@ public class DBUtils {
     }
 
     public static boolean hasTable(Connection conn, String table) {
-        String canonName = db_Derby ? table.toUpperCase() : table;
+        String canonName = canonTableName(table);
         try {
             ResultSet rs;
 
@@ -337,7 +340,7 @@ public class DBUtils {
 
             if (rs.next() == true) {
                 rs.close();
-                // System.err.println("table " + canonName + " did exist.");
+                System.out.println("table " + canonName + " did exist.");
                 return true;
             } else {
                 SurveyLog.debug("table " + canonName + " did not exist.");
@@ -345,6 +348,36 @@ public class DBUtils {
             }
         } catch (SQLException se) {
             SurveyMain.busted("While looking for table '" + table + "': ", se);
+            return false; // NOTREACHED
+        }
+    }
+
+    private static String canonTableName(String table) {
+        String canonName = db_Derby ? table.toUpperCase() : table;
+        return canonName;
+    }
+
+    public static boolean tableHasColumn(Connection conn, String table, String column) {
+        final String canonTable = canonTableName(table);
+        final String canonColumn = canonTableName(column);
+        try {
+            if (db_Derby) {
+                ResultSet rs;
+                DatabaseMetaData dbmd = conn.getMetaData();
+                rs = dbmd.getColumns(null, null, canonTable, canonColumn);
+                if (rs.next() == true) {
+                    rs.close();
+                    //System.err.println("column " + table +"."+column + " did exist.");
+                    return true;
+                } else {
+                    SurveyLog.debug("column " + table + "." + column + " did not exist.");
+                    return false;
+                }
+            } else {
+                return sqlCount(conn, "select count(*) from information_schema.COLUMNS where table_name=? and column_name=?", canonTable, canonColumn) > 0;
+            }
+        } catch (SQLException se) {
+            SurveyMain.busted("While looking for column '" + table + "." + column + "': ", se);
             return false; // NOTREACHED
         }
     }
@@ -392,9 +425,17 @@ public class DBUtils {
      */
     public static int sqlCount(String sql, Object... args) {
         Connection conn = null;
-        PreparedStatement ps = null;
         try {
             conn = DBUtils.getInstance().getDBConnection();
+            return sqlCount(conn, sql, args);
+        } finally {
+            DBUtils.close(conn);
+        }
+    }
+
+    public static int sqlCount(Connection conn, String sql, Object... args) {
+        PreparedStatement ps = null;
+        try {
             ps = prepareForwardReadOnly(conn, sql);
             setArgs(ps, args);
             return sqlCount(conn, ps);
@@ -402,7 +443,17 @@ public class DBUtils {
             SurveyLog.logException(sqe, "running sqlcount " + sql);
             return -1;
         } finally {
-            DBUtils.close(ps, conn);
+            DBUtils.close(ps);
+        }
+    }
+
+    public static boolean hasTable(String table) {
+        Connection conn = null;
+        try {
+            conn = DBUtils.getInstance().getDBConnection();
+            return hasTable(conn, table);
+        } finally {
+            DBUtils.close(conn);
         }
     }
 
@@ -529,6 +580,8 @@ public class DBUtils {
 
     private DBUtils() {
         // Initialize DB context
+        System.err.println("Loading datasource: java:comp/env " + JDBC_SURVEYTOOL);
+        ElapsedTimer et = new ElapsedTimer();
         try {
             Context initialContext = new InitialContext();
             Context eCtx = (Context) initialContext.lookup("java:comp/env");
@@ -536,16 +589,18 @@ public class DBUtils {
             // datasource = (DataSource) envContext.lookup("ASDSDASDASDASD");
 
             if (datasource != null) {
-                System.err.println("Got datasource: " + datasource.toString());
+                System.err.println("Got datasource: " + datasource.toString() + " in " + et);
             }
             Connection c = null;
             try {
                 if (datasource != null) {
                     c = datasource.getConnection();
                     DatabaseMetaData dmd = c.getMetaData();
-                    dbInfo = dmd.getDatabaseProductName() + " v" + dmd.getDatabaseProductVersion();
+                    dbInfo = dmd.getDatabaseProductName() + " v" + dmd.getDatabaseProductVersion() + " " +
+                        "driver " + dmd.getDriverName() + " ver " + dmd.getDriverVersion();
                     setupSqlForServerType();
                     SurveyLog.debug("Metadata: " + dbInfo);
+                    handleHaveDatasource(datasource);
                 }
             } catch (SQLException t) {
                 datasource = null;
@@ -568,6 +623,10 @@ public class DBUtils {
 
     }
 
+    private void handleHaveDatasource(DataSource datasource2) {
+        // process migrations here..
+    }
+
     public DBUtils(DataSource dataSource2) {
         datasource = dataSource2;
         Connection c = null;
@@ -585,6 +644,7 @@ public class DBUtils {
                     throw new IllegalArgumentException("autoCommit was true, expected false. Check your configuration.");
                 }
                 SurveyLog.debug("Metadata: " + dbInfo + ", autocommit: " + autoCommit);
+                handleHaveDatasource(datasource);
             }
         } catch (SQLException t) {
             datasource = null;
@@ -603,6 +663,7 @@ public class DBUtils {
 
     private void setupSqlForServerType() {
         SurveyLog.debug("setting up SQL for database type " + dbInfo);
+        System.err.println("setting up SQL for database type " + dbInfo);
         if (dbInfo.contains("Derby")) {
             db_Derby = true;
             System.err.println("Note: Derby (embedded) mode. ** some features may not work as expected **");
@@ -630,8 +691,10 @@ public class DBUtils {
     }
 
     public void doShutdown() throws SQLException {
-        if (datasource != null && datasource instanceof BasicDataSource) {
-            ((BasicDataSource) datasource).close();
+        try {
+            DBUtils.close(datasource);
+        } catch (IllegalArgumentException iae) {
+            System.err.println("DB Shutdown in progress, ignoring: " + iae);
         }
         datasource = null;
         if (db_Derby) {
@@ -641,8 +704,8 @@ public class DBUtils {
                 // ignore
             }
         }
-        if (this.db_number_open > 0) {
-            System.err.println("DBUtils: removing my instance. " + this.db_number_open + " still open?\n" + tracker);
+        if (DBUtils.db_number_open > 0) {
+            System.err.println("DBUtils: removing my instance. " + DBUtils.db_number_open + " still open?\n" + tracker);
         }
         if (tracker != null)
             tracker.clear();
@@ -729,19 +792,20 @@ public class DBUtils {
 
     /**
      * Shortcut for certain statements.
-     * 
+     *
      * @param conn
      * @param str
      * @return
      * @throws SQLException
      */
     public static final PreparedStatement prepareForwardReadOnly(Connection conn, String str) throws SQLException {
+        if (DEBUG_SQL) System.out.println("SQL: " + str);
         return conn.prepareStatement(str, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
     }
 
     /**
      * Shortcut for certain statements.
-     * 
+     *
      * @param conn
      * @param str
      * @return
@@ -753,7 +817,7 @@ public class DBUtils {
 
     /**
      * prepare statements for this connection
-     * 
+     *
      * @throws SQLException
      **/
     public static final PreparedStatement prepareStatementForwardReadOnly(Connection conn, String name, String sql)
@@ -779,7 +843,7 @@ public class DBUtils {
 
     /**
      * prepare statements for this connection. Assumes generated keys.
-     * 
+     *
      * @throws SQLException
      **/
     public static final PreparedStatement prepareStatement(Connection conn, String name, String sql) throws SQLException {
@@ -805,7 +869,7 @@ public class DBUtils {
     /**
      * Close all of the objects in order, if not null. Knows how to close
      * Connection, Statement, ResultSet, otherwise you'll get an IAE.
-     * 
+     *
      * @param a1
      * @throws SQLException
      */
@@ -827,8 +891,25 @@ public class DBUtils {
                 } else if (o instanceof DBCloseable) {
                     ((DBCloseable) o).close();
                 } else {
-                    throw new IllegalArgumentException("Don't know how to close " + an(o.getClass().getSimpleName()) + " "
-                        + o.getClass().getName());
+                    final Class theClass = o.getClass();
+                    final String simpleName = theClass.getSimpleName();
+                    if (simpleName.equals("BasicDataSource")) { // could expand this later, if we want to generically call close()
+                        try {
+                            // try to find a "close"
+                            final Method m = theClass.getDeclaredMethod("close");
+                            if (m != null) {
+                                System.err.println("Attempting to call close() on " + theClass.getName());
+                                m.invoke(o);
+                            }
+                        } catch (Exception nsm) {
+                            nsm.printStackTrace();
+                            System.err.println("Caught exception " + nsm + " - so, don't know how to close " + an(simpleName) + " "
+                                + theClass.getName());
+                        }
+                    } else {
+                        throw new IllegalArgumentException("Don't know how to close " + an(simpleName) + " "
+                            + theClass.getName());
+                    }
                 }
             } catch (SQLException e) {
                 System.err.println(unchainSqlException(e));
@@ -840,7 +921,7 @@ public class DBUtils {
 
     /**
      * Print A or AN appropriately.
-     * 
+     *
      * @param str
      * @return
      */
@@ -938,8 +1019,8 @@ public class DBUtils {
         return al.toArray(new Object[al.size()][]);
     }
 
-    @SuppressWarnings("rawtypes")
-    private static Map[] resultToArrayAssoc(ResultSet rs) throws SQLException {
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object>[] resultToArrayAssoc(ResultSet rs) throws SQLException {
         ResultSetMetaData rsm = rs.getMetaData();
         ArrayList<Map<String, Object>> al = new ArrayList<Map<String, Object>>();
         while (rs.next()) {
@@ -954,10 +1035,9 @@ public class DBUtils {
 
     private static Map<String, Object> assocOfResult(ResultSet rs, ResultSetMetaData rsm) throws SQLException {
         Map<String, Object> m = new HashMap<String, Object>(rsm.getColumnCount());
-
         for (int i = 1; i <= rsm.getColumnCount(); i++) {
             Object obj = extractObject(rs, rsm, i);
-            m.put(rsm.getColumnName(i), obj);
+            m.put(rsm.getColumnName(i).toLowerCase(), obj);
         }
 
         return m;
@@ -1047,6 +1127,31 @@ public class DBUtils {
         }
     }
 
+    /**
+     * Standardized way of versioning a string.
+     * @param sb
+     * @param forVersion
+     * @param isBeta
+     * @return 
+     */
+    public static StringBuilder appendVersionString(StringBuilder sb, String forVersion, Boolean isBeta) {
+        if (forVersion != null) {
+            sb.append('_');
+            sb.append(forVersion.toLowerCase());
+        }
+        if (isBeta != null && isBeta) {
+            sb.append("_beta");
+        }
+        return sb;
+    }
+
+    /**
+     * Append a versioned string
+     */
+    public static StringBuilder appendVersionString(StringBuilder sb) {
+        return appendVersionString(sb, SurveyMain.getNewVersion(), SurveyMain.phase() == SurveyMain.Phase.BETA);
+    }
+
     private static String[] arrayOfResult(ResultSet rs) throws SQLException {
         ResultSetMetaData rsm = rs.getMetaData();
         String ret[] = new String[rsm.getColumnCount()];
@@ -1067,9 +1172,9 @@ public class DBUtils {
 
     /**
      * Interface to an object that contains a held Connection
-     * 
+     *
      * @author srl
-     * 
+     *
      */
     public interface ConnectionHolder {
         /**
@@ -1080,9 +1185,9 @@ public class DBUtils {
 
     /**
      * Interface to an object that DBUtils.close can close.
-     * 
+     *
      * @author srl
-     * 
+     *
      */
     public interface DBCloseable {
         /**
@@ -1225,6 +1330,13 @@ public class DBUtils {
     }
 
     public static JSONObject queryToJSON(String string, Object... args) throws SQLException, IOException, JSONException {
+        return queryToJSONLimit(null, string, args);
+    }
+
+    public static JSONObject queryToJSONLimit(Integer limit, String string, Object... args) throws SQLException, IOException, JSONException {
+        if (limit != null && DBUtils.db_Mysql) {
+            string = string + " limit " + limit;
+        }
         Connection conn = null;
         PreparedStatement s = null;
         ResultSet rs = null;
@@ -1232,6 +1344,9 @@ public class DBUtils {
             conn = getInstance().getDBConnection();
             s = DBUtils.prepareForwardReadOnly(conn, string);
             setArgs(s, args);
+            if (limit != null && !DBUtils.db_Mysql) {
+                s.setMaxRows(limit);
+            }
             rs = s.executeQuery();
             return getJSON(rs);
         } finally {
@@ -1297,7 +1412,7 @@ public class DBUtils {
      * Get the first row of the first column.  Useful when the query is very simple, such as a count.
      * @param obj
      * @return the int
-     * @throws JSONException 
+     * @throws JSONException
      */
     public static final int getFirstInt(JSONObject json) throws JSONException {
         return json.getJSONArray("data").getJSONArray(0).getInt(0);
@@ -1311,7 +1426,7 @@ public class DBUtils {
      * @throws SQLException
      * @throws IOException
      */
-    public static Map[] queryToArrayAssoc(String string, Object... args) throws SQLException, IOException {
+    public static Map<String, Object>[] queryToArrayAssoc(String string, Object... args) throws SQLException, IOException {
         Connection conn = null;
         PreparedStatement s = null;
         ResultSet rs = null;
@@ -1375,7 +1490,7 @@ public class DBUtils {
                 // Try to print something helpful
                 sb.insert(
                     0,
-                    "</pre>Read the rest of this exception - but, you may be able to add the following to your <b>context.xml</b> file:  <br><br><pre class='graybox adminExceptionLogsite'>"
+                    "</pre>Read the rest of this notice - for derby, add the following to <b>context.xml</b> file:  <br><br><pre class='graybox adminExceptionLogsite'>"
                         + "&lt;Resource name=\"jdbc/SurveyTool\" type=\"javax.sql.DataSource\" auth=\"Container\" \n"
                         + "description=\"database for ST\" maxActive=\"100\" maxIdle=\"30\" maxWait=\"10000\" \n"
                         + " username=\"\" password=\"\" driverClassName=\"org.apache.derby.jdbc.EmbeddedDriver\" \n"
@@ -1402,5 +1517,94 @@ public class DBUtils {
         ResultSet rs = s.getGeneratedKeys();
         if (!rs.next()) return null;
         return rs.getInt(1);
+    }
+
+    /**
+     * Table name management.
+     * Manage table names according to versions.
+     */
+    public enum Table {
+        VOTE_VALUE,
+        VOTE_VALUE_ALT,
+        VOTE_FLAGGED,
+        FORUM_POSTS;
+
+        /**
+         * 
+         * @param isVersioned
+         * @param hasBeta
+         */
+        Table(boolean isVersioned, boolean hasBeta) {
+            this.isVersioned = isVersioned;
+            this.hasBeta = hasBeta;
+        }
+
+        Table() {
+            this.isVersioned = true;
+            this.hasBeta = true;
+        }
+
+        final boolean isVersioned, hasBeta;
+
+        String defaultString = null;
+
+        /**
+         * High runner case.
+         * WARNING: Do not use in constant strings
+         */
+        public synchronized String toString() {
+            if (defaultString == null) {
+                if (!SurveyMain.isConfigSetup && CLDRConfig.getInstance().getEnvironment() != CLDRConfig.Environment.UNITTEST) {
+                    throw new InternalError("Error: don't use Table.toString before CLDRConfig is setup.");
+                }
+                defaultString = forVersion(SurveyMain.getNewVersion(), SurveyMain.phase() == SurveyMain.phase().BETA).toString();
+            }
+            return defaultString;
+        }
+
+        public CharSequence forVersion(String forVersion, boolean isBeta) {
+            StringBuilder sb = new StringBuilder("cldr_");
+            sb.append(name().toLowerCase());
+            DBUtils.appendVersionString(sb, isVersioned ? forVersion : null, hasBeta ? isBeta : null);
+            return sb;
+        }
+    }
+
+    static boolean tryUpdates = true;
+
+    /**
+     * 
+     * @param rs
+     * @param string
+     * @param sqlnow
+     * @return false if caller needs to 'manually' update the item.
+     * @throws SQLException
+     */
+    public static final boolean updateTimestamp(ResultSet rs, String string, Timestamp sqlnow) throws SQLException {
+        if (tryUpdates) {
+            try {
+                rs.updateTimestamp(string, sqlnow);
+                return true; // success- caller doesn't need to do an update.
+            } catch (SQLFeatureNotSupportedException sfns) {
+                tryUpdates = false;
+                SurveyLog.warnOnce("SQL: Apparently updates aren't supported: " + sfns.toString() + " - falling back.");
+            }
+        }
+        return false; // caller needs to do an update
+    }
+
+    /**
+     * Set an Integer object, either as an int or as a null
+     * @param ps
+     * @param i
+     * @param withVote
+     * @throws SQLException
+     */
+    public static void setInteger(PreparedStatement ps, int i, Integer withVote) throws SQLException {
+        if (withVote == null) {
+            ps.setNull(i, java.sql.Types.INTEGER);
+        } else {
+            ps.setInt(i, withVote);
+        }
     }
 }

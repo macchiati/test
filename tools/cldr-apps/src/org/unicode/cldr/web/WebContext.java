@@ -18,11 +18,11 @@ import java.lang.ref.Reference;
 import java.sql.SQLException;
 import java.util.Hashtable;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.Vector;
+import java.util.regex.Pattern;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.unicode.cldr.test.CheckCLDR;
 import org.unicode.cldr.test.DisplayAndInputProcessor;
 import org.unicode.cldr.test.ExampleGenerator.HelpMessages;
 import org.unicode.cldr.util.CLDRFile;
@@ -44,6 +45,7 @@ import org.unicode.cldr.util.PathHeader.PageId;
 import org.unicode.cldr.util.StandardCodes;
 import org.unicode.cldr.web.CLDRProgressIndicator.CLDRProgressTask;
 import org.unicode.cldr.web.SurveyAjax.AjaxType;
+import org.unicode.cldr.web.SurveyMain.Phase;
 import org.unicode.cldr.web.SurveyMain.UserLocaleStuff;
 import org.unicode.cldr.web.UserRegistry.LogoutException;
 import org.unicode.cldr.web.UserRegistry.User;
@@ -1004,7 +1006,7 @@ public class WebContext implements Cloneable, Appendable {
      *            locale to set
      */
     public void setLocale(CLDRLocale l) {
-        if (!sm.getLocalesSet().contains(l)) { // bogus
+        if (!SurveyMain.getLocalesSet().contains(l)) { // bogus
             locale = null;
             return;
         }
@@ -1144,9 +1146,6 @@ public class WebContext implements Cloneable, Appendable {
      * @return number of sub-objects including this object
      */
     public int staticInfo_DataPod(Object o) {
-        int s = 0;
-        DataSection section = (DataSection) o;
-
         print(o.toString());
 
         return 1;
@@ -1219,7 +1218,6 @@ public class WebContext implements Cloneable, Appendable {
      */
     public int staticInfo_Boolean(Object o) {
         Boolean obj = (Boolean) o;
-        boolean b = (boolean) obj;
         println(obj.toString() + "<br>");
         return 1;
     }
@@ -1299,7 +1297,7 @@ public class WebContext implements Cloneable, Appendable {
         }
         print("Recommended level: <tt class='codebox'>" + recLevel.toString() + "</tt><br>");
         print("<ul><li>To change your default coverage level, see ");
-        sm.printMenu(this, "", "options", "My Options", SurveyMain.QUERY_DO);
+        SurveyMain.printMenu(this, "", "options", "My Options", SurveyMain.QUERY_DO);
         println("</li></ul>");
         if (false && SurveyMain.isUnofficial()) {
             println("<smaller><i> // User Org:" + session.getUserOrg() + "isCoverageOrg:"
@@ -1396,37 +1394,15 @@ public class WebContext implements Cloneable, Appendable {
     }
 
     /**
-     * Get the basic and WebContext Options map
-     * 
-     * @return the map
-     * @see #getOptionsMap(Map)
-     * @see org.unicode.cldr.test.CheckCoverage#check(String, String, String,
-     *      Map, List)
-     * @see SurveyMain#basicOptionsMap()
-     */
-    public Map<String, String> getOptionsMap() {
-        return getOptionsMap(sm.basicOptionsMap());
-    }
-
-    /**
      * Append the WebContext Options map to the specified map
      * 
      * @return the map
-     * @see #getOptionsMap(Map)
-     * @see org.unicode.cldr.test.CheckCoverage#check(String, String, String,
-     *      Map, List)
-     * @see SurveyMain#basicOptionsMap()
      */
-    public Map<String, String> getOptionsMap(Map<String, String> options) {
+    public CheckCLDR.Options getOptionsMap() {
         String def = getRequiredCoverageLevel();
-        options.put("CheckCoverage.requiredLevel", def);
-
         String org = getEffectiveCoverageLevel();
-        if (org != null) {
-            options.put("CoverageLevel.localeType", org);
-        }
 
-        return options;
+        return new CheckCLDR.Options(getLocale(), SurveyMain.getTestPhase(), def, org);
     }
 
     /**
@@ -1854,7 +1830,6 @@ public class WebContext implements Cloneable, Appendable {
      * @param string
      * @param object
      */
-    @SuppressWarnings("unchecked")
     public void put(String string, Object object) {
         if (object == null) {
             temporaryStuff.remove(string);
@@ -1947,7 +1922,7 @@ public class WebContext implements Cloneable, Appendable {
      * @return true if the user can modify this locale
      */
     public Boolean canModify() {
-        if (STFactory.isReadOnlyLocale(locale))
+        if (STFactory.isReadOnlyLocale(locale) || SurveyMain.phase() == Phase.READONLY)
             return (canModify = false);
         if (canModify == null) {
             if (session != null && session.user != null) {
@@ -2195,6 +2170,7 @@ public class WebContext implements Cloneable, Appendable {
 
     private boolean checkedPage = false;
     private PageId pageId = null;
+    static Pattern REPORT_SUFFIX_PATTERN = Pattern.compile("^[0-9a-z]([0-9a-z_]*)$");
 
     public PageId getPageId() {
         if (!checkedPage) {
@@ -2239,6 +2215,10 @@ public class WebContext implements Cloneable, Appendable {
                 if (myPassword != null && (password == null || password.isEmpty())) {
                     password = myPassword;
                 }
+            } else {
+                if (myEmail != null && !myEmail.equals(email)) {
+                    removeLoginCookies(request, response);
+                }
             }
         }
 
@@ -2255,7 +2235,7 @@ public class WebContext implements Cloneable, Appendable {
 
         HttpSession httpSession = request.getSession(true); // create httpsession
 
-        boolean idFromSession = false; // did the id come from the httpsession? (and why do we care?)
+        //boolean idFromSession = false; // did the id come from the httpsession? (and why do we care?)
 
         if (myNum.equals(SurveyMain.SURVEYTOOL_COOKIE_NONE)) { // "0"- for testing
             httpSession.removeAttribute(SurveyMain.SURVEYTOOL_COOKIE_SESSION);
@@ -2409,6 +2389,14 @@ public class WebContext implements Cloneable, Appendable {
             }
             session.removeAttribute(SurveyMain.SURVEYTOOL_COOKIE_SESSION);
         }
+        removeLoginCookies(request, response);
+    }
+
+    /**
+     * @param request
+     * @param response
+     */
+    public static void removeLoginCookies(HttpServletRequest request, HttpServletResponse response) {
         Cookie c0 = WebContext.getCookie(request, SurveyMain.QUERY_EMAIL);
         if (c0 != null) { // only zap extant cookies
             c0.setValue("");
@@ -2440,5 +2428,26 @@ public class WebContext implements Cloneable, Appendable {
     public void loginRemember(User user) {
         addCookie(SurveyMain.QUERY_EMAIL, user.email, SurveyMain.TWELVE_WEEKS);
         addCookie(SurveyMain.QUERY_PASSWORD, user.password, SurveyMain.TWELVE_WEEKS);
+    }
+
+    /**
+     * Show a 'report' template (r_)
+     * 
+     * @param which
+     *            current section
+     */
+    public boolean doReport(String which) {
+        if (WebContext.isLegalReportName(which)) {
+            flush();
+            includeFragment(which + ".jsp");
+            return true;
+        } else {
+            println("<i>Illegal report name: " + which + "</i><br/>");
+            return false;
+        }
+    }
+
+    static boolean isLegalReportName(String which) {
+        return REPORT_SUFFIX_PATTERN.matcher(which.substring(2)).matches();
     }
 }

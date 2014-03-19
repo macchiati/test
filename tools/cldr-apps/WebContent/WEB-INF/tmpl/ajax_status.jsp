@@ -19,6 +19,8 @@ var surveyCurrentPage = '';
 var surveyCurrentSpecial = null; //  null for locale, else oldvotes, etc
 <%
 String surveyCurrentLocale = request.getParameter(SurveyMain.QUERY_LOCALE);
+//locale can have either - or _
+surveyCurrentLocale = (surveyCurrentLocale == null) ? null : surveyCurrentLocale.replace("-", "_");
 String surveyCurrentLocaleName = "";
 if(surveyCurrentLocale!=null) {
 	CLDRLocale aloc = CLDRLocale.getInstance(surveyCurrentLocale);
@@ -38,9 +40,8 @@ var surveyCurrentSection  = '<%= surveyCurrentSection %>';
 var surveyCurrentLocale = null;
 var surveyCurrentLocaleName = null;
 var surveyCurrentSection  = '';
-<% } 
-
-%>
+<% } %>
+var surveyBaselineLocale = '<%= SurveyMain.BASELINE_LOCALE.getBaseName() %>';
 var surveyCurrentLocaleStamp = 0;
 var surveyCurrentLocaleStampId = '';
 var surveyVersion = '<%=SurveyMain.getNewVersion() %>';

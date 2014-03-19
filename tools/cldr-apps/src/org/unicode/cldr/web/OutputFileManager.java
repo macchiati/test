@@ -48,7 +48,6 @@ import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.CLDRLocale;
 import org.unicode.cldr.util.CldrUtility;
 import org.unicode.cldr.util.Pair;
-import org.unicode.cldr.util.XMLSource;
 import org.unicode.cldr.web.CLDRProgressIndicator.CLDRProgressTask;
 
 import com.ibm.icu.dev.util.ElapsedTimer;
@@ -281,7 +280,7 @@ public class OutputFileManager {
     private File writeOutputFile(CLDRLocale loc, String kind) {
         long st = System.currentTimeMillis();
         // ElapsedTimer et = new ElapsedTimer("Output "+loc);
-        XMLSource dbSource;
+        //XMLSource dbSource;
         CLDRFile file;
         boolean isFlat = false;
         if (kind.equals("vxml")) {
@@ -728,7 +727,7 @@ public class OutputFileManager {
                 ctx.println("<a href='" + ctx.base() + "'>Return to SurveyTool</a><p>");
                 ctx.println("<h4>Locales</h4>");
                 ctx.println("<ul>");
-                CLDRLocale locales[] = sm.getLocales();
+                CLDRLocale locales[] = SurveyMain.getLocales();
                 int nrInFiles = locales.length;
                 for (int i = 0; i < nrInFiles; i++) {
                     CLDRLocale locale = locales[i];
@@ -746,7 +745,7 @@ public class OutputFileManager {
                 response.sendRedirect(ctx.schemeHostPort() + ctx.base() + XML_PREFIX + "/");
             } else {
                 boolean found = false;
-                CLDRLocale locales[] = sm.getLocales();
+                CLDRLocale locales[] = SurveyMain.getLocales();
                 CLDRLocale foundLocale = null;
                 int nrInFiles = locales.length;
                 for (int i = 0; (!found) && (i < nrInFiles); i++) {
@@ -902,16 +901,16 @@ public class OutputFileManager {
 
     public Timestamp getLocaleTime(Connection conn, CLDRLocale loc) throws SQLException {
         Timestamp theDate = null;
-        if (haveVbv || DBUtils.hasTable(conn, STFactory.CLDR_VBV)) {
+        if (haveVbv || DBUtils.hasTable(conn, DBUtils.Table.VOTE_VALUE.toString())) {
             if (haveVbv == false) {
                 SurveyLog
                     .debug("OutputFileManager: have "
-                        + STFactory.CLDR_VBV
+                        + DBUtils.Table.VOTE_VALUE
                         + ", commencing  output file updates ( use CLDR_NOOUTPUT=true in cldr.properties to suppress  -  CLDR_NOOUTPUT current value = "
                         + CldrUtility.getProperty("CLDR_NOOUTPUT", false));
             }
             haveVbv = true;
-            Object[][] o = DBUtils.sqlQueryArrayArrayObj(conn, "select max(last_mod) from cldr_votevalue where locale=?", loc);
+            Object[][] o = DBUtils.sqlQueryArrayArrayObj(conn, "select max(last_mod) from " + DBUtils.Table.VOTE_VALUE + " where locale=?", loc);
             if (o != null && o.length > 0 && o[0] != null && o[0].length > 0) {
                 theDate = (Timestamp) o[0][0];
                 // System.err.println("for " + loc + " = " + theDate +
@@ -996,17 +995,17 @@ public class OutputFileManager {
 
         System.err.println("addPeriodicTask... updater");
         final ScheduledFuture<?> myTask = SurveyMain.addPeriodicTask(new Runnable() {
-            int spinner = (int) Math.round(Math.random() * (double) sm.getLocales().length); // Start
-                                                                                             // on
-                                                                                             // a
-                                                                                             // different
-                                                                                             // locale
-                                                                                             // each
-                                                                                             // time.
+            int spinner = (int) Math.round(Math.random() * (double) SurveyMain.getLocales().length); // Start
+                                                                                                     // on
+                                                                                                     // a
+                                                                                                     // different
+                                                                                                     // locale
+                                                                                                     // each
+                                                                                                     // time.
 
             @Override
             public void run() {
-                if (sm.isBusted() || !sm.isSetup) {
+                if (SurveyMain.isBusted() || !SurveyMain.isSetup) {
                     return;
                 }
                 // System.err.println("spinner hot...ac="+SurveyThread.activeCount());
@@ -1024,8 +1023,8 @@ public class OutputFileManager {
                 CLDRProgressTask progress = null;
                 try {
                     conn = DBUtils.getInstance().getDBConnection();
-                    CLDRLocale locs[] = sm.getLocales();
-                    File outFile = null;
+                    CLDRLocale locs[] = SurveyMain.getLocales();
+                    //File outFile = null;
                     // SurveyLog.logger.warning("Updater: locs to do: "
                     // +locs.length );
                     CLDRLocale loc = null;
@@ -1151,7 +1150,7 @@ public class OutputFileManager {
             @Override
             public void run() {
                 SurveyMain sm = CookieSession.sm;
-                ElapsedTimer daily = new ElapsedTimer();
+                //ElapsedTimer daily = new ElapsedTimer();
                 // Date ourDate = new Date();
                 try {
                     File usersa = sm.makeDataDir("usersa");
@@ -1174,7 +1173,7 @@ public class OutputFileManager {
                     return;
                 ElapsedTimer daily = new ElapsedTimer();
                 try {
-                    boolean svnOk = true;
+                    //boolean svnOk = true;
                     System.err.println("Beginning daily (or once at boot) update of SVN " + type + " data: " + new Date());
                     // quickAddAll
                     int added = 0;
@@ -1391,14 +1390,18 @@ public class OutputFileManager {
 
     // update the cache
     public static void updateLocaleDisplayName(CLDRFile f, CLDRLocale l) {
-        Pair<String, String> ret = statGetLocaleDisplayName(l);
-        String newValue = (f.getName(l.getBaseName()));
-        if (DEBUG) {
-            if (!newValue.equals(ret.getSecond())) {
-                System.out.println("Setting: " + newValue + " insteadof " + ret.getSecond() + " for " + ret.getFirst());
+        try {
+            Pair<String, String> ret = statGetLocaleDisplayName(l);
+            String newValue = (f.getName(l.getBaseName()));
+            if (DEBUG) {
+                if (!newValue.equals(ret.getSecond())) {
+                    System.out.println("Setting: " + newValue + " insteadof " + ret.getSecond() + " for " + ret.getFirst());
+                }
             }
+            ret.setSecond(newValue);
+        } catch (Throwable t) {
+            SurveyLog.logException(t, "Updating the Locale Display Name for " + l.getBaseName() + " with language tag " + l.toLanguageTag());
         }
-        ret.setSecond(newValue);
     }
 
 }

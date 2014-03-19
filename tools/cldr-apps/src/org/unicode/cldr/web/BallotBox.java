@@ -3,6 +3,7 @@
  */
 package org.unicode.cldr.web;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.unicode.cldr.util.VoteResolver;
@@ -45,7 +46,23 @@ public interface BallotBox<T> {
      *            new string value to vote for, or null for "unvote"
      * @return the full xpath of the user's vote, or null if not applicable.
      */
+    public void voteForValue(T user, String distinguishingXpath, String value, Integer withVote) throws InvalidXPathException;
+
     public void voteForValue(T user, String distinguishingXpath, String value) throws InvalidXPathException;
+
+    /**
+     * Delete an item. Will (eventually) throw a number of
+     * exceptions.
+     * 
+     * @param user
+     *            voter's object
+     * @param distinguishingXpath
+     *            dpath of item
+     * @param value
+     *            new string value to vote for, or null for "unvote"
+     * @return the full xpath of the user's vote, or null if not applicable.
+     */
+    public void deleteValue(T user, String distinguishingXpath, String value) throws InvalidXPathException;
 
     /**
      * Return a vote for a value, as a string
@@ -65,6 +82,13 @@ public interface BallotBox<T> {
      * @return
      */
     public Set<User> getVotesForValue(String xpath, String value);
+
+    /**
+     * Get the overrides (if any) from user to votevalue
+     * @param xpath
+     * @return
+     */
+    public Map<User, Integer> getOverridesPerUser(String xpath);
 
     /**
      * Get the possible user values at this path. Could be null.

@@ -4,6 +4,7 @@
 package org.unicode.cldr.web;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.sql.Connection;
@@ -12,12 +13,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -38,9 +39,9 @@ import org.unicode.cldr.util.CLDRLocale;
 import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.LDMLUtilities;
 import org.unicode.cldr.util.LruMap;
+import org.unicode.cldr.util.Pair;
 import org.unicode.cldr.util.PathHeader;
 import org.unicode.cldr.util.SimpleXMLSource;
-import org.unicode.cldr.util.StackTracker;
 import org.unicode.cldr.util.VoteResolver;
 import org.unicode.cldr.util.VoteResolver.Status;
 import org.unicode.cldr.util.XMLFileReader;
@@ -58,6 +59,8 @@ import com.ibm.icu.util.VersionInfo;
  * 
  */
 public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.User>, UserRegistry.UserChangedListener {
+    private static final String VOTE_OVERRIDE = "vote_override";
+
     /**
      * If true: run EVERY xpath through the resolver.
      */
@@ -307,6 +310,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
 
         /* SIMPLE IMP */
         private Map<String, Map<User, String>> xpathToVotes = new HashMap<String, Map<User, String>>();
+        private Map<String, Map<User, Integer>> xpathToOverrides = new HashMap<String, Map<User, Integer>>();
         private Map<Integer, Set<String>> xpathToOtherValues = new HashMap<Integer, Set<String>>();
         private Set<User> allVoters = new TreeSet<User>();
         private boolean oldFileMissing;
@@ -320,15 +324,15 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             diskFile = sm.getDiskFactory().make(locale.getBaseName(), true).freeze();
             pathsForFile = phf.pathsForFile(diskFile);
 
-            if (checkHadVotesSometimeThisRelease) {
-                votesSometimeThisRelease = loadVotesSometimeThisRelease(locale);
-                if (votesSometimeThisRelease == null) {
-                    SurveyLog.warnOnce("Note: giving up on loading 'sometime this release' votes. The database name would be "
-                        + getVotesSometimeTableName());
-                    checkHadVotesSometimeThisRelease = false; // don't try
-                                                              // anymore.
-                }
-            }
+//            if (checkHadVotesSometimeThisRelease) {
+//                votesSometimeThisRelease = loadVotesSometimeThisRelease(locale);
+//                if (votesSometimeThisRelease == null) {
+//                    SurveyLog.warnOnce("Note: giving up on loading 'sometime this release' votes. The database name would be "
+//                        + getVotesSometimeTableName());
+//                    checkHadVotesSometimeThisRelease = false; // don't try
+//                                                              // anymore.
+//                }
+//            }
             stamp = mintLocaleStamp(locale);
         }
 
@@ -398,7 +402,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                 VoteResolver<String> resolver = null; // save recalculating
                                                       // this.
                 Set<String> hitXpaths = new HashSet<String>();
-                ElapsedTimer et = (SurveyLog.DEBUG) ? new ElapsedTimer("Loading PLD for " + locale + " - cutoff = " + SurveyMain.getSQLVotesAfter()) : null;
+                ElapsedTimer et = (SurveyLog.DEBUG) ? new ElapsedTimer("Loading PLD for " + locale) : null;
                 Connection conn = null;
                 PreparedStatement ps = null;
                 PreparedStatement ps2 = null;
@@ -419,6 +423,12 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                         hitXpaths.add(xpath);
                         int submitter = rs.getInt(2);
                         String value = DBUtils.getStringUTF8(rs, 3);
+                        // 4 = locale
+                        Integer voteOverride = rs.getInt(5);
+                        if (voteOverride == 0 && rs.wasNull()) {
+                            voteOverride = null;
+                        } else {
+                        }
                         User theSubmitter = sm.reg.getInfo(submitter);
                         if (theSubmitter == null) {
                             if (true) SurveyLog.warnOnce("Ignoring votes for deleted user #" + submitter);
@@ -430,7 +440,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                             continue;
                         }
                         try {
-                            internalSetVoteForValue(theSubmitter, xpath, value, resolver, dataBackedSource);
+                            internalSetVoteForValue(theSubmitter, xpath, value, resolver, dataBackedSource, voteOverride);
                             n++;
                         } catch (BallotBox.InvalidXPathException e) {
                             System.err.println("InvalidXPathException: Deleting vote for " + theSubmitter + ":" + locale + ":" + xpath);
@@ -439,7 +449,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                         }
                     }
 
-                    ps2 = DBUtils.prepareStatementWithArgs(conn, "select xpath,value from " + CLDR_VBV_ALT + " where locale=?",
+                    ps2 = DBUtils.prepareStatementWithArgs(conn, "select xpath,value from " + DBUtils.Table.VOTE_VALUE_ALT + " where locale=?",
                         locale);
                     rs2 = ps2.executeQuery();
                     while (rs2.next()) {
@@ -501,17 +511,13 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
 
         public synchronized CLDRFile getFile(boolean resolved) {
             if (resolved) {
-                if (true) { // reuse r-files?
-                    return new CLDRFile(makeSource(true)).setSupplementalDirectory(getSupplementalDirectory());
-                } else {
-                    if (rFile == null) {
-                        if (getSupplementalDirectory() == null)
-                            throw new InternalError("getSupplementalDirectory() == null!");
-                        rFile = new CLDRFile(makeSource(true)).setSupplementalDirectory(getSupplementalDirectory());
-                        rFile.getSupplementalDirectory();
-                    }
-                    return rFile;
+                if (rFile == null) {
+                    if (getSupplementalDirectory() == null)
+                        throw new InternalError("getSupplementalDirectory() == null!");
+                    rFile = new CLDRFile(makeSource(true)).setSupplementalDirectory(getSupplementalDirectory());
+                    rFile.getSupplementalDirectory();
                 }
+                return rFile;
             } else {
                 if (file == null) {
                     if (getSupplementalDirectory() == null)
@@ -611,7 +617,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             final ValueChecker vc = ERRORS_ALLOWED_IN_VETTING ? null : new ValueChecker(path);
 
             // Set established locale
-            r.setEstablishedFromLocale(locale);
+            r.setLocale(locale, getPathHeader(path));
 
             CLDRFile anOldFile = getOldFile();
             if (anOldFile == null)
@@ -640,9 +646,15 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                 for (Map.Entry<User, String> e : userToVoteMap.entrySet()) {
                     String v = e.getValue();
 
+                    Map<User, Integer> voteOverrideMap = getXpathToOverride(path);
+
                     if (ERRORS_ALLOWED_IN_VETTING || vc.canUseValue(v)) {
+                        Integer voteOverride = null;
+                        if (voteOverrideMap != null) { // map may not even be present
+                            voteOverride = voteOverrideMap.get(e.getKey());
+                        }
                         r.add(v, // user's vote
-                            e.getKey().id); // user's id
+                            e.getKey().id, voteOverride); // user's id
                     }
                 }
             }
@@ -658,7 +670,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                     r = getResolverInternal(m, path, r);
                 } catch (VoteResolver.UnknownVoterException uve2) {
                     SurveyLog.logException(uve2);
-                    sm.busted(uve2.toString(), uve2);
+                    SurveyMain.busted(uve2.toString(), uve2);
                     throw new InternalError(uve2.toString());
                 }
             }
@@ -736,16 +748,21 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             return m;
         }
 
+        private Map<User, Integer> getXpathToOverride(String distinguishingXpath) {
+            Map<User, Integer> s = xpathToOverrides.get(distinguishingXpath);
+            if (s == null) {
+                s = new TreeMap<User, Integer>();
+                xpathToOverrides.put(distinguishingXpath, s);
+            }
+            return s;
+        }
+
         public synchronized XMLSource makeSource(boolean resolved) {
             if (resolved == true) {
-                if (true) { // cache r-sources?
-                    return makeResolvingSource(locale.getBaseName(), getMinimalDraftStatus());
-                } else {
-                    if (resolvedXmlsource == null) {
-                        resolvedXmlsource = makeResolvingSource(locale.getBaseName(), getMinimalDraftStatus());
-                    }
-                    return resolvedXmlsource;
+                if (resolvedXmlsource == null) {
+                    resolvedXmlsource = makeResolvingSource(locale.getBaseName(), getMinimalDraftStatus());
                 }
+                return resolvedXmlsource;
             } else {
                 if (readonly) {
                     return diskData;
@@ -779,12 +796,195 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             voteForValue(user, distinguishingXpath, oldValue);
         }
 
+        public void voteForValue(User user, String distinguishingXpath, String value) throws InvalidXPathException {
+            voteForValue(user, distinguishingXpath, value, null);
+        }
+
         @Override
-        public synchronized void voteForValue(User user, String distinguishingXpath, String value) throws BallotBox.InvalidXPathException {
+        public synchronized void voteForValue(User user, String distinguishingXpath, String value, Integer withVote) throws BallotBox.InvalidXPathException {
             if (!getPathsForFile().contains(distinguishingXpath)) {
                 throw new BallotBox.InvalidXPathException(distinguishingXpath);
             }
             SurveyLog.debug("V4v: " + locale + " " + distinguishingXpath + " : " + user + " voting for '" + value + "'");
+            ModifyDenial denial = UserRegistry.userCanModifyLocaleWhy(user, locale); // this
+                                                                                     // has
+                                                                                     // to
+                                                                                     // do
+                                                                                     // with
+                                                                                     // changing
+                                                                                     // a
+                                                                                     // vote
+                                                                                     // -
+                                                                                     // not
+                                                                                     // counting
+                                                                                     // it.
+            if (denial != null) {
+                throw new IllegalArgumentException("User " + user + " cannot modify " + locale + " " + denial);
+            }
+
+            if (withVote != null) {
+                if (withVote == user.getLevel().getVotes()) {
+                    withVote = null; // not an override
+                } else if (withVote != user.getLevel().canVoteAtReducedLevel()) {
+                    throw new IllegalArgumentException("User " + user + " cannot vote at " + withVote + " level ");
+                }
+            }
+
+            if (value != null && value.length() > MAX_VAL_LEN) {
+                throw new IllegalArgumentException("Value exceeds limit of " + MAX_VAL_LEN);
+            }
+
+            if (!readonly) {
+                boolean didClearFlag = false;
+                makeSource(false);
+                ElapsedTimer et = !SurveyLog.DEBUG ? null : new ElapsedTimer("{0} Recording PLD for " + locale + " "
+                    + distinguishingXpath + " : " + user + " voting for '" + value);
+                Connection conn = null;
+                PreparedStatement saveOld = null; // save off old value
+                PreparedStatement ps = null; // all for mysql, or 1st step for
+                                             // derby
+                PreparedStatement ps2 = null; // 2nd step for derby
+                ResultSet rs = null;
+                int xpathId = sm.xpt.getByXpath(distinguishingXpath);
+                final boolean wasFlagged = getFlag(locale, xpathId); // do this outside of the txn..
+                int submitter = user.id;
+                try {
+                    conn = DBUtils.getInstance().getDBConnection();
+
+                    String add0 = "", add1 = "", add2 = "";
+
+                    // #1 - save the "VOTE_VALUE_ALT"  ( possible proposal) value.
+                    if (DBUtils.db_Mysql) {
+                        add0 = "IGNORE";
+                        // add1="ON DUPLICATE KEY IGNORE";
+                    } else {
+                        add2 = "and not exists (select * from " + DBUtils.Table.VOTE_VALUE_ALT + " where " + DBUtils.Table.VOTE_VALUE_ALT + ".locale="
+                            + DBUtils.Table.VOTE_VALUE
+                            + ".locale and " + DBUtils.Table.VOTE_VALUE_ALT + ".xpath=" + DBUtils.Table.VOTE_VALUE + ".xpath " + " and "
+                            + DBUtils.Table.VOTE_VALUE_ALT
+                            + ".value=" + DBUtils.Table.VOTE_VALUE + ".value )";
+                    }
+                    String sql = "insert " + add0 + " into " + DBUtils.Table.VOTE_VALUE_ALT + "   " + add1 + " select " + DBUtils.Table.VOTE_VALUE + ".locale,"
+                        + DBUtils.Table.VOTE_VALUE + ".xpath," + DBUtils.Table.VOTE_VALUE + ".value "
+                        + " from " + DBUtils.Table.VOTE_VALUE + " where locale=? and xpath=? and submitter=? and value is not null " + add2;
+                    // if(DEBUG) System.out.println(sql);
+                    saveOld = DBUtils.prepareStatementWithArgs(conn, sql, locale.getBaseName(), xpathId, user.id);
+
+                    int oldSaved = saveOld.executeUpdate();
+                    // System.err.println("SaveOld: saved " + oldSaved +
+                    // " values");
+
+                    // #2 - save the actual vote.
+                    if (DBUtils.db_Mysql) { // use 'on duplicate key' syntax
+                        ps = DBUtils.prepareForwardReadOnly(conn, "INSERT INTO " + DBUtils.Table.VOTE_VALUE
+                            + " (locale,xpath,submitter,value,last_mod," + VOTE_OVERRIDE + ") values (?,?,?,?,CURRENT_TIMESTAMP,?) "
+                            + "ON DUPLICATE KEY UPDATE locale=?,xpath=?,submitter=?,value=?,last_mod=CURRENT_TIMESTAMP," + VOTE_OVERRIDE + "=?");
+                        int colNum = 6;
+                        ps.setString(colNum++, locale.getBaseName());
+                        ps.setInt(colNum++, xpathId);
+                        ps.setInt(colNum++, submitter);
+                        DBUtils.setStringUTF8(ps, colNum++, value);
+                        DBUtils.setInteger(ps, colNum++, withVote);
+                    } else { // derby
+                        ps2 = DBUtils.prepareForwardReadOnly(conn, "DELETE FROM " + DBUtils.Table.VOTE_VALUE
+                            + " where locale=? and xpath=? and submitter=? ");
+                        ps = DBUtils.prepareForwardReadOnly(conn, "INSERT INTO " + DBUtils.Table.VOTE_VALUE
+                            + " (locale,xpath,submitter,value,last_mod," + VOTE_OVERRIDE + ") VALUES (?,?,?,?,CURRENT_TIMESTAMP,?) ");
+                        int colNum = 1;
+                        ps2.setString(colNum++, locale.getBaseName());
+                        ps2.setInt(colNum++, xpathId);
+                        ps2.setInt(colNum++, submitter);
+                        // NB:  no "VOTE_OVERRIDE" column on delete.
+                    }
+
+                    {
+                        int colNum = 1;
+                        ps.setString(colNum++, locale.getBaseName());
+                        ps.setInt(colNum++, xpathId);
+                        ps.setInt(colNum++, submitter);
+                        DBUtils.setStringUTF8(ps, colNum++, value);
+                        DBUtils.setInteger(ps, colNum++, withVote);
+                    }
+                    if (ps2 != null) {
+                        ps2.executeUpdate();
+                    }
+                    ps.executeUpdate();
+
+                    if (wasFlagged && UserRegistry.userIsTC(user)) {
+                        clearFlag(conn, locale, xpathId, user);
+                        didClearFlag = true;
+                    }
+                    conn.commit();
+                } catch (SQLException e) {
+                    SurveyLog.logException(e);
+                    SurveyMain.busted("Could not vote for value in locale locale " + locale, e);
+                    throw new InternalError("Could not load locale " + locale + " : " + DBUtils.unchainSqlException(e));
+                } finally {
+                    DBUtils.close(saveOld, rs, ps, ps2, conn);
+                }
+                SurveyLog.debug(et);
+
+                if (didClearFlag) {
+                    // now, outside of THAT txn, make a forum post about clearing the flag.
+                    final String forum = SurveyForum.localeToForum(locale.toULocale());
+                    final int forumNumber = sm.fora.getForumNumber(forum);
+                    int newPostId = sm.fora.doPostInternal(forum, forumNumber, xpathId, -1, locale, "Flag Removed", "(The flag was removed.)", false, user);
+                    //sm.fora.emailNotify(ctx, forum, base_xpath, subj, text, postId);
+                    SurveyLog.warnOnce("TODO: no email notify on flag clear. This may be OK, it could be a lot of mail.");
+                    System.out.println("NOTE: flag was removed from " + locale + " " + distinguishingXpath + " - post ID=" + newPostId + "  by "
+                        + user.toString());
+                }
+
+            } else {
+                readonly();
+            }
+
+            internalSetVoteForValue(user, distinguishingXpath, value, null, xmlsource, withVote); // will create/throw away a resolver.
+        }
+
+        /**
+         * @param user
+         * @param distinguishingXpath
+         * @param value
+         * @param source
+         * @return
+         */
+        private final VoteResolver<String> internalSetVoteForValue(User user, String distinguishingXpath, String value,
+            VoteResolver<String> resolver, DataBackedSource source, Integer voteOverride) throws InvalidXPathException {
+            if (!getPathsForFile().contains(distinguishingXpath)) {
+                throw new InvalidXPathException(distinguishingXpath);
+            }
+            final Map<User, Integer> overrides = getXpathToOverride(distinguishingXpath);
+            if (value != null) {
+                getXpathToVotes(distinguishingXpath).put(user, value);
+                getXpathToOthers(sm.xpt.getByXpath(distinguishingXpath)).add(value);
+                if (voteOverride == null) {
+                    overrides.remove(user);
+                } else {
+                    overrides.put(user, voteOverride);
+                }
+            } else {
+                getXpathToVotes(distinguishingXpath).remove(user);
+                allVoters.add(user);
+                overrides.remove(user);
+            }
+            stamp.next();
+            return resolver = source.setValueFromResolver(distinguishingXpath, resolver);
+        }
+
+        @Override
+        public synchronized void deleteValue(User user, String distinguishingXpath, String value) throws BallotBox.InvalidXPathException {
+            if (!getPathsForFile().contains(distinguishingXpath)) {
+                throw new BallotBox.InvalidXPathException(distinguishingXpath);
+            }
+
+            //make sure user is not deleting a path with 1 or more votes
+            if (getVotesForValue(distinguishingXpath, value) != null) {
+                SurveyLog.debug("failed to delete value: " + value + " because it has 1 or more votes");
+                return;
+            }
+
+            SurveyLog.debug("V4v: " + locale + " " + distinguishingXpath + " : " + user + " deleting '" + value + "'");
             ModifyDenial denial = UserRegistry.userCanModifyLocaleWhy(user, locale); // this
                                                                                      // has
                                                                                      // to
@@ -808,81 +1008,32 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             if (!readonly) {
                 makeSource(false);
                 ElapsedTimer et = !SurveyLog.DEBUG ? null : new ElapsedTimer("{0} Recording PLD for " + locale + " "
-                    + distinguishingXpath + " : " + user + " voting for '" + value);
+                    + distinguishingXpath + " : " + user + " deleting '" + value);
                 Connection conn = null;
-                PreparedStatement saveOld = null; // save off old value
-                PreparedStatement ps = null; // all for mysql, or 1st step for
-                                             // derby
-                PreparedStatement ps2 = null; // 2nd step for derby
-                ResultSet rs = null;
-                int xpathId = sm.xpt.getByXpath(distinguishingXpath);
-                int submitter = user.id;
+                PreparedStatement ps = null;
                 try {
                     conn = DBUtils.getInstance().getDBConnection();
 
-                    String add0 = "", add1 = "", add2 = "";
-                    if (DBUtils.db_Mysql) {
-                        add0 = "IGNORE";
-                        // add1="ON DUPLICATE KEY IGNORE";
-                    } else {
-                        add2 = "and not exists (select * from " + CLDR_VBV_ALT + " where " + CLDR_VBV_ALT + ".locale=" + CLDR_VBV
-                            + ".locale and " + CLDR_VBV_ALT + ".xpath=" + CLDR_VBV + ".xpath " + " and " + CLDR_VBV_ALT
-                            + ".value=" + CLDR_VBV + ".value )";
-                    }
-                    String sql = "insert " + add0 + " into " + CLDR_VBV_ALT + "   " + add1 + " select " + CLDR_VBV + ".locale,"
-                        + CLDR_VBV + ".xpath," + CLDR_VBV + ".value "
-                        + " from cldr_votevalue where locale=? and xpath=? and submitter=? and value is not null " + add2;
-                    // if(DEBUG) System.out.println(sql);
-                    saveOld = DBUtils.prepareStatementWithArgs(conn, sql, locale.getBaseName(), xpathId, user.id);
+                    ps = DBUtils.prepareForwardReadOnly(conn, "DELETE FROM " + DBUtils.Table.VOTE_VALUE_ALT + " where value=? ");
 
-                    int oldSaved = saveOld.executeUpdate();
-                    // System.err.println("SaveOld: saved " + oldSaved +
-                    // " values");
+                    DBUtils.setStringUTF8(ps, 1, value);
 
-                    if (DBUtils.db_Mysql) { // use 'on duplicate key' syntax
-                        ps = DBUtils.prepareForwardReadOnly(conn, "INSERT INTO " + CLDR_VBV
-                            + " (locale,xpath,submitter,value,last_mod) values (?,?,?,?,CURRENT_TIMESTAMP) "
-                            + "ON DUPLICATE KEY UPDATE locale=?,xpath=?,submitter=?,value=?,last_mod=CURRENT_TIMESTAMP");
-
-                        ps.setString(5, locale.getBaseName());
-                        ps.setInt(6, xpathId);
-                        ps.setInt(7, submitter);
-                        DBUtils.setStringUTF8(ps, 8, value);
-                    } else {
-                        ps2 = DBUtils.prepareForwardReadOnly(conn, "DELETE FROM " + CLDR_VBV
-                            + " where locale=? and xpath=? and submitter=? ");
-                        ps = DBUtils.prepareForwardReadOnly(conn, "INSERT INTO  " + CLDR_VBV
-                            + " (locale,xpath,submitter,value,last_mod) VALUES (?,?,?,?,CURRENT_TIMESTAMP) ");
-
-                        ps2.setString(1, locale.getBaseName());
-                        ps2.setInt(2, xpathId);
-                        ps2.setInt(3, submitter);
-                    }
-
-                    ps.setString(1, locale.getBaseName());
-                    ps.setInt(2, xpathId);
-                    ps.setInt(3, submitter);
-                    DBUtils.setStringUTF8(ps, 4, value);
-
-                    if (!DBUtils.db_Mysql) {
-                        ps2.executeUpdate();
-                    }
                     ps.executeUpdate();
 
                     conn.commit();
                 } catch (SQLException e) {
                     SurveyLog.logException(e);
-                    SurveyMain.busted("Could not vote for value in locale locale " + locale, e);
+                    SurveyMain.busted("Could not delete value " + value + " in locale locale " + locale, e);
                     throw new InternalError("Could not load locale " + locale + " : " + DBUtils.unchainSqlException(e));
                 } finally {
-                    DBUtils.close(saveOld, rs, ps, ps2, conn);
+                    DBUtils.close(ps, conn);
                 }
                 SurveyLog.debug(et);
             } else {
                 readonly();
             }
 
-            internalSetVoteForValue(user, distinguishingXpath, value, null, xmlsource); // will create/throw away a resolver.
+            internalDeleteValue(user, distinguishingXpath, value, null, xmlsource); // will create/throw away a resolver.
         }
 
         /**
@@ -892,18 +1043,12 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
          * @param source
          * @return
          */
-        private final VoteResolver<String> internalSetVoteForValue(User user, String distinguishingXpath, String value,
+        private final VoteResolver<String> internalDeleteValue(User user, String distinguishingXpath, String value,
             VoteResolver<String> resolver, DataBackedSource source) throws InvalidXPathException {
             if (!getPathsForFile().contains(distinguishingXpath)) {
                 throw new InvalidXPathException(distinguishingXpath);
             }
-            if (value != null) {
-                getXpathToVotes(distinguishingXpath).put(user, value);
-                getXpathToOthers(sm.xpt.getByXpath(distinguishingXpath)).add(value);
-            } else {
-                getXpathToVotes(distinguishingXpath).remove(user);
-                allVoters.add(user);
-            }
+            getXpathToOthers(sm.xpt.getByXpath(distinguishingXpath)).remove(value);
             stamp.next();
             return resolver = source.setValueFromResolver(distinguishingXpath, resolver);
         }
@@ -934,9 +1079,9 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             return false;
         }
 
-        public TestResultBundle getTestResultData(Map<String, String> options) {
+        public TestResultBundle getTestResultData(CheckCLDR.Options options) {
             synchronized (gTestCache) {
-                return gTestCache.getBundle(locale, options);
+                return gTestCache.getBundle(options);
             }
         }
 
@@ -955,6 +1100,11 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             } else {
                 return false; // unknown.
             }
+        }
+
+        @Override
+        public Map<User, Integer> getOverridesPerUser(String xpath) {
+            return this.getXpathToOverride(xpath);
         }
     }
 
@@ -1116,10 +1266,6 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
         }
     }
 
-    // Database stuff here.
-    public static final String CLDR_VBV = "cldr_votevalue";
-    static final String CLDR_VBV_ALT = "cldr_votevalue_alt";
-
     // private static final String SOME_KEY =
     // "//ldml/localeDisplayNames/keys/key[@type=\"collation\"]";
 
@@ -1186,6 +1332,23 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
         handleUserChanged(null);
         phf = PathHeader.getFactory(sm.getBaselineFile());
         surveyMenus = new SurveyMenus(this, phf);
+    }
+
+    /**
+     * For statistics
+     */
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(super.toString());
+        sb.append("-cache:");
+        int good = 0;
+        for (Entry<CLDRLocale, Reference<PerLocaleData>> e : locales.entrySet()) {
+            if (e.getValue().get() != null) {
+                good++;
+            }
+        }
+        sb.append(good + "/" + locales.size() + " locales. TestCache:" + gTestCache + ", diskTestCache:" + gDiskTestCache + "}");
+        return sb.toString();
     }
 
     @Override
@@ -1259,7 +1422,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                 rLocales.put(locale, pld);
                 locales.put(locale, (new SoftReference<PerLocaleData>(pld)));
                 // update the locale display name cache.
-                sm.outputFileManager.updateLocaleDisplayName(pld.getFile(true), locale);
+                OutputFileManager.updateLocaleDisplayName(pld.getFile(true), locale);
             } else {
                 rLocales.put(locale, pld); // keep it in the lru
             }
@@ -1271,8 +1434,8 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
         return get(CLDRLocale.getInstance(locale));
     }
 
-    @SuppressWarnings("unchecked")
-    public TestCache.TestResultBundle getTestResult(CLDRLocale loc, Map<String, String> options) {
+    public TestCache.TestResultBundle getTestResult(CLDRLocale loc, CheckCLDR.Options options) {
+//        System.err.println("Fetching: " + options);
         return get(loc).getTestResultData(options);
     }
 
@@ -1378,9 +1541,8 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
      */
     private PreparedStatement openQueryByLocaleRW(Connection conn) throws SQLException {
         setupDB();
-        final String votesAfter = SurveyMain.getSQLVotesAfter();
         return DBUtils
-            .prepareForwardUpdateable(conn, "SELECT xpath,submitter,value,locale FROM " + CLDR_VBV + " WHERE locale = ? and last_mod > " + votesAfter);
+            .prepareForwardUpdateable(conn, "SELECT xpath,submitter,value,locale," + VOTE_OVERRIDE + " FROM " + DBUtils.Table.VOTE_VALUE + " WHERE locale = ?");
     }
 
     private synchronized final void setupDB() {
@@ -1392,7 +1554,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
         Statement s = null;
         try {
             conn = DBUtils.getInstance().getDBConnection();
-            if (!DBUtils.hasTable(conn, CLDR_VBV)) {
+            if (!DBUtils.hasTable(conn, DBUtils.Table.VOTE_VALUE.toString())) {
                 /*
                  * CREATE TABLE cldr_votevalue ( locale VARCHAR(20), xpath INT
                  * NOT NULL, submitter INT NOT NULL, value BLOB );
@@ -1402,40 +1564,61 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                  */
                 s = conn.createStatement();
 
-                sql = "create table " + CLDR_VBV + "( " + "locale VARCHAR(20), " + "xpath  INT NOT NULL, "
-                    + "submitter INT NOT NULL, " + "value " + DBUtils.DB_SQL_UNICODE + ", " + DBUtils.DB_SQL_LAST_MOD + " "
-                    + ", PRIMARY KEY (locale,submitter,xpath) " +
+                sql = "create table " + DBUtils.Table.VOTE_VALUE + "( "
+                    + "locale VARCHAR(20), "
+                    + "xpath  INT NOT NULL, "
+                    + "submitter INT NOT NULL, " + "value " + DBUtils.DB_SQL_UNICODE + ", "
+                    + DBUtils.DB_SQL_LAST_MOD + ", "
+                    + VOTE_OVERRIDE + " INT DEFAULT NULL, "
+                    + " PRIMARY KEY (locale,submitter,xpath) " +
 
                     " )";
                 // SurveyLog.logger.info(sql);
                 s.execute(sql);
 
-                sql = "CREATE UNIQUE INDEX  " + CLDR_VBV + " ON cldr_votevalue (locale,xpath,submitter)";
+                sql = "CREATE UNIQUE INDEX  " + DBUtils.Table.VOTE_VALUE + " ON " + DBUtils.Table.VOTE_VALUE + " (locale,xpath,submitter)";
                 s.execute(sql);
                 s.close();
                 s = null; // don't close twice.
                 conn.commit();
-                System.err.println("Created table " + CLDR_VBV);
+                System.err.println("Created table " + DBUtils.Table.VOTE_VALUE);
             }
-            if (!DBUtils.hasTable(conn, CLDR_VBV_ALT)) {
+            if (!DBUtils.hasTable(conn, DBUtils.Table.VOTE_VALUE_ALT.toString())) {
                 s = conn.createStatement();
                 String valueLen = DBUtils.db_Mysql ? "(750)" : "";
-                sql = "create table " + CLDR_VBV_ALT + "( " + "locale VARCHAR(20), " + "xpath  INT NOT NULL, " + "value "
+                sql = "create table " + DBUtils.Table.VOTE_VALUE_ALT + "( " + "locale VARCHAR(20), " + "xpath  INT NOT NULL, " + "value "
                     + DBUtils.DB_SQL_UNICODE + ", " +
                     // DBUtils.DB_SQL_LAST_MOD + " " +
                     " PRIMARY KEY (locale,xpath,value" + valueLen + ") " + " )";
                 // SurveyLog.logger.info(sql);
                 s.execute(sql);
 
-                sql = "CREATE UNIQUE INDEX  " + CLDR_VBV_ALT + " ON cldr_votevalue_alt (locale,xpath,value" + valueLen + ")";
+                sql = "CREATE UNIQUE INDEX  " + DBUtils.Table.VOTE_VALUE_ALT + " ON " + DBUtils.Table.VOTE_VALUE_ALT + " (locale,xpath,value" + valueLen + ")";
                 s.execute(sql);
-                // sql = "CREATE INDEX  " + CLDR_VBV_ALT +
+                // sql = "CREATE INDEX  " + DBUtils.Table.VOTE_VALUE_ALT +
                 // " ON cldr_votevalue_alt (locale)";
                 // s.execute(sql);
                 s.close();
                 s = null; // don't close twice.
                 conn.commit();
-                System.err.println("Created table " + CLDR_VBV_ALT);
+                System.err.println("Created table " + DBUtils.Table.VOTE_VALUE_ALT);
+            }
+            if (!DBUtils.hasTable(conn, DBUtils.Table.VOTE_FLAGGED.toString())) {
+                s = conn.createStatement();
+
+                sql = "create table " + DBUtils.Table.VOTE_FLAGGED + "( " + "locale VARCHAR(20), " + "xpath  INT NOT NULL, "
+                    + "submitter INT NOT NULL, " + DBUtils.DB_SQL_LAST_MOD + " "
+                    + ", PRIMARY KEY (locale,xpath) " +
+                    " )";
+                // SurveyLog.logger.info(sql);
+                s.execute(sql);
+
+                sql = "CREATE UNIQUE INDEX  " + DBUtils.Table.VOTE_FLAGGED + " ON " + DBUtils.Table.VOTE_FLAGGED + " (locale,xpath)";
+                s.execute(sql);
+                s.close();
+                s = null; // don't close twice.
+                conn.commit();
+                System.err.println("Created table " + DBUtils.Table.VOTE_FLAGGED);
             }
         } catch (SQLException se) {
             SurveyLog.logException(se, "SQL: " + sql);
@@ -1445,6 +1628,113 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             DBUtils.close(s, conn);
         }
     }
+
+    /**
+     * Flag the specified xpath for review.
+     * @param conn
+     * @param locale
+     * @param xpath
+     * @param user
+     * @throws SQLException
+     * @return number of rows changed
+     */
+    public int setFlag(Connection conn, CLDRLocale locale, int xpath, User user) throws SQLException {
+        PreparedStatement ps = null;
+        try {
+            synchronized (STFactory.class) {
+                final Pair<CLDRLocale, Integer> theKey = new Pair<CLDRLocale, Integer>(locale, xpath);
+                final Set<Pair<CLDRLocale, Integer>> m = loadFlag();
+                if (m.contains(theKey)) {
+                    return 0; // already there.
+                }
+                m.add(theKey);
+            } // make sure that the DB is loaded before we attempt to update.
+            if (DBUtils.db_Mysql) {
+                ps = DBUtils.prepareStatementWithArgs(conn, "INSERT IGNORE INTO " + DBUtils.Table.VOTE_FLAGGED +
+                    " (locale,xpath,submitter) VALUES (?,?,?)", locale.toString(), xpath, user.id);
+            } else {
+                ps = DBUtils.prepareStatementWithArgs(conn, "INSERT INTO " + DBUtils.Table.VOTE_FLAGGED +
+                    " (locale,xpath,submitter) VALUES (?,?,?)", locale.toString(), xpath, user.id);
+            }
+            int rv = ps.executeUpdate();
+            return rv;
+        } finally {
+            DBUtils.close(ps);
+        }
+    }
+
+    /**
+     * Flag the specified xpath for review.
+     * @param conn
+     * @param locale
+     * @param xpath
+     * @param user
+     * @throws SQLException
+     * @return number of rows changed
+     */
+    public int clearFlag(Connection conn, CLDRLocale locale, int xpath, User user) throws SQLException {
+        PreparedStatement ps = null;
+        try {
+            synchronized (STFactory.class) {
+                loadFlag().remove(new Pair<CLDRLocale, Integer>(locale, xpath));
+            } // make sure DB is loaded before we attempt to update
+            ps = DBUtils.prepareStatementWithArgs(conn, "DELETE FROM " + DBUtils.Table.VOTE_FLAGGED +
+                " WHERE locale=? AND xpath=?", locale.toString(), xpath);
+            int rv = ps.executeUpdate();
+            return rv;
+        } finally {
+            DBUtils.close(ps);
+        }
+    }
+
+    /**
+     * Returns userid of flagger, or null if not flagged
+     * @param locale
+     * @param xpath
+     * @return user or null
+     */
+    public boolean getFlag(CLDRLocale locale, int xpath) {
+        synchronized (STFactory.class) {
+            return loadFlag().contains(new Pair<CLDRLocale, Integer>(locale, xpath));
+        }
+    }
+
+    public boolean haveFlags() {
+        synchronized (STFactory.class) {
+            return !(loadFlag().isEmpty());
+        }
+    }
+
+    /**
+     * Bottleneck for flag functions.
+     * @return
+     */
+    private Set<Pair<CLDRLocale, Integer>> loadFlag() {
+        if (flagList == null) {
+            setupDB();
+
+            flagList = new HashSet<Pair<CLDRLocale, Integer>>();
+
+            System.out.println("Loading flagged items from .." + DBUtils.Table.VOTE_FLAGGED);
+            try {
+                for (Map<String, Object> r : DBUtils.queryToArrayAssoc("select * from " + DBUtils.Table.VOTE_FLAGGED)) {
+                    flagList.add(new Pair<CLDRLocale, Integer>(CLDRLocale.getInstance(r.get("locale").toString()),
+                        (Integer) r.get("xpath")));
+                }
+                System.out.println("Loaded " + flagList.size() + " items into flagged list.");
+            } catch (SQLException sqe) {
+                SurveyMain.busted("loading flagged votes from " + DBUtils.Table.VOTE_FLAGGED, sqe);
+            } catch (IOException ioe) {
+                SurveyMain.busted("loading flagged votes from " + DBUtils.Table.VOTE_FLAGGED, ioe);
+            }
+        }
+        return flagList;
+    }
+
+    /**
+     * In memory cache.
+     */
+    private Set<Pair<CLDRLocale, Integer>> flagList = null;
 
     /**
      * Close and re-open the factory. For testing only!
@@ -1521,49 +1811,50 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
         return ret;
     }
 
-    /**
-     * Load the 'cldr_v22submission' table.
-     * 
-     * @param forLocale
-     * @return
-     */
-    private BitSet loadVotesSometimeThisRelease(CLDRLocale forLocale) {
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        int n = 0;
-        BitSet result = new BitSet(CookieSession.sm.xpt.count());
-        String tableName = getVotesSometimeTableName();
-        try {
-            conn = DBUtils.getInstance().getDBConnection();
-
-            if (!DBUtils.hasTable(conn, tableName)) {
-                SurveyLog.warnOnce(StackTracker.currentElement(0) + ": no table (this is probably OK):" + tableName);
-                return null;
-            }
-
-            ps = DBUtils.prepareForwardReadOnly(conn, "select xpath from " + tableName + " where locale=?");
-            ps.setString(1, forLocale.getBaseName());
-            rs = ps.executeQuery();
-
-            while (rs.next()) {
-                int xp = rs.getInt(1);
-                result.set(xp);
-                n++;
-            }
-        } catch (SQLException e) {
-            SurveyLog.logException(e, "loadVotesSometimeThisRelease for " + tableName + " " + forLocale);
-            return null;
-        } finally {
-            DBUtils.close(rs, ps, conn);
-        }
-        System.err.println("loadVotesSometimeThisRelease: " + n + " xpaths from " + tableName + " " + forLocale);
-        return result;
-    }
-
-    private String getVotesSometimeTableName() {
-        return ("cldr_v" + sm.getNewVersion() + "submission").toLowerCase();
-    }
+//
+//    /**
+//     * Load the 'cldr_v22submission' table.
+//     * 
+//     * @param forLocale
+//     * @return
+//     */
+//    private BitSet loadVotesSometimeThisRelease(CLDRLocale forLocale) {
+//        Connection conn = null;
+//        PreparedStatement ps = null;
+//        ResultSet rs = null;
+//        int n = 0;
+//        BitSet result = new BitSet(CookieSession.sm.xpt.count());
+//        String tableName = getVotesSometimeTableName();
+//        try {
+//            conn = DBUtils.getInstance().getDBConnection();
+//
+//            if (!DBUtils.hasTable(conn, tableName)) {
+//                SurveyLog.warnOnce(StackTracker.currentElement(0) + ": no table (this is probably OK):" + tableName);
+//                return null;
+//            }
+//
+//            ps = DBUtils.prepareForwardReadOnly(conn, "select xpath from " + tableName + " where locale=?");
+//            ps.setString(1, forLocale.getBaseName());
+//            rs = ps.executeQuery();
+//
+//            while (rs.next()) {
+//                int xp = rs.getInt(1);
+//                result.set(xp);
+//                n++;
+//            }
+//        } catch (SQLException e) {
+//            SurveyLog.logException(e, "loadVotesSometimeThisRelease for " + tableName + " " + forLocale);
+//            return null;
+//        } finally {
+//            DBUtils.close(rs, ps, conn);
+//        }
+//        System.err.println("loadVotesSometimeThisRelease: " + n + " xpaths from " + tableName + " " + forLocale);
+//        return result;
+//    }
+//
+//    private String getVotesSometimeTableName() {
+//        return ("cldr_v" + SurveyMain.getNewVersion() + "submission").toLowerCase();
+//    }
 
     /*
      * votes sometime table
@@ -1583,7 +1874,6 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
      * where cldr_votevalue.value is not null;
      */
     public CLDRFile makeProposedFile(CLDRLocale locale) {
-        final String votesAfter = SurveyMain.getSQLVotesAfter();
 
         Connection conn = null;
         PreparedStatement ps = null; // all for mysql, or 1st step for derby
@@ -1592,20 +1882,23 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
         try {
             conn = DBUtils.getInstance().getDBConnection();
 
-            ps = DBUtils.prepareStatementWithArgsFRO(conn, "select xpath,submitter,value from " + CLDR_VBV
-                + " where locale=? and value IS NOT NULL and last_mod > " + SurveyMain.getSQLVotesAfter(), locale);
+            ps = DBUtils.prepareStatementWithArgsFRO(conn, "select xpath,submitter,value," + VOTE_OVERRIDE + " from " + DBUtils.Table.VOTE_VALUE
+                + " where locale=? and value IS NOT NULL", locale);
 
             rs = ps.executeQuery();
             XPathParts xpp = new XPathParts(null, null);
             while (rs.next()) {
                 String xp = sm.xpt.getById(rs.getInt(1));
                 int sub = rs.getInt(2);
-                String prefix = sm.xpt.altProposedPrefix(sub);
+                Integer voteValue = rs.getInt(4);
+                if (voteValue == 0 && rs.wasNull()) {
+                    voteValue = null;
+                }
 
                 StringBuilder sb = new StringBuilder(xp);
                 String alt = null;
                 if (xp.contains("[@alt")) {
-                    alt = sm.xpt.getAlt(xp, xpp);
+                    alt = XPathTable.getAlt(xp, xpp);
                     sb = new StringBuilder(sm.xpt.removeAlt(xp, xpp)); // replace
                 }
 
@@ -1614,7 +1907,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                     sb.append(alt);
                     sb.append('-');
                 }
-                sb.append(prefix);
+                XPathTable.appendAltProposedPrefix(sb, sub, voteValue);
                 sb.append("\"]");
 
                 sxs.putValueAtPath(sb.toString(), DBUtils.getStringUTF8(rs, 3)); // value
@@ -1647,7 +1940,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
      */
     public Integer[] readPXMLFiles(final File inFileList[]) {
         int nusers = 0;
-        int nlocs = 0;
+        //int nlocs = 0;
         if (CLDRConfig.getInstance().getEnvironment() != Environment.LOCAL) {
             throw new InternalError("Error: can only do this in LOCAL"); // insanity
                                                                          // check
@@ -1658,20 +1951,20 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
         Connection conn = null;
         PreparedStatement ps = null;
         PreparedStatement ps2 = null;
-        PreparedStatement ps3 = null;
-        int maxUserId = 0;
+        //PreparedStatement ps3 = null;
+        //int maxUserId = 0;
         try { // do this in 1 transaction. just in case.
             conn = DBUtils.getInstance().getDBConnection();
 
-            ps = DBUtils.prepareStatementWithArgs(conn, "delete from " + CLDR_VBV);
+            ps = DBUtils.prepareStatementWithArgs(conn, "delete from " + DBUtils.Table.VOTE_VALUE);
             int del = ps.executeUpdate();
-            ps2 = DBUtils.prepareStatementWithArgs(conn, "delete from " + CLDR_VBV_ALT);
+            ps2 = DBUtils.prepareStatementWithArgs(conn, "delete from " + DBUtils.Table.VOTE_VALUE_ALT);
             del += ps2.executeUpdate();
             System.err.println("DELETED " + del + "regular votes .. reading from files");
 
             XMLFileReader myReader = new XMLFileReader();
             final XPathParts xpp = new XPathParts(null, null);
-            final Map<String, String> attrs = new TreeMap<String, String>();
+            //final Map<String, String> attrs = new TreeMap<String, String>();
             // final Map<String,UserRegistry.User> users = new
             // TreeMap<String,UserRegistry.User>();
 
@@ -1680,7 +1973,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             // >>
             // //users/user[@id="10"][@email="__"][@level="vetter"][@name="Apple"][@org="apple"][@locales="nl.. "]
             final PreparedStatement myInsert = ps2 = DBUtils.prepareStatementForwardReadOnly(conn, "myInser", "INSERT INTO  "
-                + CLDR_VBV + " (locale,xpath,submitter,value) VALUES (?,?,?,?) ");
+                + DBUtils.Table.VOTE_VALUE + " (locale,xpath,submitter,value," + VOTE_OVERRIDE + ") VALUES (?,?,?,?) ");
             final SurveyMain sm2 = sm;
             myReader.setHandler(new XMLFileReader.SimpleHandler() {
                 int nusers = 0;
@@ -1699,7 +1992,10 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
 
                     try {
                         myInsert.setInt(2, sm2.xpt.getByXpath(newPath.toString()));
-                        myInsert.setInt(3, XPathTable.altProposedToUserid(altParts[1]));
+                        Integer voteValueArray[] = new Integer[1];
+                        // TODO: need to handle a string like 'proposed-u8v4-' to re-introduce the voting override at vote level 4.
+                        if (true) throw new InternalError("TODO: don't know how to handle voting overrides on read-in");
+                        //myInsert.setInt(3, XPathTable.altProposedToUserid(altParts[1], voteValueArray));
                         DBUtils.setStringUTF8(myInsert, 4, value);
                         myInsert.executeUpdate();
                     } catch (SQLException e) {
@@ -1745,13 +2041,15 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
     private TestResultBundle getDiskTestBundle(CLDRLocale locale) {
         synchronized (gDiskTestCache) {
             TestResultBundle q;
-            q = gDiskTestCache.getBundle(locale, basicOptions);
+            q = gDiskTestCache.getBundle(new CheckCLDR.Options(locale, SurveyMain.getTestPhase(), null, null));
             return q;
         }
     }
 
     /**
-     * For tests.
+     * Return the table for old votes 
      */
-    static private Map<String, String> basicOptions = Collections.unmodifiableMap(SurveyMain.basicOptionsMap());
+    public static final String getOldVoteTable() {
+        return DBUtils.Table.VOTE_VALUE.forVersion(SurveyMain.getOldVersion(), false).toString();
+    }
 }

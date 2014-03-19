@@ -39,6 +39,8 @@ import org.unicode.cldr.util.CLDRLocale;
  * Helper class. Sends mail with a simple interface
  */
 public class MailSender implements Runnable {
+
+    private long waitTill = 0;
     private static final String CLDR_MAIL = "cldr_mail";
 
     private static final String COUNTLEFTSQL = "select count(*) from " + CLDR_MAIL + " where sent_date is NULL and try_count < 3";
@@ -111,15 +113,16 @@ public class MailSender implements Runnable {
 
     private MailSender() {
         DBUtils db = DBUtils.getInstance();
-        USER = db.db_Mysql ? "user" : "to_user";
+        USER = DBUtils.db_Mysql ? "user" : "to_user";
         Connection conn = null;
         PreparedStatement s = null, s2 = null;
         try {
             conn = db.getDBConnection();
             conn.setAutoCommit(false);
-            if (!DBUtils.getInstance().hasTable(conn, CLDR_MAIL)) {
+            DBUtils.getInstance();
+            if (!DBUtils.hasTable(conn, CLDR_MAIL)) {
                 System.out.println("Creating " + CLDR_MAIL);
-                s = db.prepareStatementWithArgs(conn, "CREATE TABLE " + CLDR_MAIL + " (id INT NOT NULL " + DBUtils.DB_SQL_IDENTITY + ", " // PK:  id
+                s = DBUtils.prepareStatementWithArgs(conn, "CREATE TABLE " + CLDR_MAIL + " (id INT NOT NULL " + DBUtils.DB_SQL_IDENTITY + ", " // PK:  id
                     + USER + " int not null, " // userid TO
                     + "sender int not null DEFAULT -1 , " // userid TO
                     + "subject " + DBUtils.DB_SQL_MIDTEXT + " not null, " // mail subj
@@ -136,7 +139,7 @@ public class MailSender implements Runnable {
                     + "xpath INT DEFAULT NULL "
                     + (!DBUtils.db_Mysql ? ",primary key(id)" : "") + ")");
                 s.execute();
-                s2 = db.prepareStatementWithArgs(conn, "INSERT INTO " + CLDR_MAIL + "(" + USER + ",subject,text,queue_date) VALUES(?,?,?,?)",
+                s2 = DBUtils.prepareStatementWithArgs(conn, "INSERT INTO " + CLDR_MAIL + "(" + USER + ",subject,text,queue_date) VALUES(?,?,?,?)",
                     1, "Hello", "Hello from the SurveyTool!", DBUtils.sqlNow());
                 s2.execute();
                 conn.commit();
@@ -166,7 +169,8 @@ public class MailSender implements Runnable {
                 int firstTime = SurveyMain.isUnofficial() ? 5 : 60; // for official use, give some time for ST to settle before starting on mail s ending.
                 int eachTime = 6; /* Check for outbound mail every 6 seconds */// SurveyMain.isUnofficial()?6:45; // 63;
                 periodicThis = SurveyMain.getTimer().scheduleWithFixedDelay(this, firstTime, eachTime, TimeUnit.SECONDS);
-                System.out.println("Set up mail thread every " + eachTime + "s starting in " + firstTime + "s - waiting count = " + db.sqlCount(COUNTLEFTSQL));
+                System.out.println("Set up mail thread every " + eachTime + "s starting in " + firstTime + "s - waiting count = "
+                    + DBUtils.sqlCount(COUNTLEFTSQL));
             }
         } catch (SQLException se) {
             SurveyMain.busted("Cant set up " + CLDR_MAIL, se);
@@ -189,9 +193,6 @@ public class MailSender implements Runnable {
             SurveyLog.logException(t, "shutting down mailSender");
         }
     }
-
-    private boolean KEEP_ALIVE = true;
-    // int port = Integer.getInteger(CLDR_SMTP_PORT);
 
     static private MailSender fInstance = null;
 
@@ -235,12 +236,12 @@ public class MailSender implements Runnable {
             conn = db.getDBConnection();
             final String sql = "INSERT INTO " + CLDR_MAIL + "(sender, " + USER + ",subject,text,queue_date,cc,locale,xpath,post) VALUES(?,?,?,?,?,?,?,?,?)";
             if (!DBUtils.db_Derby) { // hack around derby
-                s2 = db.prepareStatementWithArgs(conn, sql,
+                s2 = DBUtils.prepareStatementWithArgs(conn, sql,
                     fromUser, toUser, DBUtils.prepareUTF8(subject), DBUtils.prepareUTF8(body), DBUtils.sqlNow(),
                     ccstr, locale, xpath, post);
 
             } else {
-                s2 = db.prepareStatementWithArgs(conn, sql,
+                s2 = DBUtils.prepareStatementWithArgs(conn, sql,
                     fromUser, toUser, DBUtils.prepareUTF8(subject), DBUtils.prepareUTF8(body), DBUtils.sqlNow()); // just the ones that can't be null
                 if (ccstr == null) {
                     s2.setNull(6, java.sql.Types.VARCHAR);
@@ -333,6 +334,11 @@ public class MailSender implements Runnable {
             return;
         }
 
+        if (System.currentTimeMillis() < waitTill) {
+            SurveyLog.warnOnce("************* delaying mail processing due to previous errors. **************");
+            return; // wait a bit
+        }
+
         SurveyLog.warnOnce("MailSender: processing mail queue");
         String oldName = Thread.currentThread().getName();
         try {
@@ -352,8 +358,8 @@ public class MailSender implements Runnable {
                 DBUtils db = DBUtils.getInstance();
                 conn = db.getDBConnection();
                 conn.setAutoCommit(false);
-                java.sql.Timestamp sqlnow = db.sqlNow();
-                s = db.prepareForwardUpdateable(conn, "select * from " + CLDR_MAIL + " where sent_date is NULL and id > ?  and try_count < 3 order by id "
+                java.sql.Timestamp sqlnow = DBUtils.sqlNow();
+                s = DBUtils.prepareForwardUpdateable(conn, "select * from " + CLDR_MAIL + " where sent_date is NULL and id > ?  and try_count < 3 order by id "
                     + (DBUtils.db_Mysql ? "limit 1" : ""));
                 s.setInt(1, lastIdProcessed);
                 rs = s.executeQuery();
@@ -428,9 +434,14 @@ public class MailSender implements Runnable {
 
                     if (DEBUG) System.out.println("Successful send of id " + lastIdProcessed + " to " + toUser);
 
-                    rs.updateTimestamp("sent_date", sqlnow);
-                    if (DEBUG) System.out.println("Mail: Row updated: #id " + lastIdProcessed + " to " + toUser);
-                    rs.updateRow();
+                    if (!DBUtils.updateTimestamp(rs, "sent_date", sqlnow)) {
+                        SurveyLog.warnOnce("Sorry, mail isn't supported without SQL update. You may need to use a different database or JDBC driver.");
+                        shutdown();
+                        return;
+                    } else {
+                        if (DEBUG) System.out.println("Mail: Row updated: #id " + lastIdProcessed + " to " + toUser);
+                        rs.updateRow();
+                    }
                     if (DEBUG) System.out.println("Mail: do updated: #id " + lastIdProcessed + " to " + toUser);
                     conn.commit();
                     if (DEBUG) System.out.println("Mail: comitted: #id " + lastIdProcessed + " to " + toUser);
@@ -457,6 +468,7 @@ public class MailSender implements Runnable {
                 }
             } catch (SQLException se) {
                 SurveyLog.logException(se, "processing mail");
+                waitTill = System.currentTimeMillis() + (1000 * 60 * 5); // backoff 5 minutes
             } finally {
                 DBUtils.close(rs, s, s2, conn);
             }
