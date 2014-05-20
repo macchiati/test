@@ -14,17 +14,16 @@ For terms of use, see http://www.unicode.org/copyright.html
 	<localeDisplayNames>
 		<languages>
 			<language type="arn" draft="unconfirmed">mapudungun</language>
-			<language type="ira" draft="unconfirmed">iraníes</language>
 		</languages>
 		<territories>
 			<territory type="005">Sudamérica</territory>
 			<territory type="AN" draft="unconfirmed">Antillas Holandesas</territory>
 			<territory type="AZ" draft="unconfirmed">Azerbayán</territory>
+			<territory type="BD" draft="unconfirmed">Bangladesh</territory>
 			<territory type="EH">Sahara Occidental</territory>
 			<territory type="PS" draft="unconfirmed">Territorio Palestino</territory>
 			<territory type="RO" draft="unconfirmed">Rumania</territory>
 			<territory type="SA" draft="unconfirmed">Arabia Saudita</territory>
-			<territory type="TZ" draft="unconfirmed">Tanzanía</territory>
 		</territories>
 		<keys>
 			<key type="currency" draft="unconfirmed">divisa</key>
@@ -158,23 +157,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 						</dateFormat>
 					</dateFormatLength>
 				</dateFormats>
-				<timeFormats>
-					<timeFormatLength type="long">
-						<timeFormat>
-							<pattern>H:mm:ss z</pattern>
-						</timeFormat>
-					</timeFormatLength>
-					<timeFormatLength type="medium">
-						<timeFormat>
-							<pattern>H:mm:ss</pattern>
-						</timeFormat>
-					</timeFormatLength>
-					<timeFormatLength type="short">
-						<timeFormat>
-							<pattern>H:mm</pattern>
-						</timeFormat>
-					</timeFormatLength>
-				</timeFormats>
 				<dateTimeFormats>
 					<availableFormats>
 						<dateFormatItem id="Md">dd-MM</dateFormatItem>
@@ -281,7 +263,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</symbols>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
 					<pattern>¤#,##0.00;¤-#,##0.00</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
@@ -289,6 +271,9 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<currencies>
 			<currency type="CLP">
 				<symbol>$</symbol>
+			</currency>
+			<currency type="USD">
+				<symbol>US$</symbol>
 			</currency>
 		</currencies>
 	</numbers>

@@ -263,10 +263,10 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="CA" draft="unconfirmed">Kanada</territory>
 			<territory type="CC" draft="unconfirmed">Kokosinslä</territory>
 			<territory type="CD" draft="unconfirmed">Kongo-Kinshasa</territory>
-			<territory type="CD" alt="variant" draft="unconfirmed">Kongo [Demokratiši Rebublik]</territory>
+			<territory type="CD" alt="variant" draft="unconfirmed">Kongo (Demokratiši Rebublik)</territory>
 			<territory type="CF" draft="unconfirmed">Zentralafrikaniši Rebublik</territory>
 			<territory type="CG" draft="unconfirmed">Kongo Brazzaville</territory>
-			<territory type="CG" alt="variant" draft="unconfirmed">Kongo [Rebublik]</territory>
+			<territory type="CG" alt="variant" draft="unconfirmed">Kongo (Rebublik)</territory>
 			<territory type="CH" draft="unconfirmed">Schwiz</territory>
 			<territory type="CI" draft="unconfirmed">Elfebeiküšta</territory>
 			<territory type="CI" alt="variant" draft="unconfirmed">Côte d'Ivoire</territory>
@@ -301,7 +301,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="FI" draft="unconfirmed">Finnland</territory>
 			<territory type="FJ" draft="unconfirmed">Fidši</territory>
 			<territory type="FK" draft="unconfirmed">Falklandinslä</territory>
-			<territory type="FK" alt="variant" draft="unconfirmed">Falklandinslä [Malwine]</territory>
+			<territory type="FK" alt="variant" draft="unconfirmed">Falklandinslä (Malwine)</territory>
 			<territory type="FM" draft="unconfirmed">Mikronesie</territory>
 			<territory type="FO" draft="unconfirmed">Färöe</territory>
 			<territory type="FR" draft="unconfirmed">Frankrič</territory>
@@ -376,7 +376,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="MG" draft="unconfirmed">Madagaskar</territory>
 			<territory type="MH" draft="unconfirmed">Maršalinslä</territory>
 			<territory type="MK" draft="unconfirmed">Mazedonie</territory>
-			<territory type="MK" alt="variant" draft="unconfirmed">Mazedonie [EJR]</territory>
+			<territory type="MK" alt="variant" draft="unconfirmed">Mazedonie (EJR)</territory>
 			<territory type="ML" draft="unconfirmed">Mali</territory>
 			<territory type="MM" draft="unconfirmed">Burma</territory>
 			<territory type="MN" draft="unconfirmed">Mongolei</territory>
@@ -975,12 +975,36 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</field>
 			<field type="year">
 				<displayName draft="unconfirmed">Jár</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">I {0} jár</relativeTimePattern>
+					<relativeTimePattern count="other">I {0} jár</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">vor {0} jár</relativeTimePattern>
+					<relativeTimePattern count="other">cor {0} jár</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="month">
 				<displayName draft="unconfirmed">Mánet</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">I {0} mánet</relativeTimePattern>
+					<relativeTimePattern count="other">I {0} mánet</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">vor {0} mánet</relativeTimePattern>
+					<relativeTimePattern count="other">vor {0} mánet</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="week">
 				<displayName draft="unconfirmed">Wuča</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">i {0} wuča</relativeTimePattern>
+					<relativeTimePattern count="other">i {0} wučä</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">vor {0} wuča</relativeTimePattern>
+					<relativeTimePattern count="other">cor {0} wučä</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="day">
 				<displayName draft="unconfirmed">Tag</displayName>
@@ -989,6 +1013,14 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<relative type="0" draft="unconfirmed">Hitte</relative>
 				<relative type="1" draft="unconfirmed">Móre</relative>
 				<relative type="2" draft="unconfirmed">Ubermóre</relative>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">i {0} tag</relativeTimePattern>
+					<relativeTimePattern count="other">i {0} täg</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">vor {0} tag</relativeTimePattern>
+					<relativeTimePattern count="other">vor {0} täg</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="weekday">
 				<displayName draft="unconfirmed">Wučetag</displayName>
@@ -998,12 +1030,36 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</field>
 			<field type="hour">
 				<displayName draft="unconfirmed">Schtund</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">i {0} stund</relativeTimePattern>
+					<relativeTimePattern count="other">i {0} stunde</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">vor {0} stund</relativeTimePattern>
+					<relativeTimePattern count="other">vor {0} stunde</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="minute">
 				<displayName draft="unconfirmed">Mínütta</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">i {0} minüta</relativeTimePattern>
+					<relativeTimePattern count="other">i {0} minüte</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">vor {0} minüta</relativeTimePattern>
+					<relativeTimePattern count="other">vor {0} minüte</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="second">
 				<displayName draft="unconfirmed">Sekunda</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">i {0} sekund</relativeTimePattern>
+					<relativeTimePattern count="other">i {0} sekunde</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">vor {0} sekund</relativeTimePattern>
+					<relativeTimePattern count="other">vor {0} sekunde</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="zone">
 				<displayName draft="unconfirmed">Zitzóna</displayName>
@@ -1239,88 +1295,62 @@ For terms of use, see http://www.unicode.org/copyright.html
 	<units>
 		<unitLength type="long">
 			<unit type="duration-day">
+				<displayName draft="provisional">täg</displayName>
 				<unitPattern count="one">{0} täg</unitPattern>
 				<unitPattern count="other">{0} täg</unitPattern>
 			</unit>
-			<unit type="duration-day-future">
-				<unitPattern count="one">i {0} tag</unitPattern>
-				<unitPattern count="other">i {0} täg</unitPattern>
-			</unit>
-			<unit type="duration-day-past">
-				<unitPattern count="one">vor {0} tag</unitPattern>
-				<unitPattern count="other">vor {0} täg</unitPattern>
-			</unit>
 			<unit type="duration-hour">
+				<displayName draft="provisional">stunde</displayName>
 				<unitPattern count="one">{0} stund</unitPattern>
 				<unitPattern count="other">{0} stunde</unitPattern>
 			</unit>
-			<unit type="duration-hour-future">
-				<unitPattern count="one">i {0} stund</unitPattern>
-				<unitPattern count="other">i {0} stunde</unitPattern>
-			</unit>
-			<unit type="duration-hour-past">
-				<unitPattern count="one">vor {0} stund</unitPattern>
-				<unitPattern count="other">vor {0} stunde</unitPattern>
-			</unit>
 			<unit type="duration-minute">
+				<displayName draft="provisional">minüte</displayName>
 				<unitPattern count="one">{0} minüta</unitPattern>
 				<unitPattern count="other">{0} minüte</unitPattern>
 			</unit>
-			<unit type="duration-minute-future">
-				<unitPattern count="one">i {0} minüta</unitPattern>
-				<unitPattern count="other">i {0} minüte</unitPattern>
-			</unit>
-			<unit type="duration-minute-past">
-				<unitPattern count="one">vor {0} minüta</unitPattern>
-				<unitPattern count="other">vor {0} minüte</unitPattern>
-			</unit>
 			<unit type="duration-month">
+				<displayName draft="provisional">mánet</displayName>
 				<unitPattern count="one">{0} mánet</unitPattern>
 				<unitPattern count="other">{0} mánet</unitPattern>
 			</unit>
-			<unit type="duration-month-future">
-				<unitPattern count="one">I {0} mánet</unitPattern>
-				<unitPattern count="other">I {0} mánet</unitPattern>
-			</unit>
-			<unit type="duration-month-past">
-				<unitPattern count="one">vor {0} mánet</unitPattern>
-				<unitPattern count="other">vor {0} mánet</unitPattern>
-			</unit>
 			<unit type="duration-second">
+				<displayName draft="provisional">sekunde</displayName>
 				<unitPattern count="one">{0} sekund</unitPattern>
 				<unitPattern count="other">{0} sekunde</unitPattern>
 			</unit>
-			<unit type="duration-second-future">
-				<unitPattern count="one">i {0} sekund</unitPattern>
-				<unitPattern count="other">i {0} sekunde</unitPattern>
-			</unit>
-			<unit type="duration-second-past">
-				<unitPattern count="one">vor {0} sekund</unitPattern>
-				<unitPattern count="other">vor {0} sekunde</unitPattern>
-			</unit>
 			<unit type="duration-week">
+				<displayName draft="provisional">wučä</displayName>
 				<unitPattern count="one">{0} wuča</unitPattern>
 				<unitPattern count="other">{0} wučä</unitPattern>
 			</unit>
-			<unit type="duration-week-future">
-				<unitPattern count="one">i {0} wuča</unitPattern>
-				<unitPattern count="other">i {0} wučä</unitPattern>
-			</unit>
-			<unit type="duration-week-past">
-				<unitPattern count="one">vor {0} wuča</unitPattern>
-				<unitPattern count="other">cor {0} wučä</unitPattern>
-			</unit>
 			<unit type="duration-year">
+				<displayName draft="provisional">jár</displayName>
 				<unitPattern count="one">{0} jár</unitPattern>
 				<unitPattern count="other">{0} jár</unitPattern>
 			</unit>
-			<unit type="duration-year-future">
-				<unitPattern count="one">I {0} jár</unitPattern>
-				<unitPattern count="other">I {0} jár</unitPattern>
+		</unitLength>
+		<unitLength type="short">
+			<unit type="duration-day">
+				<displayName draft="provisional">täg</displayName>
 			</unit>
-			<unit type="duration-year-past">
-				<unitPattern count="one">vor {0} jár</unitPattern>
-				<unitPattern count="other">cor {0} jár</unitPattern>
+			<unit type="duration-hour">
+				<displayName draft="provisional">stunde</displayName>
+			</unit>
+			<unit type="duration-minute">
+				<displayName draft="provisional">minüte</displayName>
+			</unit>
+			<unit type="duration-month">
+				<displayName draft="provisional">mánet</displayName>
+			</unit>
+			<unit type="duration-second">
+				<displayName draft="provisional">sekunde</displayName>
+			</unit>
+			<unit type="duration-week">
+				<displayName draft="provisional">wučä</displayName>
+			</unit>
+			<unit type="duration-year">
+				<displayName draft="provisional">jár</displayName>
 			</unit>
 		</unitLength>
 	</units>

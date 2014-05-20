@@ -20,7 +20,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<language type="az" draft="unconfirmed">Azerbaijanci</language>
 			<language type="be">Belarusanci</language>
 			<language type="bg">Bulgaranci</language>
-			<language type="bh" draft="unconfirmed">Bihari</language>
 			<language type="bn">Bengali</language>
 			<language type="br" draft="unconfirmed">Buretananci</language>
 			<language type="bs" draft="unconfirmed">Bosniyanci</language>
@@ -660,7 +659,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</percentFormats>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
 					<pattern>¤ #,##0.00</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
@@ -824,7 +823,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<displayName>Kuɗin Afirka Ta Kudu</displayName>
 			</currency>
 			<currency type="ZMK">
-				<displayName>Kuɗin Zambiya (1968-2012)</displayName>
+				<displayName>Kuɗin Zambiya (1968–2012)</displayName>
 			</currency>
 			<currency type="ZMW">
 				<displayName>Kuɗin Zambiya</displayName>

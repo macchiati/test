@@ -80,10 +80,10 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="BY">ᏇᎳᎷᏍ</territory>
 			<territory type="BZ">ᏇᎵᏍ</territory>
 			<territory type="CA">ᎨᎾᏓ</territory>
-			<territory type="CC">ᎪᎪᏍ [ᎩᎵᏂ] ᏚᎦᏚᏛ</territory>
+			<territory type="CC">ᎪᎪᏍ (ᎩᎵᏂ) ᏚᎦᏚᏛ</territory>
 			<territory type="CD">ᎧᏂᎪ</territory>
 			<territory type="CF">ᎬᎿᎨᏍᏛ ᎠᏰᏟ ᏍᎦᏚᎩ</territory>
-			<territory type="CG">ᎧᏂᎪ [ᏍᎦᏚᎩ]</territory>
+			<territory type="CG">ᎧᏂᎪ (ᏍᎦᏚᎩ)</territory>
 			<territory type="CH">ᏍᏫᏍ</territory>
 			<territory type="CI">ᎢᏬᎵ ᎾᎿ ᎠᎹᏳᎶᏗ</territory>
 			<territory type="CK">ᎠᏓᏍᏓᏴᎲᏍᎩ ᎤᎦᏚᏛ</territory>
@@ -112,7 +112,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="FI">ᏫᏂᎦᏙᎯ</territory>
 			<territory type="FJ">ᏫᏥ</territory>
 			<territory type="FK">ᏩᎩ ᎤᎦᏚᏛ</territory>
-			<territory type="FK" alt="variant">ᏩᎩ ᎤᎦᏚᏛ [ᎢᏍᎳᏍ ᎹᎸᏫᎾᏍ]</territory>
+			<territory type="FK" alt="variant">ᏩᎩ ᎤᎦᏚᏛ (ᎢᏍᎳᏍ ᎹᎸᏫᎾᏍ)</territory>
 			<territory type="FM">ᎠᏰᏟ ᏧᎾᎵᎪᎯ ᎾᎿ ᎹᎢᏉᏂᏏᏯ</territory>
 			<territory type="FO">ᏪᎶ ᏚᎦᏚᏛ</territory>
 			<territory type="FR">ᎦᎸᏥᏱ</territory>
@@ -186,7 +186,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="ML">ᎹᎵ</territory>
 			<territory type="MM">ᎹᏯᎹᎵ</territory>
 			<territory type="MN">ᎹᏂᎪᎵᎠ</territory>
-			<territory type="MO">ᎹᎧᎣ [ᎤᏓᏤᎵᏓ ᏧᏂᎸᏫᏍᏓᏁᏗ ᎢᎬᎾᏕᎾ] ᏣᎢ</territory>
+			<territory type="MO">ᎹᎧᎣ (ᎤᏓᏤᎵᏓ ᏧᏂᎸᏫᏍᏓᏁᏗ ᎢᎬᎾᏕᎾ) ᏣᎢ</territory>
 			<territory type="MO" alt="short">ᎹᎧᎣ</territory>
 			<territory type="MP">ᎾᏍᎩ ᎤᏴᏢ ᏗᏜ ᎹᎵᎠᎾ ᏚᎦᏚᏛ</territory>
 			<territory type="MQ">ᎹᏘᏂᎨ</territory>
@@ -383,7 +383,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 							<month type="9">ᏚᎵ</month>
 							<month type="10">ᏚᏂ</month>
 							<month type="11">ᏅᏓ</month>
-							<month type="12">ᎤᏍ</month>
+							<month type="12">ᎥᏍ</month>
 						</monthWidth>
 						<monthWidth type="wide">
 							<month type="1">ᎤᏃᎸᏔᏅ</month>
@@ -397,7 +397,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 							<month type="9">ᏚᎵᏍᏗ</month>
 							<month type="10">ᏚᏂᏅᏗ</month>
 							<month type="11">ᏅᏓᏕᏆ</month>
-							<month type="12">ᎤᏍᎩᏱ</month>
+							<month type="12">ᎥᏍᎩᏱ</month>
 						</monthWidth>
 					</monthContext>
 					<monthContext type="stand-alone">
@@ -413,7 +413,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 							<month type="9">Ꮪ</month>
 							<month type="10">Ꮪ</month>
 							<month type="11">Ꮕ</month>
-							<month type="12">Ꭴ</month>
+							<month type="12">Ꭵ</month>
 						</monthWidth>
 					</monthContext>
 				</months>
@@ -628,12 +628,32 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<hourFormat>+HH:mm;-HH:mm</hourFormat>
 			<gmtFormat>GMT{0}</gmtFormat>
 			<gmtZeroFormat>ᎢᎢᎢ</gmtZeroFormat>
+			<regionFormat>{0} ᎢᏳᏩᎪᏗ</regionFormat>
+			<zone type="Pacific/Honolulu">
+				<short>
+					<generic>HST</generic>
+					<standard>HST</standard>
+					<daylight>HDT</daylight>
+				</short>
+			</zone>
+			<metazone type="Alaska">
+				<short>
+					<generic>AKT</generic>
+					<standard>AKST</standard>
+					<daylight>AKDT</daylight>
+				</short>
+			</metazone>
 			<metazone type="America_Central">
 				<long>
 					<generic>ᎠᏰᎵ ᎢᏳᏩᎪᏗ</generic>
 					<standard>ᎠᏰᎵ ᏰᎵᏊ ᏗᏙᎳᎩ ᎢᏳᏩᎪᏗ</standard>
 					<daylight>ᎠᏰᎵ ᎢᎦ ᎢᏳᏩᎪᏗ</daylight>
 				</long>
+				<short>
+					<generic>CT</generic>
+					<standard>CST</standard>
+					<daylight>CDT</daylight>
+				</short>
 			</metazone>
 			<metazone type="America_Eastern">
 				<long>
@@ -641,6 +661,11 @@ For terms of use, see http://www.unicode.org/copyright.html
 					<standard>ᎧᎸᎬᎢᏗᏢ ᏰᎵᏊ ᏗᏙᎳᎩ ᎢᏳᏩᎪᏗ</standard>
 					<daylight>ᎧᎸᎬᎢᏗᏢ ᎢᎦ ᎢᏳᏩᎪᏗ</daylight>
 				</long>
+				<short>
+					<generic>ET</generic>
+					<standard>EST</standard>
+					<daylight>EDT</daylight>
+				</short>
 			</metazone>
 			<metazone type="America_Mountain">
 				<long>
@@ -648,6 +673,11 @@ For terms of use, see http://www.unicode.org/copyright.html
 					<standard>ᎣᏓᎸ ᏰᎵᏊ ᏗᏙᎳᎩ ᎢᏳᏩᎪᏗ</standard>
 					<daylight>ᎣᏓᎸ ᎢᎦ ᎢᏳᏩᎪᏗ</daylight>
 				</long>
+				<short>
+					<generic>MT</generic>
+					<standard>MST</standard>
+					<daylight>MDT</daylight>
+				</short>
 			</metazone>
 			<metazone type="America_Pacific">
 				<long>
@@ -655,11 +685,30 @@ For terms of use, see http://www.unicode.org/copyright.html
 					<standard>ᏭᏕᎵᎬ ᏰᎵᏊ ᏗᏙᎳᎩ ᎢᏳᏩᎪᏗ</standard>
 					<daylight>ᏭᏕᎵᎬ ᎢᎦ ᎢᏳᏩᎪᏗ</daylight>
 				</long>
+				<short>
+					<generic>PT</generic>
+					<standard>PST</standard>
+					<daylight>PDT</daylight>
+				</short>
+			</metazone>
+			<metazone type="Atlantic">
+				<short>
+					<generic>AT</generic>
+					<standard>AST</standard>
+					<daylight>ADT</daylight>
+				</short>
 			</metazone>
 			<metazone type="GMT">
 				<long>
 					<standard>ᎢᏤ ᎢᏳᏍᏗ ᎢᏳᏩᎪᏗ</standard>
 				</long>
+			</metazone>
+			<metazone type="Hawaii_Aleutian">
+				<short>
+					<generic>HAT</generic>
+					<standard>HAST</standard>
+					<daylight>HADT</daylight>
+				</short>
 			</metazone>
 		</timeZoneNames>
 	</dates>
@@ -699,9 +748,11 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</percentFormats>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
 					<pattern>¤#,##0.00</pattern>
-					<pattern alt="accounting">¤#,##0.00;(¤#,##0.00)</pattern>
+				</currencyFormat>
+				<currencyFormat type="accounting">
+					<pattern>¤#,##0.00;(¤#,##0.00)</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
 			<unitPattern count="one">{0} {1}</unitPattern>
@@ -746,32 +797,72 @@ For terms of use, see http://www.unicode.org/copyright.html
 	<units>
 		<unitLength type="long">
 			<unit type="duration-day">
+				<displayName draft="provisional">ᏧᏒᎯᏓ</displayName>
 				<unitPattern count="one">{0} ᏏᎦ</unitPattern>
 				<unitPattern count="other">{0} ᏧᏒᎯᏓ</unitPattern>
 			</unit>
 			<unit type="duration-hour">
+				<displayName draft="provisional">ᎢᏧᏣᎶᏓ</displayName>
 				<unitPattern count="one">{0} ᏑᏣᎶᏓ</unitPattern>
 				<unitPattern count="other">{0} ᎢᏧᏣᎶᏓ</unitPattern>
 			</unit>
 			<unit type="duration-minute">
+				<displayName draft="provisional">ᎢᏧᏔᏬᏍᏔᏅ</displayName>
 				<unitPattern count="one">{0} ᎢᏯᏔᏬᏍᏔᏅ</unitPattern>
 				<unitPattern count="other">{0} ᎢᏧᏔᏬᏍᏔᏅ</unitPattern>
 			</unit>
 			<unit type="duration-month">
+				<displayName draft="provisional">ᎢᏯᏅᏓ</displayName>
 				<unitPattern count="one">{0} ᏏᏅᏓ</unitPattern>
 				<unitPattern count="other">{0} ᎢᏯᏅᏓ</unitPattern>
 			</unit>
 			<unit type="duration-second">
+				<displayName draft="provisional">ᏗᏎᏢ</displayName>
 				<unitPattern count="one">{0} ᎠᏎᏢ</unitPattern>
 				<unitPattern count="other">{0} ᏗᏎᏢ</unitPattern>
 			</unit>
 			<unit type="duration-week">
+				<displayName draft="provisional">ᎢᏳᎾᏙᏓᏆᏍᏗ</displayName>
 				<unitPattern count="one">{0} ᏒᎾᏙᏓᏆᏍᏗ</unitPattern>
 				<unitPattern count="other">{0} ᎢᏳᎾᏙᏓᏆᏍᏗ</unitPattern>
 			</unit>
 			<unit type="duration-year">
+				<displayName draft="provisional">ᏧᏕᏘᏴᏓ</displayName>
 				<unitPattern count="one">{0} ᏑᏕᏘᏴᏓ</unitPattern>
 				<unitPattern count="other">{0} ᏧᏕᏘᏴᏓ</unitPattern>
+			</unit>
+		</unitLength>
+		<unitLength type="short">
+			<unit type="duration-day">
+				<displayName draft="provisional">ᏧᏒᎯᏓ</displayName>
+			</unit>
+			<unit type="duration-hour">
+				<displayName draft="provisional">ᎢᏧᏣᎶᏓ</displayName>
+			</unit>
+			<unit type="duration-minute">
+				<displayName draft="provisional">ᎢᏧᏔᏬᏍᏔᏅ</displayName>
+			</unit>
+			<unit type="duration-month">
+				<displayName draft="provisional">ᎢᏯᏅᏓ</displayName>
+			</unit>
+			<unit type="duration-second">
+				<displayName draft="provisional">ᏗᏎᏢ</displayName>
+			</unit>
+			<unit type="duration-week">
+				<displayName draft="provisional">ᎢᏳᎾᏙᏓᏆᏍᏗ</displayName>
+			</unit>
+			<unit type="duration-year">
+				<displayName draft="provisional">ᏧᏕᏘᏴᏓ</displayName>
+			</unit>
+		</unitLength>
+		<unitLength type="narrow">
+			<unit type="temperature-celsius">
+				<unitPattern count="one">{0}°C</unitPattern>
+				<unitPattern count="other">{0}°C</unitPattern>
+			</unit>
+			<unit type="temperature-fahrenheit">
+				<unitPattern count="one">{0}°</unitPattern>
+				<unitPattern count="other">{0}°</unitPattern>
 			</unit>
 		</unitLength>
 	</units>

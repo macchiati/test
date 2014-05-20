@@ -22,12 +22,10 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<language type="af">ཨཕ་རི་ཀཱནས་ཁ</language>
 			<language type="am">ཨམ་ཧ་རིཀ་ཁ</language>
 			<language type="ar">ཨེ་ར་བིཀ་ཁ</language>
-			<language type="art" draft="unconfirmed">བཟོ་བཟོཝ (གཞན)</language>
 			<language type="as">ཨ་ས་མིས་ཁ</language>
 			<language type="az">ཨ་ཛར་བྷའི་ཇཱན་ཁ</language>
 			<language type="be">བེལ་ཨ་རུས་ཁ</language>
 			<language type="bg">བཱལ་གེ་རི་ཡཱན་ཁ</language>
-			<language type="bh" draft="unconfirmed">བི་ཧ་ལི</language>
 			<language type="bn">བངྒ་ལ་ཁ</language>
 			<language type="bo">བོད་ཁ</language>
 			<language type="bs">བྷོས་ནི་ཡཱན་ཁ</language>
@@ -73,14 +71,12 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<language type="haw">ཧ་ཝ་ཡིའི་ཁ</language>
 			<language type="he">ཧེ་བྲུ་ཁ</language>
 			<language type="hi">ཧིན་དི་ཁ</language>
-			<language type="him">ཧི་མ་ཅ་ལི་ཁ</language>
 			<language type="hr">ཀྲོ་ཨེ་ཤི་ཡཱན་ཁ</language>
 			<language type="ht">ཧེ་ཏི་ཡཱན་ཁ</language>
 			<language type="hu">ཧཱང་གྷ་རི་ཡཱན་ཁ</language>
 			<language type="hy">ཨར་མི་ནི་ཡཱན་ཁ</language>
 			<language type="id">ཨིན་ཌོ་ནེ་ཤི་ཡཱན་ཁ</language>
 			<language type="ig">ཨིག་བོ་ཁ</language>
-			<language type="inc">ཨིན་ཌིཀ་ཁ་སྐད</language>
 			<language type="is">ཨ་ཡིས་ལེན་ཌིཀ་ཁ</language>
 			<language type="it">ཨི་ཊ་ལི་ཡཱན་ཁ</language>
 			<language type="ja">ཇཱ་པཱ་ནིས་ཁ</language>
@@ -320,7 +316,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="FI">ཕིན་ལེནཌ</territory>
 			<territory type="FJ">ཕི་ཇི</territory>
 			<territory type="FK">ཕལྐ་ལནྜ་གླིང་ཚོམ</territory>
-			<territory type="FK" alt="variant">ཕལྐ་ལནྜ་གླིང་ཚོམ [ཨིས་ལཱས་མལ་བི་ཎཱས]</territory>
+			<territory type="FK" alt="variant">ཕལྐ་ལནྜ་གླིང་ཚོམ (ཨིས་ལཱས་མལ་བི་ཎཱས)</territory>
 			<territory type="FM">མའི་ཀྲོ་ནི་ཤི་ཡ</territory>
 			<territory type="FO">ཕཱའེ་རོ་གླིང་ཚོམ</territory>
 			<territory type="FR">ཕྲཱནས</territory>
@@ -395,9 +391,9 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="MG">མ་དཱ་གེས་ཀར</territory>
 			<territory type="MH">མར་ཤེལ་གླིང་ཚོམ</territory>
 			<territory type="MK">མ་སེ་ཌོ་ནི་ཡ</territory>
-			<territory type="MK" alt="variant">མ་སེ་ཌོ་ནི་ཡ་ [ཡུ་གོ་སླཱ་བི་ཡ]</territory>
+			<territory type="MK" alt="variant">མ་སེ་ཌོ་ནི་ཡ་ (ཡུ་གོ་སླཱ་བི་ཡ)</territory>
 			<territory type="ML">མཱ་ལི</territory>
-			<territory type="MM">མི་ཡཱན་མར་ [བྷར་མ]</territory>
+			<territory type="MM">མི་ཡཱན་མར་ (བྷར་མ)</territory>
 			<territory type="MN">སོག་པོ་ཡུལ</territory>
 			<territory type="MO">མཀ་ཨའུ་ཅཱའི་ན</territory>
 			<territory type="MO" alt="short">མཀ་ཨའུ</territory>
@@ -566,10 +562,10 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</codePatterns>
 	</localeDisplayNames>
 	<characters>
-		<exemplarCharacters>[ཀ \u0F90 ཁ \u0F91 ག \u0F92 ང \u0F94 ཅ ཆ ཇ \u0F97 ཉ \u0F99 ཏ \u0F9F ཐ \u0FA0 ད \u0FA1 ན \u0FA3 པ \u0FA4 ཕ \u0FA5 བ \u0FA6 མ \u0FA8 ཙ \u0FA9 ཚ \u0FAA ཛ \u0FAB ཝ \u0FAD ཞ ཟ འ ཡ \u0FB1 ར \u0FB2 ལ \u0FB3 ཤ \u0FB5 ས \u0FB6 ཧ \u0FB7 ཨ \u0F72 \u0F74 \u0F7A \u0F7C]</exemplarCharacters>
-		<exemplarCharacters type="auxiliary">[\u0F7E ཊ \u0F9A ཋ \u0F9B ཌ \u0F9C ཎ \u0F9E \u0FBA \u0FBB \u0FBC ཥ \u0F80 \u0F7B \u0F7D \u0F84]</exemplarCharacters>
+		<exemplarCharacters>[ཀ ཁ ག ང ཅ ཆ ཇ ཉ ཏ ཐ ད ན པ ཕ བ མ ཙ ཚ ཛ ཝ ཞ ཟ འ ཡ ར ལ ཤ ས ཧ ཨ \u0F72 \u0F74 \u0F7A \u0F7C \u0F90 \u0F91 \u0F92 \u0F94 \u0F97 \u0F99 \u0F9F \u0FA0 \u0FA1 \u0FA3 \u0FA4 \u0FA5 \u0FA6 \u0FA8 \u0FA9 \u0FAA \u0FAB \u0FAD \u0FB1 \u0FB2 \u0FB3 \u0FB5 \u0FB6 \u0FB7]</exemplarCharacters>
+		<exemplarCharacters type="auxiliary">[\u0F84 ཊ ཋ ཌ ཎ \u0F7E ཥ \u0F80 \u0F7B \u0F7D \u0F9A \u0F9B \u0F9C \u0F9E \u0FBA \u0FBB \u0FBC]</exemplarCharacters>
 		<exemplarCharacters type="index" draft="contributed">[ཀ ཁ ག ང ཅ ཆ ཇ ཉ ཏ ཐ ད ན པ ཕ བ མ ཙ ཚ ཛ ཝ ཞ ཟ འ ཡ ར ལ ཤ ས ཧ ཨ]</exemplarCharacters>
-		<exemplarCharacters type="punctuation">[\- ‐ – — , ; \: ༔ ! ? . … ' ‘ ’ &quot; “ ” ( ) \[ \] ༼ ༽ § @ * / \&amp; # † ‡ ༄ ༅ ༆ ༈ ༉ ༊ ࿐ ࿑ ༌ ། ༎ ༏ ༐ ༑ ༒ ࿒ ࿓ ࿔ ༴ ༶ ྾ ྿]</exemplarCharacters>
+		<exemplarCharacters type="punctuation">[\- ‐ – — , ; \: ! ? . … ' ‘ ’ &quot; “ ” ( ) \[ \] ༼ ༽ § @ * / \&amp; # † ‡ ༄ ༅ ༆ ༈ ༉ ༊ ࿐ ࿑ ༒ ࿒ ࿓ ࿔ ༶ ྾ ྿ ༌ ། ༎ ༏ ༐ ༑ ༔ ༴]</exemplarCharacters>
 		<ellipsis type="final">{0}་་་་</ellipsis>
 		<ellipsis type="initial">་་་་{0}</ellipsis>
 		<ellipsis type="medial">{0}་་་་་་ {1}</ellipsis>
@@ -1183,12 +1179,30 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</field>
 			<field type="year">
 				<displayName>ལོ</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">ལོ་འཁོར་ {0} ནང་</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">ལོ་འཁོར་ {0} ཧེ་མ་</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="month">
 				<displayName>ཟླ་ཝ་</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">ཟླཝ་ {0} ནང་</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">ཟླཝ་ {0} ཧེ་མ་</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="week">
 				<displayName>བདུན་ཕྲག</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">བངུན་ཕྲག་ {0} ནང་</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">བངུན་ཕྲག་ {0} ཧེ་མ་</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="day">
 				<displayName>ཚེས་</displayName>
@@ -1197,6 +1211,12 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<relative type="0">ད་རིས་</relative>
 				<relative type="1">ནངས་པ་</relative>
 				<relative type="2">གནངས་ཚེ</relative>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">ཉིནམ་ {0} ནང་</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">ཉིནམ་ {0} ཧེ་མ་</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="weekday">
 				<displayName>བདུན་ཕྲག་གི་ཉིམ</displayName>
@@ -1206,12 +1226,30 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</field>
 			<field type="hour">
 				<displayName>ཆུ་ཚོད</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">ཆུ་ཚོད་ {0} ནང་</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">ཆུ་ཚོད་ {0} ཧེ་མ་</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="minute">
 				<displayName>སྐར་མ</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">སྐར་མ་ {0} ནང་</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">སྐར་མ་ {0} ཧེ་མ་</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="second">
 				<displayName>སྐར་ཆཱ་</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">སྐར་ཆ་ {0} ནང་</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">སྐར་ཆ་ {0} ཧེ་མ་</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="zone">
 				<displayName>དུས་ཀུལ</displayName>
@@ -1246,9 +1284,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</zone>
 			<zone type="Antarctica/Palmer">
 				<exemplarCity draft="unconfirmed">ཕཱལ་མར</exemplarCity>
-			</zone>
-			<zone type="Antarctica/South_Pole">
-				<exemplarCity draft="unconfirmed">སཱའུཐ་པོལ</exemplarCity>
 			</zone>
 			<zone type="Antarctica/Mawson">
 				<exemplarCity>མའུ་སཱོན</exemplarCity>
@@ -1357,9 +1392,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</zone>
 			<zone type="America/Toronto">
 				<exemplarCity>ཊོ་རོན་ཊོ</exemplarCity>
-			</zone>
-			<zone type="America/Montreal">
-				<exemplarCity>མཱོནཊ་རི་ཡལ</exemplarCity>
 			</zone>
 			<zone type="America/Pangnirtung">
 				<exemplarCity>པེང་ནིར་ཏུང</exemplarCity>
@@ -2325,7 +2357,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</percentFormats>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
 					<pattern>¤#,##,##0.00</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
@@ -2579,67 +2611,55 @@ For terms of use, see http://www.unicode.org/copyright.html
 	<units>
 		<unitLength type="long">
 			<unit type="duration-day">
+				<displayName draft="provisional">ཉིན་ཞག་</displayName>
 				<unitPattern count="other">ཉིན་ཞག་ {0}</unitPattern>
 			</unit>
-			<unit type="duration-day-future">
-				<unitPattern count="other">ཉིནམ་ {0} ནང་</unitPattern>
-			</unit>
-			<unit type="duration-day-past">
-				<unitPattern count="other">ཉིནམ་ {0} ཧེ་མ་</unitPattern>
-			</unit>
 			<unit type="duration-hour">
+				<displayName draft="provisional">ཆུ་ཚོད་</displayName>
 				<unitPattern count="other">ཆུ་ཚོད་ {0}</unitPattern>
 			</unit>
-			<unit type="duration-hour-future">
-				<unitPattern count="other">ཆུ་ཚོད་ {0} ནང་</unitPattern>
-			</unit>
-			<unit type="duration-hour-past">
-				<unitPattern count="other">ཆུ་ཚོད་ {0} ཧེ་མ་</unitPattern>
-			</unit>
 			<unit type="duration-minute">
-				<unitPattern count="other">སྐར་ཆ་ {0}</unitPattern>
-			</unit>
-			<unit type="duration-minute-future">
-				<unitPattern count="other">སྐར་ཆ་ {0} ནང་</unitPattern>
-			</unit>
-			<unit type="duration-minute-past">
-				<unitPattern count="other">སྐར་ཆ་ {0} ཧེ་མ་</unitPattern>
+				<displayName draft="provisional">སྐར་མ་</displayName>
+				<unitPattern count="other">སྐར་མ་ {0}</unitPattern>
 			</unit>
 			<unit type="duration-month">
+				<displayName draft="provisional">ཟླཝ་</displayName>
 				<unitPattern count="other">ཟླཝ་ {0}</unitPattern>
 			</unit>
-			<unit type="duration-month-future">
-				<unitPattern count="other">ཟླཝ་ {0} ནང་</unitPattern>
-			</unit>
-			<unit type="duration-month-past">
-				<unitPattern count="other">ཟླཝ་ {0} ཧེ་མ་</unitPattern>
-			</unit>
 			<unit type="duration-second">
+				<displayName draft="provisional">སྐར་ཆ་</displayName>
 				<unitPattern count="other">སྐར་ཆ་ {0}</unitPattern>
 			</unit>
-			<unit type="duration-second-future">
-				<unitPattern count="other">སྐར་ཆ་ {0} ནང་</unitPattern>
-			</unit>
-			<unit type="duration-second-past">
-				<unitPattern count="other">བངུན་ཕྲག་ {0} ཧེ་མ་</unitPattern>
-			</unit>
 			<unit type="duration-week">
+				<displayName draft="provisional">བངུན་ཕྲག་</displayName>
 				<unitPattern count="other">བངུན་ཕྲག་ {0}</unitPattern>
 			</unit>
-			<unit type="duration-week-future">
-				<unitPattern count="other">བངུན་ཕྲག་ {0} ནང་</unitPattern>
-			</unit>
-			<unit type="duration-week-past">
-				<unitPattern count="other">བངུན་ཕྲག་ {0} ཧེ་མ་</unitPattern>
-			</unit>
 			<unit type="duration-year">
+				<displayName draft="provisional">ལོ་འཁོར་</displayName>
 				<unitPattern count="other">ལོ་འཁོར་ {0}</unitPattern>
 			</unit>
-			<unit type="duration-year-future">
-				<unitPattern count="other">ལོ་འཁོར་ {0} ནང་</unitPattern>
+		</unitLength>
+		<unitLength type="short">
+			<unit type="duration-day">
+				<displayName draft="provisional">ཉིན་ཞག་</displayName>
 			</unit>
-			<unit type="duration-year-past">
-				<unitPattern count="other">ལོ་འཁོར་ {0} ཧེ་མ་</unitPattern>
+			<unit type="duration-hour">
+				<displayName draft="provisional">ཆུ་ཚོད་</displayName>
+			</unit>
+			<unit type="duration-minute">
+				<displayName draft="provisional">སྐར་མ་</displayName>
+			</unit>
+			<unit type="duration-month">
+				<displayName draft="provisional">ཟླཝ་</displayName>
+			</unit>
+			<unit type="duration-second">
+				<displayName draft="provisional">སྐར་ཆ་</displayName>
+			</unit>
+			<unit type="duration-week">
+				<displayName draft="provisional">བངུན་ཕྲག་</displayName>
+			</unit>
+			<unit type="duration-year">
+				<displayName draft="provisional">ལོ་འཁོར་</displayName>
 			</unit>
 		</unitLength>
 	</units>

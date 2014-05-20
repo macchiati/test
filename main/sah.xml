@@ -304,12 +304,30 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</field>
 			<field type="year">
 				<displayName draft="unconfirmed">Сыл</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">{0} сылынан</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">{0} сыл ынараа өттүгэр</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="month">
 				<displayName draft="unconfirmed">Ый</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">{0} ыйынан</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">{0} ый ынараа өттүгэр</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="week">
 				<displayName draft="unconfirmed">Нэдиэлэ</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">{0} нэдиэлэннэн</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">{0} нэдиэлэ ынараа өттүгэр</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="day">
 				<displayName draft="unconfirmed">Күн</displayName>
@@ -318,6 +336,12 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<relative type="0" draft="unconfirmed">Бүгүн</relative>
 				<relative type="1" draft="unconfirmed">Сарсын</relative>
 				<relative type="2" draft="unconfirmed">Өйүүн</relative>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">{0} күнүнэн</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">{0} күн ынараа өттүгэр</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="weekday">
 				<displayName draft="unconfirmed">Нэдиэлэ күнэ</displayName>
@@ -327,12 +351,30 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</field>
 			<field type="hour">
 				<displayName draft="unconfirmed">Чаас</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">{0} чааһынан</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">{0} чаас ынараа өттүгэр</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="minute">
 				<displayName draft="unconfirmed">Мүнүүтэ</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">{0} мүнүүтэннэн</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">{0} мүнүүтэ ынараа өттүгэр</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="second">
 				<displayName draft="unconfirmed">Сөкүүндэ</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="other">{0} сөкүүндэннэн</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="other">{0} сөкүүндэ ынараа өттүгэр</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="zone">
 				<displayName draft="unconfirmed">Кэм балаһата</displayName>
@@ -349,67 +391,55 @@ For terms of use, see http://www.unicode.org/copyright.html
 	<units>
 		<unitLength type="long">
 			<unit type="duration-day">
+				<displayName draft="provisional">күн</displayName>
 				<unitPattern count="other">{0} күн</unitPattern>
 			</unit>
-			<unit type="duration-day-future">
-				<unitPattern count="other">{0} күнүнэн</unitPattern>
-			</unit>
-			<unit type="duration-day-past">
-				<unitPattern count="other">{0} күн ынараа өттүгэр</unitPattern>
-			</unit>
 			<unit type="duration-hour">
+				<displayName draft="provisional">чаас</displayName>
 				<unitPattern count="other">{0} чаас</unitPattern>
 			</unit>
-			<unit type="duration-hour-future">
-				<unitPattern count="other">{0} чааһынан</unitPattern>
-			</unit>
-			<unit type="duration-hour-past">
-				<unitPattern count="other">{0} чаас ынараа өттүгэр</unitPattern>
-			</unit>
 			<unit type="duration-minute">
+				<displayName draft="provisional">мүнүүтэ</displayName>
 				<unitPattern count="other">{0} мүнүүтэ</unitPattern>
 			</unit>
-			<unit type="duration-minute-future">
-				<unitPattern count="other">{0} мүнүүтэннэн</unitPattern>
-			</unit>
-			<unit type="duration-minute-past">
-				<unitPattern count="other">{0} мүнүүтэ ынараа өттүгэр</unitPattern>
-			</unit>
 			<unit type="duration-month">
+				<displayName draft="provisional">ый</displayName>
 				<unitPattern count="other">{0} ый</unitPattern>
 			</unit>
-			<unit type="duration-month-future">
-				<unitPattern count="other">{0} ыйынан</unitPattern>
-			</unit>
-			<unit type="duration-month-past">
-				<unitPattern count="other">{0} ый ынараа өттүгэр</unitPattern>
-			</unit>
 			<unit type="duration-second">
+				<displayName draft="provisional">сөкүүндэ</displayName>
 				<unitPattern count="other">{0} сөкүүндэ</unitPattern>
 			</unit>
-			<unit type="duration-second-future">
-				<unitPattern count="other">{0} сөкүүндэннэн</unitPattern>
-			</unit>
-			<unit type="duration-second-past">
-				<unitPattern count="other">{0} сөкүүндэ ынараа өттүгэр</unitPattern>
-			</unit>
 			<unit type="duration-week">
+				<displayName draft="provisional">нэдиэлэ</displayName>
 				<unitPattern count="other">{0} нэдиэлэ</unitPattern>
 			</unit>
-			<unit type="duration-week-future">
-				<unitPattern count="other">{0} нэдиэлэннэн</unitPattern>
-			</unit>
-			<unit type="duration-week-past">
-				<unitPattern count="other">{0} нэдиэлэ ынараа өттүгэр</unitPattern>
-			</unit>
 			<unit type="duration-year">
+				<displayName draft="provisional">сыл</displayName>
 				<unitPattern count="other">{0} сыл</unitPattern>
 			</unit>
-			<unit type="duration-year-future">
-				<unitPattern count="other">{0} сылынан</unitPattern>
+		</unitLength>
+		<unitLength type="short">
+			<unit type="duration-day">
+				<displayName draft="provisional">күн</displayName>
 			</unit>
-			<unit type="duration-year-past">
-				<unitPattern count="other">{0} сыл ынараа өттүгэр</unitPattern>
+			<unit type="duration-hour">
+				<displayName draft="provisional">чаас</displayName>
+			</unit>
+			<unit type="duration-minute">
+				<displayName draft="provisional">мүнүүтэ</displayName>
+			</unit>
+			<unit type="duration-month">
+				<displayName draft="provisional">ый</displayName>
+			</unit>
+			<unit type="duration-second">
+				<displayName draft="provisional">сөкүүндэ</displayName>
+			</unit>
+			<unit type="duration-week">
+				<displayName draft="provisional">нэдиэлэ</displayName>
+			</unit>
+			<unit type="duration-year">
+				<displayName draft="provisional">сыл</displayName>
 			</unit>
 		</unitLength>
 	</units>

@@ -593,7 +593,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</percentFormats>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
 					<pattern>#,##0.00¤</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
@@ -759,7 +759,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<displayName>Hawasa Afriki Rand</displayName>
 			</currency>
 			<currency type="ZMK">
-				<displayName>Zambi Kwaca (1968-2012)</displayName>
+				<displayName>Zambi Kwaca (1968–2012)</displayName>
 			</currency>
 			<currency type="ZMW">
 				<displayName>Zambi Kwaca</displayName>

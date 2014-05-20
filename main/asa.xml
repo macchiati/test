@@ -579,7 +579,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 	<numbers>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
 					<pattern>#,##0.00 ¤</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
@@ -746,7 +746,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<displayName>randi ya Afrika Kuthini</displayName>
 			</currency>
 			<currency type="ZMK">
-				<displayName>kwacha ya Dhambia (1968-2012)</displayName>
+				<displayName>kwacha ya Dhambia (1968–2012)</displayName>
 			</currency>
 			<currency type="ZMW">
 				<displayName>kwacha ya Dhambia</displayName>

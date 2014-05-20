@@ -259,15 +259,14 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="BY" draft="unconfirmed">Bielorrusia</territory>
 			<territory type="BZ" draft="unconfirmed">Belize</territory>
 			<territory type="CA" draft="unconfirmed">Canadá</territory>
-			<territory type="CC" draft="unconfirmed">Islles Cocos [Keeling]</territory>
+			<territory type="CC" draft="unconfirmed">Islles Cocos (Keeling)</territory>
 			<territory type="CD" draft="unconfirmed">Congu - Kinxasa</territory>
-			<territory type="CD" alt="variant" draft="unconfirmed">Congu [RDC]</territory>
+			<territory type="CD" alt="variant" draft="unconfirmed">Congu (RDC)</territory>
 			<territory type="CF" draft="unconfirmed">República Centroafricana</territory>
 			<territory type="CG" draft="unconfirmed">Congu - Brazzaville</territory>
-			<territory type="CG" alt="variant" draft="unconfirmed">Congu [República]</territory>
+			<territory type="CG" alt="variant" draft="unconfirmed">Congu (República)</territory>
 			<territory type="CH" draft="unconfirmed">Suiza</territory>
 			<territory type="CI" draft="unconfirmed">Costa de Marfil</territory>
-			<territory type="CI" alt="variant" draft="unconfirmed">Costa de Marfil</territory>
 			<territory type="CK" draft="unconfirmed">Islles Cook</territory>
 			<territory type="CL" draft="unconfirmed">Chile</territory>
 			<territory type="CM" draft="unconfirmed">Camerún</territory>
@@ -375,9 +374,9 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="MG" draft="unconfirmed">Madagascar</territory>
 			<territory type="MH" draft="unconfirmed">Islles Marshall</territory>
 			<territory type="MK" draft="unconfirmed">Macedonia</territory>
-			<territory type="MK" alt="variant" draft="unconfirmed">Macedonia [ARYDM]</territory>
+			<territory type="MK" alt="variant" draft="unconfirmed">Macedonia (ARYDM)</territory>
 			<territory type="ML" draft="unconfirmed">Malí</territory>
-			<territory type="MM" draft="unconfirmed">Myanmar [Birmania]</territory>
+			<territory type="MM" draft="unconfirmed">Myanmar (Birmania)</territory>
 			<territory type="MN" draft="unconfirmed">Mongolia</territory>
 			<territory type="MO" draft="unconfirmed">ARE China de Macáu</territory>
 			<territory type="MO" alt="short" draft="unconfirmed">Macáu</territory>
@@ -1139,21 +1138,52 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</field>
 			<field type="year">
 				<displayName draft="unconfirmed">añu</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">En {0} añu</relativeTimePattern>
+					<relativeTimePattern count="other">En {0} años</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">Hai {0} añu</relativeTimePattern>
+					<relativeTimePattern count="other">Hai {0} años</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="month">
 				<displayName draft="unconfirmed">mes</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">En {0} mes</relativeTimePattern>
+					<relativeTimePattern count="other">En {0} meses</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">Hai {0} mes</relativeTimePattern>
+					<relativeTimePattern count="other">Hai {0} meses</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="week">
 				<displayName draft="unconfirmed">selmana</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">En {0} selmana</relativeTimePattern>
+					<relativeTimePattern count="other">En {0} selmanes</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">Hai {0} selmana</relativeTimePattern>
+					<relativeTimePattern count="other">Hai {0} selmanes</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="day">
 				<displayName draft="unconfirmed">día</displayName>
-				<relative type="-3" draft="unconfirmed">antantayeri</relative>
 				<relative type="-2" draft="unconfirmed">antayeri</relative>
 				<relative type="-1" draft="unconfirmed">ayeri</relative>
 				<relative type="0" draft="unconfirmed">güei</relative>
 				<relative type="1" draft="unconfirmed">mañana</relative>
 				<relative type="2" draft="unconfirmed">pasao mañana</relative>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">En {0} dia</relativeTimePattern>
+					<relativeTimePattern count="other">En {0} díes</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">Hai {0} dia</relativeTimePattern>
+					<relativeTimePattern count="other">Hai {0} díes</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="weekday">
 				<displayName draft="unconfirmed">día de la selmana</displayName>
@@ -1163,12 +1193,36 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</field>
 			<field type="hour">
 				<displayName draft="unconfirmed">hora</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">En {0} hora</relativeTimePattern>
+					<relativeTimePattern count="other">En {0} hores</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">Hai {0} hora</relativeTimePattern>
+					<relativeTimePattern count="other">Hai {0} hores</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="minute">
 				<displayName draft="unconfirmed">minutu</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">En {0} minutu</relativeTimePattern>
+					<relativeTimePattern count="other">En {0} minutos</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">Hai {0} minutu</relativeTimePattern>
+					<relativeTimePattern count="other">Hai {0} minutos</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="second">
 				<displayName draft="unconfirmed">segundu</displayName>
+				<relativeTime type="future">
+					<relativeTimePattern count="one">En {0} segundu</relativeTimePattern>
+					<relativeTimePattern count="other">En {0} segundos</relativeTimePattern>
+				</relativeTime>
+				<relativeTime type="past">
+					<relativeTimePattern count="one">Hai {0} segundu</relativeTimePattern>
+					<relativeTimePattern count="other">Hai {0} segundos</relativeTimePattern>
+				</relativeTime>
 			</field>
 			<field type="zone">
 				<displayName draft="unconfirmed">zona horaria</displayName>
@@ -1443,6 +1497,11 @@ For terms of use, see http://www.unicode.org/copyright.html
 					<standard draft="unconfirmed">Hora estándar d'Europa Central</standard>
 					<daylight draft="unconfirmed">Hora de branu d'Europa Central</daylight>
 				</long>
+				<short>
+					<generic draft="unconfirmed">CET</generic>
+					<standard draft="unconfirmed">CET</standard>
+					<daylight draft="unconfirmed">CEST</daylight>
+				</short>
 			</metazone>
 			<metazone type="Europe_Eastern">
 				<long>
@@ -1450,6 +1509,11 @@ For terms of use, see http://www.unicode.org/copyright.html
 					<standard draft="unconfirmed">Hora estándar d'Europa del Este</standard>
 					<daylight draft="unconfirmed">Hora de branu d'Europa del Este</daylight>
 				</long>
+				<short>
+					<generic draft="unconfirmed">EET</generic>
+					<standard draft="unconfirmed">EET</standard>
+					<daylight draft="unconfirmed">EEST</daylight>
+				</short>
 			</metazone>
 			<metazone type="Europe_Western">
 				<long>
@@ -1457,11 +1521,19 @@ For terms of use, see http://www.unicode.org/copyright.html
 					<standard draft="unconfirmed">Hora estándar d'Europa Occidental</standard>
 					<daylight draft="unconfirmed">Hora de branu d'Europa Occidental</daylight>
 				</long>
+				<short>
+					<generic draft="unconfirmed">WET</generic>
+					<standard draft="unconfirmed">WET</standard>
+					<daylight draft="unconfirmed">WEST</daylight>
+				</short>
 			</metazone>
 			<metazone type="GMT">
 				<long>
 					<standard draft="unconfirmed">Hora media de Greenwich</standard>
 				</long>
+				<short>
+					<standard draft="unconfirmed">GMT</standard>
+				</short>
 			</metazone>
 			<metazone type="Irkutsk">
 				<long>
@@ -1639,7 +1711,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</percentFormats>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
 					<pattern draft="unconfirmed">#,##0.00 ¤</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
@@ -2449,9 +2521,9 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<displayName count="other" draft="unconfirmed">rands sudafricanos</displayName>
 			</currency>
 			<currency type="ZMK">
-				<displayName draft="unconfirmed">kwacha zambianu (1968-2012)</displayName>
-				<displayName count="one" draft="unconfirmed">kwacha zambianu (1968-2012)</displayName>
-				<displayName count="other" draft="unconfirmed">kwachas zambianos (1968-2012)</displayName>
+				<displayName draft="unconfirmed">kwacha zambianu (1968–2012)</displayName>
+				<displayName count="one" draft="unconfirmed">kwacha zambianu (1968–2012)</displayName>
+				<displayName count="other" draft="unconfirmed">kwachas zambianos (1968–2012)</displayName>
 			</currency>
 			<currency type="ZMW">
 				<displayName draft="unconfirmed">kwacha zambianu</displayName>
@@ -2463,116 +2535,74 @@ For terms of use, see http://www.unicode.org/copyright.html
 	<units>
 		<unitLength type="long">
 			<unit type="duration-day">
+				<displayName draft="provisional">díes</displayName>
 				<unitPattern count="one">{0} dia</unitPattern>
 				<unitPattern count="other">{0} díes</unitPattern>
 			</unit>
-			<unit type="duration-day-future">
-				<unitPattern count="one">En {0} dia</unitPattern>
-				<unitPattern count="other">En {0} díes</unitPattern>
-			</unit>
-			<unit type="duration-day-past">
-				<unitPattern count="one">Hai {0} dia</unitPattern>
-				<unitPattern count="other">Hai {0} díes</unitPattern>
-			</unit>
 			<unit type="duration-hour">
+				<displayName draft="provisional">hores</displayName>
 				<unitPattern count="one">{0} hora</unitPattern>
 				<unitPattern count="other">{0} hores</unitPattern>
 			</unit>
-			<unit type="duration-hour-future">
-				<unitPattern count="one">En {0} hora</unitPattern>
-				<unitPattern count="other">En {0} hores</unitPattern>
-			</unit>
-			<unit type="duration-hour-past">
-				<unitPattern count="one">Hai {0} hora</unitPattern>
-				<unitPattern count="other">Hai {0} hores</unitPattern>
-			</unit>
 			<unit type="duration-minute">
+				<displayName draft="provisional">minutos</displayName>
 				<unitPattern count="one">{0} minutu</unitPattern>
 				<unitPattern count="other">{0} minutos</unitPattern>
 			</unit>
-			<unit type="duration-minute-future">
-				<unitPattern count="one">En {0} minutu</unitPattern>
-				<unitPattern count="other">En {0} minutos</unitPattern>
-			</unit>
-			<unit type="duration-minute-past">
-				<unitPattern count="one">Hai {0} minutu</unitPattern>
-				<unitPattern count="other">Hai {0} minutos</unitPattern>
-			</unit>
 			<unit type="duration-month">
+				<displayName draft="provisional">meses</displayName>
 				<unitPattern count="one">{0} mes</unitPattern>
 				<unitPattern count="other">{0} meses</unitPattern>
 			</unit>
-			<unit type="duration-month-future">
-				<unitPattern count="one">En {0} mes</unitPattern>
-				<unitPattern count="other">En {0} meses</unitPattern>
-			</unit>
-			<unit type="duration-month-past">
-				<unitPattern count="one">Hai {0} mes</unitPattern>
-				<unitPattern count="other">Hai {0} meses</unitPattern>
-			</unit>
 			<unit type="duration-second">
+				<displayName draft="provisional">segundos</displayName>
 				<unitPattern count="one">{0} segundu</unitPattern>
 				<unitPattern count="other">{0} segundos</unitPattern>
 			</unit>
-			<unit type="duration-second-future">
-				<unitPattern count="one">En {0} segundu</unitPattern>
-				<unitPattern count="other">En {0} segundos</unitPattern>
-			</unit>
-			<unit type="duration-second-past">
-				<unitPattern count="one">Hai {0} segundu</unitPattern>
-				<unitPattern count="other">Hai {0} segundos</unitPattern>
-			</unit>
 			<unit type="duration-week">
+				<displayName draft="provisional">selmanes</displayName>
 				<unitPattern count="one">{0} selmana</unitPattern>
 				<unitPattern count="other">{0} selmanes</unitPattern>
 			</unit>
-			<unit type="duration-week-future">
-				<unitPattern count="one">En {0} selmana</unitPattern>
-				<unitPattern count="other">En {0} selmanes</unitPattern>
-			</unit>
-			<unit type="duration-week-past">
-				<unitPattern count="one">Hai {0} selmana</unitPattern>
-				<unitPattern count="other">Hai {0} selmanes</unitPattern>
-			</unit>
 			<unit type="duration-year">
+				<displayName draft="provisional">años</displayName>
 				<unitPattern count="one">{0} añu</unitPattern>
 				<unitPattern count="other">{0} años</unitPattern>
-			</unit>
-			<unit type="duration-year-future">
-				<unitPattern count="one">En {0} añu</unitPattern>
-				<unitPattern count="other">En {0} años</unitPattern>
-			</unit>
-			<unit type="duration-year-past">
-				<unitPattern count="one">Hai {0} añu</unitPattern>
-				<unitPattern count="other">Hai {0} años</unitPattern>
 			</unit>
 		</unitLength>
 		<unitLength type="short">
 			<unit type="duration-day">
+				<displayName draft="provisional">díes</displayName>
 				<unitPattern count="one">{0} d</unitPattern>
 				<unitPattern count="other">{0} d</unitPattern>
 			</unit>
 			<unit type="duration-hour">
+				<displayName draft="provisional">hores</displayName>
 				<unitPattern count="one">{0} h</unitPattern>
 				<unitPattern count="other">{0} h</unitPattern>
 			</unit>
 			<unit type="duration-minute">
+				<displayName draft="provisional">minutos</displayName>
 				<unitPattern count="one">{0} min</unitPattern>
 				<unitPattern count="other">{0} min</unitPattern>
 			</unit>
 			<unit type="duration-month">
+				<displayName draft="provisional">meses</displayName>
 				<unitPattern count="one">{0} m</unitPattern>
 				<unitPattern count="other">{0} m</unitPattern>
 			</unit>
 			<unit type="duration-second">
+				<displayName draft="provisional">segundos</displayName>
 				<unitPattern count="one">{0} s</unitPattern>
 				<unitPattern count="other">{0} s</unitPattern>
 			</unit>
 			<unit type="duration-week">
+				<displayName draft="provisional">selmanes</displayName>
 				<unitPattern count="one">{0} sel</unitPattern>
 				<unitPattern count="other">{0} sel</unitPattern>
 			</unit>
 			<unit type="duration-year">
+				<displayName draft="provisional">años</displayName>
 				<unitPattern count="one">{0} a</unitPattern>
 				<unitPattern count="other">{0} a</unitPattern>
 			</unit>

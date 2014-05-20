@@ -18,6 +18,11 @@ For terms of use, see http://www.unicode.org/copyright.html
 					<standard>புருணை டாரு சலாம் நேரம்</standard>
 				</long>
 			</metazone>
+			<metazone type="India">
+				<short>
+					<standard>∅∅∅</standard>
+				</short>
+			</metazone>
 			<metazone type="Indonesia_Central">
 				<long>
 					<standard>மத்திய இந்தோனேசிய நேரம்</standard>
@@ -68,7 +73,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</percentFormats>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
 					<pattern>¤ #,##0.00</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
@@ -80,6 +85,9 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</currency>
 			<currency type="SGD">
 				<symbol>$</symbol>
+			</currency>
+			<currency type="USD">
+				<symbol>US$</symbol>
 			</currency>
 		</currencies>
 	</numbers>

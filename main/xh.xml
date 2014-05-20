@@ -19,7 +19,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<language type="az" draft="unconfirmed">Isi-Azerbaijani</language>
 			<language type="be" draft="unconfirmed">Isi-Belarusian</language>
 			<language type="bg" draft="unconfirmed">Isi-Bulgaria</language>
-			<language type="bh" draft="unconfirmed">Isi-Bihari</language>
 			<language type="bn" draft="unconfirmed">Isi-Bengali</language>
 			<language type="br" draft="unconfirmed">Breton</language>
 			<language type="bs" draft="unconfirmed">Isi-Bosnia</language>
@@ -244,7 +243,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</percentFormats>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
 					<pattern>¤#,##0.00</pattern>
 				</currencyFormat>
 			</currencyFormatLength>

@@ -20,7 +20,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<language type="az">Èdè Azerbaijani</language>
 			<language type="be">Èdè Belarusi</language>
 			<language type="bg">Èdè Bugaria</language>
-			<language type="bh">Èdè Bihari</language>
 			<language type="bn">Èdè Bengali</language>
 			<language type="br">Èdè Bretoni</language>
 			<language type="bs">Èdè Bosnia</language>
@@ -607,9 +606,11 @@ For terms of use, see http://www.unicode.org/copyright.html
 	<numbers>
 		<currencyFormats numberSystem="latn">
 			<currencyFormatLength>
-				<currencyFormat>
+				<currencyFormat type="standard">
 					<pattern>¤#,##0.00</pattern>
-					<pattern alt="accounting">¤#,##0.00;(¤#,##0.00)</pattern>
+				</currencyFormat>
+				<currencyFormat type="accounting">
+					<pattern>¤#,##0.00;(¤#,##0.00)</pattern>
 				</currencyFormat>
 			</currencyFormatLength>
 		</currencyFormats>
@@ -775,7 +776,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<displayName>Randi ti Orílẹ́ède Ariwa Afirika</displayName>
 			</currency>
 			<currency type="ZMK">
-				<displayName>Kawaṣa ti Orílẹ́ède Saabia (1968-2012)</displayName>
+				<displayName>Kawaṣa ti Orílẹ́ède Saabia (1968–2012)</displayName>
 			</currency>
 			<currency type="ZMW">
 				<displayName>Kawaṣa ti Orílẹ́ède Saabia</displayName>

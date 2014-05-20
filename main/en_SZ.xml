@@ -13,60 +13,26 @@ For terms of use, see http://www.unicode.org/copyright.html
 	</identity>
 	<dates>
 		<timeZoneNames>
-			<zone type="Pacific/Honolulu">
+			<metazone type="Africa_Central">
 				<short>
-					<generic>∅∅∅</generic>
-					<standard>∅∅∅</standard>
-					<daylight>∅∅∅</daylight>
-				</short>
-			</zone>
-			<metazone type="Alaska">
-				<short>
-					<generic>∅∅∅</generic>
-					<standard>∅∅∅</standard>
-					<daylight>∅∅∅</daylight>
+					<standard>CAT</standard>
 				</short>
 			</metazone>
-			<metazone type="America_Central">
+			<metazone type="Africa_Eastern">
 				<short>
-					<generic>∅∅∅</generic>
-					<standard>∅∅∅</standard>
-					<daylight>∅∅∅</daylight>
+					<standard>EAT</standard>
 				</short>
 			</metazone>
-			<metazone type="America_Eastern">
+			<metazone type="Africa_Southern">
 				<short>
-					<generic>∅∅∅</generic>
-					<standard>∅∅∅</standard>
-					<daylight>∅∅∅</daylight>
+					<standard>SAST</standard>
 				</short>
 			</metazone>
-			<metazone type="America_Mountain">
+			<metazone type="Africa_Western">
 				<short>
-					<generic>∅∅∅</generic>
-					<standard>∅∅∅</standard>
-					<daylight>∅∅∅</daylight>
-				</short>
-			</metazone>
-			<metazone type="America_Pacific">
-				<short>
-					<generic>∅∅∅</generic>
-					<standard>∅∅∅</standard>
-					<daylight>∅∅∅</daylight>
-				</short>
-			</metazone>
-			<metazone type="Atlantic">
-				<short>
-					<generic>∅∅∅</generic>
-					<standard>∅∅∅</standard>
-					<daylight>∅∅∅</daylight>
-				</short>
-			</metazone>
-			<metazone type="Hawaii_Aleutian">
-				<short>
-					<generic>∅∅∅</generic>
-					<standard>∅∅∅</standard>
-					<daylight>∅∅∅</daylight>
+					<generic>WAT</generic>
+					<standard>WAT</standard>
+					<daylight>WAST</daylight>
 				</short>
 			</metazone>
 		</timeZoneNames>
@@ -76,10 +42,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<currency type="SZL">
 				<symbol>E</symbol>
 			</currency>
-			<currency type="USD">
-				<symbol>US$</symbol>
-			</currency>
 		</currencies>
 	</numbers>
 </ldml>
-

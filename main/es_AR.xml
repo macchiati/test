@@ -115,11 +115,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 							<pattern>HH'h'''mm:ss zzzz</pattern>
 						</timeFormat>
 					</timeFormatLength>
-					<timeFormatLength type="long">
-						<timeFormat>
-							<pattern>H:mm:ss z</pattern>
-						</timeFormat>
-					</timeFormatLength>
 				</timeFormats>
 				<dateTimeFormats>
 					<availableFormats>
@@ -241,6 +236,9 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<currencies>
 			<currency type="ARS">
 				<symbol>$</symbol>
+			</currency>
+			<currency type="USD">
+				<symbol>US$</symbol>
 			</currency>
 		</currencies>
 	</numbers>

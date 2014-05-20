@@ -11,11 +11,12 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<generation date="$Date$"/>
 		<language type="lv" /> 
 	</identity>
-		<collations  validSubLocales="lv_LV">
+		<collations  >
 			<collation type="standard" references="Dzintra Kalniņa: Latvian-English Dictionary ISBN 9984-700-52-6">
 				<cr><![CDATA[
 					&[before 1]D<č<<<Č
 					&[before 1]H<ģ<<<Ģ
+					&I<<y<<<Y
 					&[before 1]L<ķ<<<Ķ
 					&[before 1]M<ļ<<<Ļ
 					&[before 1]O<ņ<<<Ņ
