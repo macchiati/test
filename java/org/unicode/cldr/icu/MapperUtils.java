@@ -1,23 +1,22 @@
 package org.unicode.cldr.icu;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.unicode.cldr.util.InputStreamFactory;
 import org.unicode.cldr.util.RegexUtilities;
 import org.unicode.cldr.util.XMLFileReader;
-import org.unicode.cldr.util.XPathParts;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
-
-import com.ibm.icu.text.DecimalFormat;
-import com.ibm.icu.text.MessageFormat;
 
 /**
  * Utility class for NewLdml2IcuConverter mappers.
@@ -38,14 +37,18 @@ public class MapperUtils {
     public static void parseFile(File inputFile, ContentHandler handler) {
         XMLReader xmlReader = XMLFileReader.createXMLReader(true);
         xmlReader.setContentHandler(handler);
-        try {
-            FileInputStream fis = new FileInputStream(inputFile);
+        if (inputFile == null) {
+            System.err.println("Please call with non-null input file");
+            return;
+        }
+        try (InputStream fis = InputStreamFactory.createInputStream(inputFile)) {
+//            FileInputStream fis = new FileInputStream(inputFile);
             InputSource is = new InputSource(fis);
             // Set the system ID so the parser knows where to find the dtd.
             is.setSystemId(inputFile.toString());
             xmlReader.parse(is);
-            fis.close();
-        } catch (Exception e) {
+//            fis.close();
+        } catch (IOException | SAXException e) {
             System.err.println("Error loading " + inputFile.getAbsolutePath());
             e.printStackTrace();
         }
@@ -123,5 +126,34 @@ public class MapperUtils {
         @Override
         public void endDocument() throws SAXException {
         }
+    }
+
+    public static IcuData[] toArray(Collection<IcuData> collection) {
+        IcuData[] dataList = new IcuData[collection.size()];
+        return collection.toArray(dataList);
+    }
+
+    /**
+     * Returns a list of names of XML files in the specified directory.
+     * @param sourceDir
+     * @return
+     */
+    public static List<String> getNames(String sourceDir) {
+        return getNames(new File(sourceDir));
+    }
+
+    /**
+     * Returns a list of names of XML files in the specified directory.
+     * @param sourceDir
+     * @return
+     */
+    public static List<String> getNames(File sourceDir) {
+        List<String> locales = new ArrayList<String>();
+        for (String filename : sourceDir.list()) {
+            if (!filename.endsWith(".xml")) continue;
+            String locale = filename.substring(0, filename.length() - 4);
+            locales.add(locale);
+        }
+        return locales;
     }
 }

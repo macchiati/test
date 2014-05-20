@@ -10,13 +10,10 @@ package org.unicode.cldr.posix;
 
 import java.text.StringCharacterIterator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 import org.unicode.cldr.util.CLDRFile;
-import org.unicode.cldr.util.XPathParts;
 
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.text.UTF16;
@@ -173,7 +170,7 @@ public class POSIXUtilities {
             String SearchLocation = "//supplementalData/characters/character-fallback/character[@value='"
                 + UCharacter.toString(cp) + "']/substitute";
 
-            for (Iterator<String> it = char_fallbk.iterator(SearchLocation, CLDRFile.ldmlComparator); it.hasNext()
+            for (Iterator<String> it = char_fallbk.iterator(SearchLocation, char_fallbk.getComparator()); it.hasNext()
                 && !SubFound;)
             {
                 String path = it.next();
@@ -359,7 +356,6 @@ public class POSIXUtilities {
     public static boolean isBetween(int a, int b, int c) {
         return ((a < b && b < c) || (c < b && b < a));
     }
-
 
     public static String POSIXYesNoExpr(String s)
     {

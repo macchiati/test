@@ -2,7 +2,6 @@ package org.unicode.cldr.util;
 
 import java.io.BufferedReader;
 
-import org.unicode.cldr.draft.FileUtilities;
 import org.unicode.cldr.util.CldrUtility.VariableReplacer;
 
 /**
@@ -36,8 +35,8 @@ public class RegexFileParser {
         VariableReplacer variables = new VariableReplacer();
 
         @Override
-        public void add(String variable, String variableName) {
-            variables.add(variable, variableName);
+        public void add(String variableName, String value) {
+            variables.add(variableName, value);
         }
 
         @Override
@@ -63,7 +62,7 @@ public class RegexFileParser {
      *            the name of the text file to be parsed
      */
     public void parse(Class<?> baseClass, String filename) {
-        BufferedReader reader = FileUtilities.openFile(baseClass, filename);
+        BufferedReader reader = FileReaders.openFile(baseClass, filename);
         String line = null;
         int lineNumber = 0;
         try {

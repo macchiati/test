@@ -6,7 +6,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import org.unicode.cldr.unittest.TestAll.TestInfo;
+import org.unicode.cldr.util.CLDRConfig;
 import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.Factory;
 
@@ -15,7 +15,7 @@ import com.ibm.icu.text.DateTimePatternGenerator;
 
 public class CompareStockDatetime {
     public static void main(String[] args) {
-        TestInfo info = TestInfo.getInstance();
+        CLDRConfig info = ToolConfig.getToolInstance();
         Factory cldrFactory = info.getCldrFactory();
         String[][] data = {
             { "date", "full" },
@@ -28,7 +28,7 @@ public class CompareStockDatetime {
             { "time", "short" },
         };
 
-        Map<String, Relation<String, String>> lengthToSkeletonToLocales = new TreeMap();
+        Map<String, Relation<String, String>> lengthToSkeletonToLocales = new TreeMap<String, Relation<String, String>>();
         // new Relation(new TreeMap(), TreeSet.class);
         Set<String> defaultContentLocales = info.getSupplementalDataInfo().getDefaultContentLocales();
 
@@ -52,7 +52,7 @@ public class CompareStockDatetime {
                 String key = type + "-" + length;
                 Relation<String, String> skeletonToLocales = lengthToSkeletonToLocales.get(key);
                 if (skeletonToLocales == null) {
-                    lengthToSkeletonToLocales.put(key, skeletonToLocales = new Relation(new TreeMap(), TreeSet.class));
+                    lengthToSkeletonToLocales.put(key, skeletonToLocales = Relation.of(new TreeMap<String, Set<String>>(), TreeSet.class));
                 }
                 skeletonToLocales.put(skeleton, locale);
                 // System.out.println(key + "\t" + skeleton + "\t" + locale);

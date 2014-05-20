@@ -55,9 +55,6 @@ Oracle	;	tr	;	basic
 Oracle	;	uk	;	basic
 Oracle	;	vi	;	basic
 
-# not used
-Sun ; * ; moderate
-
 openoffice_org	;	ar	;	basic
 openoffice_org	;	cs	;	basic
 openoffice_org	;	de	;	basic
@@ -264,27 +261,79 @@ Google	;	sq	;	modern	;	T3.1	Albanian
 Google	;	my	;	modern	;	T3.1	Burmese (Myanmar)
 
 #Google	Tier	4					
+Google	;	am	;	modern	;	T4	Amharic
+Google	;	gu	;	modern	;	T4	Gujarati
+Google	;	kn	;	modern	;	T4	Kannada
+Google	;	ky	;	modern	;	T4.1	Kirghiz																
+Google	;	ml	;	modern	;	T4	Malayalam
+Google	;	pa	;	modern	;	T4.1	Punjabi
 Google	;	te	;	modern	;	T4	Telugu
 Google	;	ur	;	modern	;	T4	Urdu
-Google	;	ml	;	modern	;	T4	Malayalam
-Google	;	kn	;	modern	;	T4	Kannada
-Google	;	gu	;	modern	;	T4	Gujarati
-Google	;	eu	;	modern	;	T4	Basque
-Google	;	am	;	modern	;	T4	Amharic
-Google	;	fr_CA	;	modern	;	T4	Canadian French
-Google	;	zh_Hant_HK	;	modern	;	T4	Hong Kong Chinese (T)
-Google	;	uz	;	modern	;	T4.1	Uzbek															
-Google	;	ky	;	modern	;	T4.1	Kirghiz																
-Google	;	pa	;	modern	;	T4.1	Punjabi
-															
-#Google	Tier	5	
-Google	;	uz_Latn	;	moderate	;	T5	Uzbek (Latn) // to be supplemented from Cyrl.																	
-Google	;	zu	;	moderate	;	T5	Zulu										
-Google	;	gl	;	moderate	;	T5	Galician
-Google	;	cy	;	moderate	;	T5	Welsh
-														
-Google	;	*	;	moderate	;	n/a	All others										
+Google	;	uz	;	modern		;	T4.1	Uzbek	(Latin)															
 
+#Google	Tier	generated					
+Google	;	sr_Latn	;	modern		;	Tx	Serbian (auto-generated)														
+				
+#Google	Tier	ext
+Google	;	bs	;	modern	;	Bosnian
+Google	;	cy	;	moderate	;	T5	Welsh
+Google	;	eu	;	moderate	;	T4	Basque
+Google	;	gl	;	moderate	;	T5	Galician
+Google	;	zu	;	moderate	;	T5	Zulu										
+#Google	;	fr_CA	;	modern	;	T4	Canadian French
+#Google	;	zh_Hant_HK	;	modern	;	T4	Hong Kong Chinese (T)
+Google	;	uz_Cyrl	;	moderate	;	T5	Uzbek	(Cyrillic)														
+										
+Google	;	be	;	basic	;	Belarusian
+Google	;	ht	;	basic	;	Haitian
+Google	;	ga	;	basic	;	Irish
+Google	;	mt	;	basic	;	Maltese
+Google	;	so	;	basic	;	Somali
+Google	;	ig	;	basic	;	Igbo
+Google	;	yo	;	basic	;	Yoruba
+Google	;	ceb	;	basic	;	Cebuano
+Google	;	ha	;	basic	;	Hausa
+Google	;	tg	;	basic	;	Tajik
+Google	;	mg	;	basic	;	Malagasy
+Google	;	ve	;	basic	;	Venda
+Google	;	crs	;	basic	;	crs
+Google	;	nso	;	basic	;	NorthernSotho
+Google	;	ny	;	basic	;	Nyanja
+Google	;	pcm	;	basic	;	pcm
+Google	;	st	;	basic	;	SouthernSotho
+Google	;	tn	;	basic	;	Tswana
+Google	;	xh	;	basic	;	Xhosa
+Google	;	kri	;	basic	;	kri
+Google	;	ti	;	basic	;	Tigrinya
+Google	;	rm	;	basic	;	Romansh
+Google	;	ach	;	basic	;	Acoli
+Google	;	ban	;	basic	;	Balinese
+Google	;	bem	;	basic	;	Bemba
+Google	;	ee	;	basic	;	Ewe
+Google	;	fo	;	basic	;	Faroese
+Google	;	gaa	;	basic	;	Ga
+Google	;	lg	;	basic	;	Ganda
+Google	;	jw	;	basic	;	Javanese
+Google	;	rw	;	basic	;	Kinyarwanda
+Google	;	kg	;	basic	;	Kongo
+Google	;	ln	;	basic	;	Lingala
+Google	;	loz	;	basic	;	Lozi
+Google	;	lua	;	basic	;	Luba-Lulua
+Google	;	mi	;	basic	;	Maori
+Google	;	mfe	;	basic	;	Morisyen
+Google	;	nyn	;	basic	;	Nyankole
+Google	;	om	;	basic	;	Oromo
+Google	;	ps	;	basic	;	Pashto
+Google	;	qu	;	basic	;	Quechua
+Google	;	rn	;	basic	;	Rundi
+Google	;	sn	;	basic	;	Shona
+Google	;	ckb	;	basic	;	SoraniKurdish
+Google	;	to	;	basic	;	Tongan
+Google	;	tum	;	basic	;	Tumbuka
+Google	;	tk	;	basic	;	Turkmen
+Google	;	wo	;	basic	;	Wolof
+Google	;	gsw	;	basic	;	Swiss German
+			
 Apple	;	en	;	comprehensive
 Apple	;	ar	;	modern
 Apple	;	da	;	modern
@@ -415,6 +464,96 @@ Adobe	;	zh	;	moderate
 Adobe	;	zh	;	moderate
 
 
+#Cldr	Tier	0					
+Cldr	;	en	;	modern	;	T0	American English
+							
+#Cldr	Tier	1					
+Cldr	;	en_GB	;	modern	;	T1	British English
+Cldr	;	fr	;	modern	;	T1	French
+Cldr	;	de	;	modern	;	T1	German
+Cldr	;	ja	;	modern	;	T1	Japanese
+Cldr	;	ru	;	modern	;	T1	Russian
+Cldr	;	es	;	modern	;	T1	European Spanish
+Cldr	;	ar	;	modern	;	T1	Arabic
+Cldr	;	pt	;	modern	;	T1	Brazilian Portuguese
+Cldr	;	nl	;	modern	;	T1	Dutch
+Cldr	;	it	;	modern	;	T1	Italian
+Cldr	;	ko	;	modern	;	T1	Korean
+Cldr	;	pl	;	modern	;	T1	Polish
+Cldr	;	zh	;	modern	;	T1	Simplified Chinese
+Cldr	;	th	;	modern	;	T1	Thai
+Cldr	;	zh_Hant	;	modern	;	T1	Traditional Chinese
+Cldr	;	tr	;	modern	;	T1	Turkish
+Cldr	;	es_419	;	modern	;	T1.1	Latin American Spanish
+							
+#Cldr	Tier	2					
+Cldr	;	bg	;	modern	;	T2	Bulgarian
+Cldr	;	ca	;	modern	;	T2	Catalan
+Cldr	;	hr	;	modern	;	T2	Croatian
+Cldr	;	cs	;	modern	;	T2	Czech
+Cldr	;	da	;	modern	;	T2	Danish
+Cldr	;	fil	;	modern	;	T2	Filipino
+Cldr	;	fi	;	modern	;	T2	Finnish
+Cldr	;	el	;	modern	;	T2	Greek
+Cldr	;	he	;	modern	;	T2	Hebrew
+Cldr	;	hi	;	modern	;	T2	Hindi
+Cldr	;	hu	;	modern	;	T2	Hungarian
+Cldr	;	pt_PT	;	modern	;	T2	European Portuguese
+Cldr	;	id	;	modern	;	T2	Indonesian
+Cldr	;	lv	;	modern	;	T2	Latvian
+Cldr	;	lt	;	modern	;	T2	Lithuanian
+Cldr	;	nb	;	modern	;	T2	Norwegian (Bokmål)
+Cldr	;	ro	;	modern	;	T2	Romanian
+Cldr	;	sr	;	modern	;	T2	Serbian
+Cldr	;	sk	;	modern	;	T2	Slovak
+Cldr	;	sl	;	modern	;	T2	Slovenian
+Cldr	;	sv	;	modern	;	T2	Swedish
+Cldr	;	uk	;	modern	;	T2	Ukrainian
+Cldr	;	vi	;	modern	;	T2	Vietnamese
+Cldr	;	fa	;	modern	;	T2.1	Persian
+							
+#Cldr	Tier	3					
+Cldr	;	af	;	modern	;	T3	Afrikaans
+Cldr	;	bn	;	modern	;	T3	Bengali
+Cldr	;	et	;	modern	;	T3	Estonian
+Cldr	;	is	;	modern	;	T3	Icelandic
+Cldr	;	ms	;	modern	;	T3	Malay
+Cldr	;	mr	;	modern	;	T3	Marathi
+Cldr	;	sw	;	modern	;	T3	Swahili 
+Cldr	;	ta	;	modern	;	T3	Tamil
+Cldr	;	km	;	modern	;	T3.1	Khmer
+Cldr	;	lo	;	modern	;	T3.1	Lao
+Cldr	;	ne	;	modern	;	T3.1	Nepali
+Cldr	;	si	;	modern	;	T3.1	Sinhala
+Cldr	;	ka	;	modern	;	T3.1	Georgian
+Cldr	;	hy	;	modern	;	T3.1	Armenian
+Cldr	;	mn	;	modern	;	T3.1	Mongolian
+Cldr	;	kk	;	modern	;	T3.1	Kazakh
+Cldr	;	az	;	modern	;	T3.1	Azerbaijani
+Cldr	;	mk	;	modern	;	T3.1	Macedonian
+Cldr	;	sq	;	modern	;	T3.1	Albanian
+Cldr	;	my	;	modern	;	T3.1	Burmese (Myanmar)
+
+#Cldr	Tier	4					
+Cldr	;	am	;	modern	;	T4	Amharic
+Cldr	;	gu	;	modern	;	T4	Gujarati
+Cldr	;	kn	;	modern	;	T4	Kannada
+Cldr	;	ky	;	modern	;	T4.1	Kirghiz																
+Cldr	;	ml	;	modern	;	T4	Malayalam
+Cldr	;	pa	;	modern	;	T4.1	Punjabi
+Cldr	;	te	;	modern	;	T4	Telugu
+Cldr	;	ur	;	modern	;	T4	Urdu
+Cldr	;	uz	;	modern		;	T4.1	Uzbek	(Latin)															
+Cldr	;	bs	;	modern		;	Bosnian															
+
+#Cldr	Tier	generated					
+Cldr	;	sr_Latn	;	modern		;	Tx	Serbian (auto-generated)		
+														
+#Cldr	Tier	ext	
+#Cldr	;	fr_CA	;	modern	;	T4	Canadian French
+#Cldr	;	zh_Hant_HK	;	modern	;	T4	Hong Kong Chinese (T)
+#Cldr	;	uz_Cyrl	;	modern	;	T5	Uzbek	(Cyrillic)														
+
 Bangor_Univ ;   cy   ;    modern  ; Welsh
 Bangor_Univ ;   *    ;    moderate  ; All others
 
@@ -466,6 +605,8 @@ Kendra	;	*	;	moderate	;	All others
 OpenInstitute	;	km	;	modern	;	Khmer
 OpenInstitute	;	*	;	moderate	;	All others
 
+Microsoft	;	*	;	modern	;	All Others
+
 Pakistan	;	ur	;	modern	;	Urdu
 Pakistan	;	*	;	modern	;	All others
 
@@ -482,10 +623,10 @@ Srilanka	;	*	;	moderate	; All others
 
 Surveytool	;	*	; comprehensive	;	(Administrative)
 
-Utilika	;	eo	;	modern	;	Esperanto
-Utilika	;	tr	;	modern	;	Turkish
-Utilika	;	fr	;	modern	;	French
-Utilika	;	*	;	moderate	;	All others
+longnow	;	eo	;	modern	;	Esperanto
+longnow	;	tr	;	modern	;	Turkish
+longnow	;	fr	;	modern	;	French
+longnow	;	*	;	moderate	;	All others
 
 welsh_lc	;	cy	;	modern	;	Welsh
 welsh_lc	;	*	;	moderate	; All others
@@ -505,3 +646,10 @@ Afghan_MCIT	;	*	;	moderate	;	All others
 
 Lakota_LC	;	lkt	;	modern	;	Lakota
 Lakota_LC	;	*	;	moderate	;	All others
+
+Gaeilge	;	ga	;	modern	;	Irish
+Gaeilge	;	*	;	moderate	;	All others
+
+# not used
+Sun ; * ; moderate
+Utilika ; * ; moderate

@@ -36,6 +36,9 @@ import com.ibm.icu.dev.util.XEquivalenceClass;
 import com.ibm.icu.impl.Differ;
 import com.ibm.icu.text.UTF16;
 
+/**
+ * @deprecated
+ */
 public class FindDTDOrder implements DeclHandler, ContentHandler, ErrorHandler {
     static final boolean SHOW_PROGRESS = CldrUtility.getProperty("verbose", false);
     static final boolean SHOW_ALL = CldrUtility.getProperty("show_all", false);
@@ -46,6 +49,7 @@ public class FindDTDOrder implements DeclHandler, ContentHandler, ErrorHandler {
     private boolean recordingAttributeElements;
 
     public static void main(String[] args) throws IOException {
+        System.out.println("Outdated, no longer used");
         FindDTDOrder me = getInstance();
         me.showData();
     }
@@ -64,7 +68,7 @@ public class FindDTDOrder implements DeclHandler, ContentHandler, ErrorHandler {
                     FileInputStream fis;
                     InputSource is;
                     me.recordingAttributeElements = true;
-                    String filename = CldrUtility.MAIN_DIRECTORY + "/root.xml";
+                    String filename = CLDRPaths.MAIN_DIRECTORY + "/root.xml";
                     File file = new File(filename);
                     if (DEBUG) {
                         System.out.println("Opening " + file.getCanonicalFile());
@@ -89,7 +93,7 @@ public class FindDTDOrder implements DeclHandler, ContentHandler, ErrorHandler {
                     fis.close();
 
                     me.recordingAttributeElements = false;
-                    filename = CldrUtility.DEFAULT_SUPPLEMENTAL_DIRECTORY
+                    filename = CLDRPaths.DEFAULT_SUPPLEMENTAL_DIRECTORY
                         + "/supplementalData.xml";
                     File file2 = new File(filename);
                     if (DEBUG) {
@@ -101,7 +105,29 @@ public class FindDTDOrder implements DeclHandler, ContentHandler, ErrorHandler {
                     is.setSystemId(file.getCanonicalPath() + "/../");
                     xmlReader.parse(is);
                     fis.close();
-                    me.attributeList = Collections.unmodifiableList(new ArrayList<String>(me.attributeSet));
+                    // Then Attributes
+                    List<String> rawDtdAttributeOrder = Collections.unmodifiableList(new ArrayList<String>(me.attributeSet));
+                    List<String> metadataAttributeOrder = SupplementalDataInfo.getInstance().getAttributeOrder();
+                    List<String> cldrFileAttributeOrder = CLDRFile.getAttributeOrder();
+
+                    LinkedHashSet<String> modifiedDtdOrder = new LinkedHashSet<String>(cldrFileAttributeOrder);
+                    // add items, keeping the ordering stable
+                    modifiedDtdOrder.addAll(metadataAttributeOrder);
+                    modifiedDtdOrder.retainAll(rawDtdAttributeOrder); // remove any superfluous stuff
+                    modifiedDtdOrder.addAll(rawDtdAttributeOrder);
+
+                    // certain stuff always goes at the end
+                    modifiedDtdOrder.removeAll(me.getCommonAttributes());
+                    modifiedDtdOrder.addAll(me.getCommonAttributes());
+
+                    // now make a list for comparison
+                    List<String> dtdAttributeOrder = new ArrayList<String>(modifiedDtdOrder);
+
+                    // fix to and from
+                    dtdAttributeOrder.remove("from");
+                    dtdAttributeOrder.add(dtdAttributeOrder.indexOf("to"), "from");
+
+                    me.attributeList = Collections.unmodifiableList(dtdAttributeOrder);
                     me.checkData();
                     me.orderingList = Collections.unmodifiableList(me.orderingList);
 
@@ -168,7 +194,7 @@ public class FindDTDOrder implements DeclHandler, ContentHandler, ErrorHandler {
 
     private boolean isAncestorOf(String possibleAncestor, String possibleDescendent) {
         if (ancestorToDescendant == null) {
-            ancestorToDescendant = new Relation(new TreeMap<String, String>(), TreeSet.class);
+            ancestorToDescendant = Relation.of(new TreeMap<String, Set<String>>(), TreeSet.class);
             buildPairwiseRelations(new ArrayList<String>(), "ldml");
         }
         Set<String> possibleDescendents = ancestorToDescendant.getAll(possibleAncestor);
@@ -203,7 +229,7 @@ public class FindDTDOrder implements DeclHandler, ContentHandler, ErrorHandler {
 
     Object DONE = new Object(); // marker
 
-    Relation<String, String> elementToChildren = new Relation(new TreeMap(),
+    Relation<String, String> elementToChildren = Relation.of(new TreeMap<String, Set<String>>(),
         TreeSet.class);
 
     FindDTDOrder() {
@@ -295,14 +321,24 @@ public class FindDTDOrder implements DeclHandler, ContentHandler, ErrorHandler {
     String sep = CldrUtility.LINE_SEPARATOR + "\t\t\t";
 
     private void showData() throws IOException {
-        // finish up
-        log.println("Successful Ordering");
-        log.println("Old Attributes: ");
-        log.println(CLDRFile.getAttributeOrder());
 
-        log.println("*** New Attributes: ");
-        log.println(breakLines(attributeSet));
-        log.println("*** Replace in CLDRFile attributeOrdering & supplementalMetadata***");
+        // finish up
+        String oldAttributeOrder = breakLines(CLDRFile.getAttributeOrder());
+        log.println("Successful Ordering...");
+        log.println();
+        log.println("Old Attribute Ordering: ");
+        log.println(oldAttributeOrder);
+
+        String newAttributeOrder = breakLines(attributeList);
+
+        if (newAttributeOrder.equals(oldAttributeOrder)) {
+            log.println("*** New Attribute Ordering: <same>");
+            log.println("*** No changes required...");
+        } else {
+            log.println("*** New Attribute Ordering: ");
+            log.println(newAttributeOrder);
+            log.println("*** Replace in CLDRFile elementOrdering  & supplementalMetadata ***");
+        }
 
         log.println("Attribute Eq: ");
         for (Iterator it = attributeEquivalents.getSamples().iterator(); it.hasNext();) {
@@ -329,11 +365,12 @@ public class FindDTDOrder implements DeclHandler, ContentHandler, ErrorHandler {
 
         String newOrder = '"' + breakLines(orderingList) + '"';
         if (newOrder.equals(oldOrder)) {
-            log.println(" *** New Element Ordering: <same>");
+            log.println("*** New Element Ordering: <same>");
+            log.println("*** No changes required...");
         } else {
-            log.println("*** New Element Ordering:\n" + newOrder);// getJavaList(orderingList));
+            log.println("*** New Element Ordering:\n" + newOrder);
+            log.println("*** Replace in CLDRFile elementOrdering  & supplementalMetadata ***");
         }
-        log.println("*** Replace in CLDRFile elementOrdering  & supplementalMetadata ***");
 
         if (SHOW_ALL) {
             log.println("Old Size: " + CLDRFile.getElementOrder().size());
@@ -371,10 +408,10 @@ public class FindDTDOrder implements DeclHandler, ContentHandler, ErrorHandler {
 
         log.flush();
 
-        writeNewSupplemental(CldrUtility.SUPPLEMENTAL_DIRECTORY, "supplementalMetadata.xml",
+        writeNewSupplemental(CLDRPaths.SUPPLEMENTAL_DIRECTORY, "supplementalMetadata.xml",
             "<attributeOrder>", "</attributeOrder>",
             "<elementOrder>", "</elementOrder>", "\t\t\t", CldrUtility.LINE_SEPARATOR + "\t\t");
-        writeNewSupplemental(CldrUtility.BASE_DIRECTORY + "/tools/java/org/unicode/cldr/util/",
+        writeNewSupplemental(CLDRPaths.BASE_DIRECTORY + "/tools/java/org/unicode/cldr/util/",
             "CLDRFile.java",
             "// START MECHANICALLY attributeOrdering GENERATED BY FindDTDOrder",
             "// END MECHANICALLY attributeOrdering GENERATED BY FindDTDOrder",
@@ -387,7 +424,7 @@ public class FindDTDOrder implements DeclHandler, ContentHandler, ErrorHandler {
     private void writeNewSupplemental(String dir, String filename, String startAttributeTag, String endAttributeTag,
         String startElementTag, String endElementTag, String startSep, String endSep) throws IOException {
         BufferedReader oldFile = BagFormatter.openUTF8Reader(dir, filename);
-        Log.setLogNoBOM(CldrUtility.GEN_DIRECTORY + "/DTDOrder/" + filename);
+        Log.setLogNoBOM(CLDRPaths.GEN_DIRECTORY + "/DTDOrder/" + filename);
 
         // CldrUtility.copyUpTo(oldFile, Pattern.compile("\\s*" +
         // startAttributeTag +
@@ -582,12 +619,13 @@ public class FindDTDOrder implements DeclHandler, ContentHandler, ErrorHandler {
     Set<String> attributeSet = new TreeSet<String>();
     {
         attributeSet.add("_q");
+        attributeSet.addAll(skipCommon);
     }
     List<String> attributeList;
 
     Map<String, Set<String>> attribEquiv = new TreeMap<String, Set<String>>();
 
-    Relation<String, String> attributeToElements = new Relation(new TreeMap(),
+    Relation<String, String> attributeToElements = Relation.of(new TreeMap<String, Set<String>>(),
         TreeSet.class);
     private XEquivalenceClass attributeEquivalents;
 

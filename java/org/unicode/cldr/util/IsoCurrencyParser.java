@@ -13,12 +13,15 @@ import com.ibm.icu.impl.Utility;
 
 public class IsoCurrencyParser {
 
-    private static final String ISO_CURRENT_CODES_XML = "org/unicode/cldr/util/data/dl_iso_table_a1.xml";
+    /**
+     * Note: path is relative to CldrUtility, {@link CldrUtility#getInputStream(String)}
+     */
+    private static final String ISO_CURRENT_CODES_XML = "dl_iso_table_a1.xml";
 
     /*
      * IsoCurrencyParser doesn't currently use the historic codes list, but it could easily be modified/extended to do
      * so if we need to at some point. (JCE)
-     * private static final String ISO_HISTORIC_CODES_XML = "org/unicode/cldr/util/data/dl_iso_tables_a3.xml";
+     * private static final String ISO_HISTORIC_CODES_XML = "dl_iso_tables_a3.xml";
      */
 
     /*
@@ -26,7 +29,7 @@ public class IsoCurrencyParser {
      * Some subterritory designations that we use in CLDR, like Ascension Island or Tristan da Cunha aren't
      * used in ISO4217, so we use an extensions data file to allow our tests to validate the CLDR data properly.
      */
-    private static final String CLDR_EXTENSIONS_XML = "org/unicode/cldr/util/data/dl_cldr_extensions.xml";
+    private static final String CLDR_EXTENSIONS_XML = "dl_cldr_extensions.xml";
 
     /*
      * These corrections are country descriptions that are in the ISO4217 tables but carry a different spelling
@@ -36,21 +39,22 @@ public class IsoCurrencyParser {
         { Utility.unescape("R\u00C9UNION"), "RE" },
         { Utility.unescape("\u00C5LAND ISLANDS"), "AX" },
         { "BOLIVIA, PLURINATIONAL STATE OF", "BO" },
-        { "CONGO, THE DEMOCRATIC REPUBLIC OF", "CD" },
+        { "CONGO, DEMOCRATIC REPUBLIC OF THE", "CD" },
         { Utility.unescape("C\u00D4TE D\u2019IVOIRE"), "CI" },
+        { "CAPE VERDE", "CV" },
         { Utility.unescape("CURA\u00C7AO"), "CW" },
         { "HEARD ISLAND AND McDONALD ISLANDS", "HM" },
         { Utility.unescape("INTERNATIONAL MONETARY FUND (IMF)\u00A0"), "ZZ" },
         { "IRAN, ISLAMIC REPUBLIC OF", "IR" },
         { "VIRGIN ISLANDS (BRITISH)", "VG" },
-        { "VIRGIN ISLANDS (US)", "VI" },
+        { "VIRGIN ISLANDS (U.S.)", "VI" },
         { Utility.unescape("KOREA, DEMOCRATIC PEOPLE\u2019S REPUBLIC OF"), "KP" },
         { "KOREA, REPUBLIC OF", "KR" },
         { "MICRONESIA, FEDERATED STATES OF", "FM" },
         { "TANZANIA, UNITED REPUBLIC OF", "TZ" },
         { "Vatican City State (HOLY SEE)", "VA" },
         { Utility.unescape("LAO PEOPLE\u2019S DEMOCRATIC REPUBLIC"), "LA" },
-        { "MACEDONIA, THE FORMER YUGOSLAV REPUBLIC OF", "MK" },
+        { Utility.unescape("MACEDONIA, THE FORMER YUGOSLAV REPUBLIC OF"), "MK" },
         { "MEMBER COUNTRIES OF THE AFRICAN DEVELOPMENT BANK GROUP", "ZZ" },
         { "MOLDOVA, REPUBLIC OF", "MD" },
         { "PALESTINE, STATE OF", "PS" },
@@ -73,8 +77,8 @@ public class IsoCurrencyParser {
         iso4217CountryToCountryCode.putAll(COUNTRY_CORRECTIONS);
     }
 
-    private Relation<String, Data> codeList = new Relation(new TreeMap(), TreeSet.class, null);
-    private Relation<String, String> countryToCodes = new Relation(new TreeMap(), TreeSet.class, null);
+    private Relation<String, Data> codeList = Relation.of(new TreeMap<String, Set<Data>>(), TreeSet.class, null);
+    private Relation<String, String> countryToCodes = Relation.of(new TreeMap<String, Set<String>>(), TreeSet.class, null);
 
     public static class Data implements Comparable<Object> {
         private String name;
@@ -138,9 +142,9 @@ public class IsoCurrencyParser {
 
         ISOCurrencyHandler isoCurrentHandler = new ISOCurrencyHandler();
         XMLFileReader xfr = new XMLFileReader().setHandler(isoCurrentHandler);
-        xfr.read(ISO_CURRENT_CODES_XML, -1, false);
+        xfr.readCLDRResource(ISO_CURRENT_CODES_XML, -1, false);
         if (useCLDRExtensions) {
-            xfr.read(CLDR_EXTENSIONS_XML, -1, false);
+            xfr.readCLDRResource(CLDR_EXTENSIONS_XML, -1, false);
         }
         if (exceptionList.size() != 0) {
             throw new IllegalArgumentException(exceptionList.toString());
@@ -198,7 +202,7 @@ public class IsoCurrencyParser {
             try {
                 parts.set(path);
                 String type = parts.getElement(-1);
-                if (type.equals("ENTITY")) {
+                if (type.equals("CtryNm")) {
                     country_code = getCountryCode(value);
                     if (country_code == null) {
                         country_code = "ZZ";
@@ -206,17 +210,17 @@ public class IsoCurrencyParser {
                     alphabetic_code = "XXX";
                     numeric_code = -1;
                     minor_unit = 0;
-                } else if (type.equals("CURRENCY")) {
+                } else if (type.equals("CcyNm")) {
                     currency_name = value;
-                } else if (type.equals("ALPHABETIC_CODE")) {
+                } else if (type.equals("Ccy")) {
                     alphabetic_code = value;
-                } else if (type.equals("NUMERIC_CODE")) {
+                } else if (type.equals("CcyNbr")) {
                     try {
                         numeric_code = Integer.valueOf(value);
                     } catch (NumberFormatException ex) {
                         numeric_code = -1;
                     }
-                } else if (type.equals("MINOR_UNIT")) {
+                } else if (type.equals("CcyMnrUnts")) {
                     try {
                         minor_unit = Integer.valueOf(value);
                     } catch (NumberFormatException ex) {
@@ -224,7 +228,7 @@ public class IsoCurrencyParser {
                     }
                 }
 
-                if (type.equals("MINOR_UNIT") && alphabetic_code.length() > 0
+                if (type.equals("CcyMnrUnts") && alphabetic_code.length() > 0
                     && !KNOWN_BAD_ISO_DATA_CODES.contains(alphabetic_code)) {
                     Data data = new Data(country_code, currency_name, numeric_code, minor_unit);
                     codeList.put(alphabetic_code, data);

@@ -82,6 +82,31 @@
 #^//ldml/dates/.*(pattern|available|intervalFormatItem) ; VVVV=TIMEZONE_GENERIC_LOCATION United States (Los Angeles) Time
 #^//ldml/dates/.*(pattern|available|intervalFormatItem) ; V=TIMEZONE_SPECIFIC_NON_LOCATION_SHORT_FORCED PDT
 
+^//ldml/dates/fields/field\[@type="day"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_DAYS 3
+^//ldml/dates/fields/field\[@type="day-short"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_DAYS 3
+^//ldml/dates/fields/field\[@type="day-narrow"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_DAYS 3
+^//ldml/dates/fields/field\[@type="hour"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_HOURS 3
+^//ldml/dates/fields/field\[@type="hour-short"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_HOURS 3
+^//ldml/dates/fields/field\[@type="hour-narrow"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_HOURS 3
+^//ldml/dates/fields/field\[@type="minute"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_MINUTES 3
+^//ldml/dates/fields/field\[@type="minute-short"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_MINUTES 3
+^//ldml/dates/fields/field\[@type="minute-narrow"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_MINUTES 3
+^//ldml/dates/fields/field\[@type="month"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_MONTHS 3
+^//ldml/dates/fields/field\[@type="month-short"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_MONTHS 3
+^//ldml/dates/fields/field\[@type="month-narrow"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_MONTHS 3
+^//ldml/dates/fields/field\[@type="quarter"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_QUARTERS 3
+^//ldml/dates/fields/field\[@type="quarter-short"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_QUARTERS 3
+^//ldml/dates/fields/field\[@type="quarter-narrow"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_QUARTERS 3
+^//ldml/dates/fields/field\[@type="second"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_SECONDS 3
+^//ldml/dates/fields/field\[@type="second-short"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_SECONDS 3
+^//ldml/dates/fields/field\[@type="second-narrow"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_SECONDS 3
+^//ldml/dates/fields/field\[@type="week"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_WEEKS 3
+^//ldml/dates/fields/field\[@type="week-short"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_WEEKS 3
+^//ldml/dates/fields/field\[@type="week-narrow"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_WEEKS 3
+^//ldml/dates/fields/field\[@type="year"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_YEARS 3
+^//ldml/dates/fields/field\[@type="year-short"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_YEARS 3
+^//ldml/dates/fields/field\[@type="year-narrow"]/relativeTime\[@type="(future|past)"]/relativeTimePattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_YEARS 3
+
 ^//ldml/dates/calendars/calendar\[@type="%A"]/dateTimeFormats/appendItems/appendItem\[@request="Day-Of-Week"] ; {0}=BASE_FORMAT January 23; {1}=APPEND_FIELD_FORMAT Monday
 ^//ldml/dates/calendars/calendar\[@type="%A"]/dateTimeFormats/appendItems/appendItem\[@request="Timezone"] ; {0}=BASE_FORMAT 12:30; {1}=APPEND_FIELD_FORMAT Pacific Time
 ^//ldml/dates/calendars/calendar\[@type="%A"]/dateTimeFormats/appendItems/appendItem\[@request="Era"] ; {0}=BASE_FORMAT Monday, January 23; {1}=APPEND_FIELD_FORMAT A.D.
@@ -105,20 +130,20 @@
 ^//ldml/listPatterns/listPattern/listPatternPart\[@type="middle"] ; {0}=FIRST_ITEMS Apples, Oranges ; {1}=LAST_ITEMS Peaches, and Grapes
 ^//ldml/listPatterns/listPattern/listPatternPart\[@type="end"] ; {0}=START_ITEMS Apples, Oranges, Peaches; {1}=LAST_ITEM Grapes
 
-^//ldml/listPatterns/listPattern\[@type="duration"]/listPatternPart\[@type="2"] ; {0}=ITEM1 4 days; {1}=ITEM2 2 hours
-^//ldml/listPatterns/listPattern\[@type="duration"]/listPatternPart\[@type="start"] ; {0}=FIRST_ITEM 4 days; {1}=REMAINING_ITEMS 2 hours, 37 minutes, and 23 seconds
-^//ldml/listPatterns/listPattern\[@type="duration"]/listPatternPart\[@type="middle"] ; {0}=FIRST_ITEMS 4 days, 2 hours; {1}=LAST_ITEMS 37 minutes, and 23 seconds
-^//ldml/listPatterns/listPattern\[@type="duration"]/listPatternPart\[@type="end"] ; {0}=START_ITEMS 4 days, 2 hours, 37 minutes; {1}=LAST_ITEM 23 seconds
+^//ldml/listPatterns/listPattern\[@type="unit"]/listPatternPart\[@type="2"] ; {0}=ITEM1 4 days; {1}=ITEM2 2 hours
+^//ldml/listPatterns/listPattern\[@type="unit"]/listPatternPart\[@type="start"] ; {0}=FIRST_ITEM 4 days; {1}=REMAINING_ITEMS 2 hours, 37 minutes, and 23 seconds
+^//ldml/listPatterns/listPattern\[@type="unit"]/listPatternPart\[@type="middle"] ; {0}=FIRST_ITEMS 4 days, 2 hours; {1}=LAST_ITEMS 37 minutes, and 23 seconds
+^//ldml/listPatterns/listPattern\[@type="unit"]/listPatternPart\[@type="end"] ; {0}=START_ITEMS 4 days, 2 hours, 37 minutes; {1}=LAST_ITEM 23 seconds
 
-^//ldml/listPatterns/listPattern\[@type="duration-short"]/listPatternPart\[@type="2"] ; {0}=ITEM1 4 days; {1}=ITEM2 2 hrs
-^//ldml/listPatterns/listPattern\[@type="duration-short"]/listPatternPart\[@type="start"] ; {0}=FIRST_ITEM 4 days; {1}=REMAINING_ITEMS 2 hrs, 37 mins, and 23 secs
-^//ldml/listPatterns/listPattern\[@type="duration-short"]/listPatternPart\[@type="middle"] ; {0}=FIRST_ITEMS 4 days, 2 hrs; {1}=LAST_ITEMS 37 mins, and 23 secs
-^//ldml/listPatterns/listPattern\[@type="duration-short"]/listPatternPart\[@type="end"] ; {0}=START_ITEMS 4 days, 2 hrs, 37 mins; {1}=LAST_ITEM 23 secs
+^//ldml/listPatterns/listPattern\[@type="unit-short"]/listPatternPart\[@type="2"] ; {0}=ITEM1 4 days; {1}=ITEM2 2 hrs
+^//ldml/listPatterns/listPattern\[@type="unit-short"]/listPatternPart\[@type="start"] ; {0}=FIRST_ITEM 4 days; {1}=REMAINING_ITEMS 2 hrs, 37 mins, and 23 secs
+^//ldml/listPatterns/listPattern\[@type="unit-short"]/listPatternPart\[@type="middle"] ; {0}=FIRST_ITEMS 4 days, 2 hrs; {1}=LAST_ITEMS 37 mins, and 23 secs
+^//ldml/listPatterns/listPattern\[@type="unit-short"]/listPatternPart\[@type="end"] ; {0}=START_ITEMS 4 days, 2 hrs, 37 mins; {1}=LAST_ITEM 23 secs
 
-^//ldml/listPatterns/listPattern\[@type="duration-narrow"]/listPatternPart\[@type="2"] ; {0}=ITEM1 4 days; {1}=ITEM2 2 hrs
-^//ldml/listPatterns/listPattern\[@type="duration-narrow"]/listPatternPart\[@type="start"] ; {0}=FIRST_ITEM 4 days; {1}=REMAINING_ITEMS 2 hrs, 37 mins, and 23 secs
-^//ldml/listPatterns/listPattern\[@type="duration-narrow"]/listPatternPart\[@type="middle"] ; {0}=FIRST_ITEMS 4 days, 2 hrs; {1}=LAST_ITEMS 37 mins, and 23 secs
-^//ldml/listPatterns/listPattern\[@type="duration-narrow"]/listPatternPart\[@type="end"] ; {0}=START_ITEMS 4 days, 2 hrs, 37 mins; {1}=LAST_ITEM 23 secs
+^//ldml/listPatterns/listPattern\[@type="unit-narrow"]/listPatternPart\[@type="2"] ; {0}=ITEM1 4 days; {1}=ITEM2 2 hrs
+^//ldml/listPatterns/listPattern\[@type="unit-narrow"]/listPatternPart\[@type="start"] ; {0}=FIRST_ITEM 4 days; {1}=REMAINING_ITEMS 2 hrs, 37 mins, and 23 secs
+^//ldml/listPatterns/listPattern\[@type="unit-narrow"]/listPatternPart\[@type="middle"] ; {0}=FIRST_ITEMS 4 days, 2 hrs; {1}=LAST_ITEMS 37 mins, and 23 secs
+^//ldml/listPatterns/listPattern\[@type="unit-narrow"]/listPatternPart\[@type="end"] ; {0}=START_ITEMS 4 days, 2 hrs, 37 mins; {1}=LAST_ITEM 23 secs
 
 ^//ldml/localeDisplayNames/codePatterns/codePattern\[@type="language"] ; {0}=LANGUAGE_CODE zh
 ^//ldml/localeDisplayNames/codePatterns/codePattern\[@type="script"] ; {0}=SCRIPT_CODE Hans
@@ -152,6 +177,7 @@
 ^//ldml/units/unitLength\[@type="%L"]/unit\[@type="duration-year%A"]/unitPattern ; {0}=NUMBER_OF_YEARS 3
 
 ^//ldml/units/unitLength\[@type="%L"]/unit\[@type="%A"]/unitPattern\[@count="\w+"] ; locale ; {0}=NUMBER_OF_UNITS 3
+^//ldml/units/unitLength\[@type="%L"]/unit\[@type="%A"]/perUnitPattern ; locale ; {0}=NUMBER_OF_UNITS 3
 
 # ^//ldml/numbers/currencyFormats/unitPattern\[@count="(%A)"]  ;  {0}=NUMBER 3 ; {1}=UNIT hour(s)
 

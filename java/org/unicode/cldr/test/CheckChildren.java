@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.unicode.cldr.test.CheckCLDR.Phase;
 import org.unicode.cldr.test.CheckCLDR.CheckStatus.Subtype;
 import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.CLDRLocale;
@@ -22,7 +21,7 @@ public class CheckChildren extends FactoryCheckCLDR {
     }
 
     public CheckCLDR handleCheck(String path, String fullPath, String value,
-        Map<String, String> options, List<CheckStatus> result) {
+        Options options, List<CheckStatus> result) {
         if (immediateChildren == null) return this; // skip - test isn't even relevant
         if (isSkipTest()) return this; // disabled
         if (fullPath == null) return this; // skip paths that we don't have
@@ -58,7 +57,8 @@ public class CheckChildren extends FactoryCheckCLDR {
         return this;
     }
 
-    public CheckCLDR setCldrFileToCheck(CLDRFile cldrFileToCheck, Map<String, String> options,
+    @Override
+    public CheckCLDR setCldrFileToCheck(CLDRFile cldrFileToCheck, Options options,
         List<CheckStatus> possibleErrors) {
         if (cldrFileToCheck == null) return this;
         if (cldrFileToCheck.getLocaleID().equals("root")) return this; // Root's children can override.
@@ -74,6 +74,10 @@ public class CheckChildren extends FactoryCheckCLDR {
         List<CLDRFile> iChildren = new ArrayList<CLDRFile>();
         super.setCldrFileToCheck(cldrFileToCheck, options, possibleErrors);
         CLDRLocale myLocale = CLDRLocale.getInstance(cldrFileToCheck.getLocaleID());
+        if (myLocale.getCountry() != null && myLocale.getCountry().length() == 2) {
+            immediateChildren = null;
+            return this; // We don't care if a country locale's children override, since the country locale needs to stand on its own.
+        }
         Set<CLDRLocale> subLocales = getFactory().subLocalesOf(myLocale);
         if (subLocales == null) return this;
         for (CLDRLocale locale : subLocales) {

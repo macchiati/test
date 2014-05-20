@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.unicode.cldr.draft.FileUtilities;
+import org.unicode.cldr.util.FileCopier;
 
 import com.ibm.icu.dev.util.BagFormatter;
 import com.ibm.icu.impl.Utility;
@@ -29,7 +29,7 @@ public class IcuTextWriter {
     // List of characters to escape in UnicodeSets.
     private static final Pattern UNICODESET_ESCAPE = Pattern.compile("\\\\[\\\\\\[\\]\\{\\}\\-&:^=]");
     // Only escape \ and " from other strings.
-    private static final Pattern STRING_ESCAPE = Pattern.compile("\\\\\\\\");
+    private static final Pattern STRING_ESCAPE = Pattern.compile("(?!')\\\\\\\\(?!')");
     private static final Pattern QUOTE_ESCAPE = Pattern.compile("\\\\?\"");
 
     private static String headerText;
@@ -63,13 +63,17 @@ public class IcuTextWriter {
         };
 
     private static String getHeader() {
-        if (headerText != null) return headerText;
-        StringWriter stringWriter = new StringWriter();
-        PrintWriter out = new PrintWriter(stringWriter);
-        FileUtilities.appendFile(NewLdml2IcuConverter.class, "ldml2icu_header.txt", out);
-        headerText = stringWriter.toString();
-        headerText = headerText.replace("%year%", String.valueOf(Calendar.getInstance().get(Calendar.YEAR)));
-        return headerText;
+        if (headerText != null) {
+            return headerText;
+        }
+        try(StringWriter stringWriter = new StringWriter();) {
+            FileCopier.copy(NewLdml2IcuConverter.class, "ldml2icu_header.txt", stringWriter);
+            headerText = stringWriter.toString();
+            headerText = headerText.replace("%year%", String.valueOf(Calendar.getInstance().get(Calendar.YEAR)));
+            return headerText;
+        } catch (IOException ioe) {
+            throw new IllegalArgumentException(ioe);
+        }
     }
 
     /**
@@ -226,7 +230,7 @@ public class IcuTextWriter {
     }
 
     private static PrintWriter appendArray(String padding, String[] valueArray,
-            boolean quote, boolean isSequence, PrintWriter out) {
+        boolean quote, boolean isSequence, PrintWriter out) {
         for (String value : valueArray) {
             out.append(padding);
             appendValue(quoteInside(value), quote, out);
@@ -325,4 +329,3 @@ public class IcuTextWriter {
         return i - 1;
     }
 }
- 

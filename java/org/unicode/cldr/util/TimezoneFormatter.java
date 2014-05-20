@@ -48,6 +48,10 @@ import com.ibm.icu.util.TimeZoneTransition;
 
 public class TimezoneFormatter extends UFormat {
 
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -506645087792499122L;
     private static final long TIME = new Date().getTime();
     public static boolean SHOW_DRAFT = false;
 
@@ -119,10 +123,10 @@ public class TimezoneFormatter extends UFormat {
 
     private transient SimpleDateFormat hourFormatPlus = new SimpleDateFormat();
     private transient SimpleDateFormat hourFormatMinus = new SimpleDateFormat();
-    private transient MessageFormat hoursFormat, gmtFormat, regionFormat, 
+    private transient MessageFormat gmtFormat, regionFormat,
         regionFormatStandard, regionFormatDaylight, fallbackFormat;
-    private transient String abbreviationFallback, preferenceOrdering;
-    private transient Set singleCountriesSet;
+    //private transient String abbreviationFallback, preferenceOrdering;
+    private transient Set<String> singleCountriesSet;
 
     // private for computation
     private transient Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
@@ -177,7 +181,7 @@ public class TimezoneFormatter extends UFormat {
             singleCountriesList = (String) new XPathParts(null, null).set(temp).findAttributeValue("singleCountries",
                 "list");
         }
-        singleCountriesSet = new TreeSet(CldrUtility.splitList(singleCountriesList, ' '));
+        singleCountriesSet = new TreeSet<String>(CldrUtility.splitList(singleCountriesList, ' '));
     }
 
     /**
@@ -266,7 +270,7 @@ public class TimezoneFormatter extends UFormat {
         // * Australia/ACT => Australia/Sydney
 
         String zoneid = TimeZone.getCanonicalID(inputZoneid);
-        BasicTimeZone timeZone = (BasicTimeZone) TimeZone.getTimeZone(zoneid);
+        // BasicTimeZone timeZone = (BasicTimeZone) TimeZone.getTimeZone(zoneid);
         // if (zoneid == null) zoneid = inputZoneid;
 
         switch (location) {
@@ -393,11 +397,11 @@ public class TimezoneFormatter extends UFormat {
             // {1} will be the metazone
             // {0} will be a qualifier (city or country)
             // Example: Pacific Time (Phoenix)
-            
+
             if (length == Length.LONG) {
-                return getRegionFallback(zoneid, 
-                        type == Type.GENERIC || noTimezoneChangeWithin184Days ? regionFormat 
-                                : daylight ? regionFormatDaylight : regionFormatStandard);
+                return getRegionFallback(zoneid,
+                    type == Type.GENERIC || noTimezoneChangeWithin184Days ? regionFormat
+                        : daylight ? regionFormatDaylight : regionFormatStandard);
             }
             return null;
 
@@ -450,13 +454,13 @@ public class TimezoneFormatter extends UFormat {
         // so the exemplar city might be composed by the last field of the raw TZID as described above)
         // with the regionFormat (for example, "{0} Time"), and return it.
         // ***FIX by changing to: if the country can't be resolved, or the zonesInRegion are not unique
-        
+
         String zoneIdsCountry = TimeZone.getRegion(zoneid);
         if (zoneIdsCountry != null) {
             String[] zonesInRegion = TimeZone.getAvailableIDs(zoneIdsCountry);
             if (zonesInRegion != null && zonesInRegion.length == 1 || singleCountriesSet.contains(zoneid)) {
                 String countryName = getLocalizedCountryName(zoneIdsCountry);
-                return  regionFallbackFormat.format(new Object[] { countryName });
+                return regionFallbackFormat.format(new Object[] { countryName });
             }
         }
         String cityName = getLocalizedExemplarCity(zoneid);
@@ -528,10 +532,10 @@ public class TimezoneFormatter extends UFormat {
     private transient Matcher m = Pattern.compile("([-+])([0-9][0-9])([0-9][0-9])").matcher("");
 
     private transient boolean parseInfoBuilt;
-    private transient final Map localizedCountry_countryCode = new HashMap();
-    private transient final Map exemplar_zone = new HashMap();
-    private transient final Map localizedExplicit_zone = new HashMap();
-    private transient final Map country_zone = new HashMap();
+    private transient final Map<String, String> localizedCountry_countryCode = new HashMap<String, String>();
+    private transient final Map<String, String> exemplar_zone = new HashMap<String, String>();
+    private transient final Map<Object, Object> localizedExplicit_zone = new HashMap<Object, Object>();
+    private transient final Map<String, String> country_zone = new HashMap<String, String>();
 
     /**
      * Returns zoneid. In case of an offset, returns "Etc/GMT+/-HH" or "Etc/GMT+/-HHmm".
@@ -658,10 +662,10 @@ public class TimezoneFormatter extends UFormat {
         // now add exemplar cities, AND pick up explicit strings, AND localized countries
         String prefix = "//ldml/dates/timeZoneNames/zone[@type=\"";
         String countryPrefix = "//ldml/localeDisplayNames/territories/territory[@type=\"";
-        Map localizedNonWall = new HashMap();
-        Set skipDuplicates = new HashSet();
-        for (Iterator it = desiredLocaleFile.iterator(); it.hasNext();) {
-            String path = (String) it.next();
+        Map<String, Comparable> localizedNonWall = new HashMap<String, Comparable>();
+        Set<String> skipDuplicates = new HashSet<String>();
+        for (Iterator<String> it = desiredLocaleFile.iterator(); it.hasNext();) {
+            String path = it.next();
             // dumb, simple implementation
             if (path.startsWith(prefix)) {
                 String zoneId = matchesPart(path, prefix, "\"]/exemplarCity");
@@ -704,8 +708,8 @@ public class TimezoneFormatter extends UFormat {
             }
         }
         // add to main set
-        for (Iterator it = localizedNonWall.keySet().iterator(); it.hasNext();) {
-            Object key = it.next();
+        for (Iterator<String> it = localizedNonWall.keySet().iterator(); it.hasNext();) {
+            String key = it.next();
             Object value = localizedNonWall.get(key);
             localizedExplicit_zone.put(key, value);
         }

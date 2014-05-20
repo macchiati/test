@@ -1,16 +1,20 @@
 package org.unicode.cldr.draft;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.unicode.cldr.tool.CountryCodeConverter;
 import org.unicode.cldr.tool.LanguageCodeConverter;
+import org.unicode.cldr.util.CldrUtility;
+import org.unicode.cldr.util.SemiFileReader;
 import org.unicode.cldr.util.StandardCodes;
 
 import com.ibm.icu.dev.util.Relation;
@@ -20,15 +24,16 @@ public class ScriptMetadata {
     private static final String DATA_FILE = "/org/unicode/cldr/util/data/Script_Metadata.csv";
 
     // To get the data, go do the Script MetaData spreadsheet, and Download As Comma Separated Items into DATA_FILE
+    // Then you'll run GenerateScriptMetadata
     public enum Column {
         // must match the spreadshee header (caseless compare) or have the alternate header as an argument.
         // doesn't have to be in order
         WR, SAMPLE, ID_USAGE("ID Usage (UAX31)"), RTL("RTL?"), LB_LETTERS("LB letters?"), SHAPING_REQ("Shaping Req?"), IME(
             "IME?"),
-        ORIGIN_COUNTRY("Origin Country"),
-        DENSITY("~Density"),
-        LIKELY_LANGUAGE("Likely Language"),
-        HAS_CASE("Has Case?"), ;
+            ORIGIN_COUNTRY("Origin Country"),
+            DENSITY("~Density"),
+            LIKELY_LANGUAGE("Likely Language"),
+            HAS_CASE("Has Case?"), ;
         int columnNumber = -1;
         final Set<String> names = new HashSet<String>();
 
@@ -67,8 +72,12 @@ public class ScriptMetadata {
     }
 
     public enum IdUsage {
-        UNKNOWN("Other"), EXCLUSION("Historic"), LIMITED_USE("Limited Use"), ASPIRATIONAL("Aspirational"), RECOMMENDED(
-            "Major Use");
+        UNKNOWN("Other"),
+        EXCLUSION("Historic"),
+        LIMITED_USE("Limited Use"),
+        ASPIRATIONAL("Aspirational"),
+        RECOMMENDED("Major Use");
+
         public final String name;
 
         private IdUsage(String name) {
@@ -107,7 +116,7 @@ public class ScriptMetadata {
 
     public static void addNameToCode(String type, Map<String, String> hashMap) {
         for (String language : SC.getAvailableCodes(type)) {
-            Map<String, String> fullData = SC.getLStreg().get(type).get(language);
+            Map<String, String> fullData = StandardCodes.getLStreg().get(type).get(language);
             String name = (String) (fullData.get("Description"));
             hashMap.put(name.toUpperCase(Locale.ENGLISH), language);
         }
@@ -118,7 +127,7 @@ public class ScriptMetadata {
         map.put(newTerm.toUpperCase(Locale.ENGLISH), code);
     }
 
-    public static class Info {
+    public static class Info implements Comparable<Info> {
         public final int rank;
         public final String sampleChar;
         public final IdUsage idUsage;
@@ -160,6 +169,20 @@ public class ScriptMetadata {
             likelyLanguage = language == null ? "und" : language;
         }
 
+        public Info(Info other, String string) {
+            rank = other.rank;
+            sampleChar = other.sampleChar;
+            idUsage = other.idUsage;
+            rtl = other.rtl;
+            lbLetters = other.lbLetters;
+            hasCase = other.hasCase;
+            shapingReq = other.shapingReq;
+            ime = string.equals("IME:YES") ? Trinary.YES : other.ime;
+            density = other.density;
+            originCountry = other.originCountry;
+            likelyLanguage = other.likelyLanguage;
+        }
+
         // public Trinary parseTrinary(Column title, String[] items) {
         // return Trinary.valueOf(fix(title.getItem(items)).toUpperCase(Locale.ENGLISH));
         // }
@@ -183,19 +206,25 @@ public class ScriptMetadata {
         }
 
         public Object getName(String type, String code) {
-            List fullData = SC.getFullData(type, code);
+            List<String> fullData = SC.getFullData(type, code);
             if (fullData == null) {
                 return "unavailable";
             }
             return fullData.get(0);
+        }
+
+        @Override
+        public int compareTo(Info o) {
+            // we don't actually care what the comparison value is, as long as it is transitive and consistent with equals.
+            return toString().compareTo(o.toString());
         }
     }
 
     public static Set<String> errors = new LinkedHashSet<String>();
     static HashMap<String, Integer> titleToColumn = new HashMap<String, Integer>();
 
-    private static class MyFileReader extends FileUtilities.SemiFileReader {
-        public Map<String, Info> data = new HashMap<String, Info>();
+    private static class MyFileReader extends SemiFileReader {
+        private Map<String, Info> data = new HashMap<String, Info>();
 
         @Override
         protected boolean isCodePoint() {
@@ -204,7 +233,7 @@ public class ScriptMetadata {
 
         @Override
         protected String[] splitLine(String line) {
-            return FileUtilities.splitCommaSeparated(line);
+            return CldrUtility.splitCommaSeparated(line);
         };
 
         @Override
@@ -229,7 +258,12 @@ public class ScriptMetadata {
             Set<String> extras = EXTRAS.get(script);
             if (extras != null) {
                 for (String script2 : extras) {
-                    data.put(script2, info);
+                    Info info2 = info;
+                    if (script2.equals("Jpan")) {
+                        // HACK
+                        info2 = new Info(info, "IME:YES");
+                    }
+                    data.put(script2, info2);
                 }
             }
             return true;
@@ -241,6 +275,9 @@ public class ScriptMetadata {
             return this;
         }
 
+        private Map<String, Info> getData() {
+            return Collections.unmodifiableMap(data);
+        }
     }
 
     static Relation<String, String> EXTRAS = Relation.of(new HashMap<String, Set<String>>(), HashSet.class);
@@ -249,11 +286,21 @@ public class ScriptMetadata {
         EXTRAS.put("Hani", "Hant");
         EXTRAS.put("Hang", "Kore");
         EXTRAS.put("Hira", "Jpan");
+        EXTRAS.freeze();
     }
-    static Map<String, Info> data = new MyFileReader().process(ScriptMetadata.class, DATA_FILE).data;
+    static final Map<String, Info> data = new MyFileReader()
+    .process(ScriptMetadata.class, DATA_FILE).getData();
 
     public static Info getInfo(String s) {
-        return data.get(s);
+        Info result = data.get(s);
+        if (result == null) {
+            try {
+                String name2 = UScript.getShortName(UScript.getCodeFromName(s));
+                result = data.get(name2);
+            } catch (Exception e) {
+            }
+        }
+        return result;
     }
 
     public static Set<String> getScripts() {
@@ -262,5 +309,17 @@ public class ScriptMetadata {
 
     public static Info getInfo(int i) {
         return data.get(UScript.getShortName(i));
+    }
+
+    public static Set<Entry<String, Info>> iterable() {
+        return data.entrySet();
+    }
+
+    /** 
+     * Specialized scripts
+     * @return
+     */
+    public static Set<String> getExtras() {
+        return EXTRAS.values();
     }
 }

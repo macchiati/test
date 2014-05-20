@@ -15,11 +15,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.unicode.cldr.draft.FileUtilities;
-import org.unicode.cldr.test.DisplayAndInputProcessor.NumericType;
 import org.unicode.cldr.util.CLDRFile;
-import com.ibm.icu.util.Output;
 import org.unicode.cldr.util.CldrUtility.VariableReplacer;
+import org.unicode.cldr.util.FileReaders;
 import org.unicode.cldr.util.RegexLookup;
 import org.unicode.cldr.util.RegexLookup.Finder;
 import org.unicode.cldr.util.RegexLookup.Merger;
@@ -29,6 +27,7 @@ import com.ibm.icu.impl.Row.R2;
 import com.ibm.icu.impl.Row.R3;
 import com.ibm.icu.text.Transform;
 import com.ibm.icu.text.UnicodeSet;
+import com.ibm.icu.util.Output;
 
 /**
  * A class for loading and managing the xpath converters used to map CLDR data
@@ -51,15 +50,12 @@ class RegexManager {
     private Map<String, String> xpathVariables;
     private VariableReplacer cldrVariables;
 
-    static class FullMatcher extends RegexFinder {
-        public FullMatcher(String pattern) {
-            super(pattern);
-        }
-
-        public boolean find(String item, Object context) {
-            return matcher.reset(item).matches();
-        }
-    }
+//    static class FullMatcher extends RegexFinder {
+//        public FullMatcher(String pattern) {
+//            super(pattern);
+//        }
+//
+//    }
 
     /**
      * Wrapper class for functions that need to be performed on CLDR values as
@@ -149,15 +145,14 @@ class RegexManager {
             return processString(groupKey, arguments);
         }
 
-        public List<String> processValues(String[] arguments, CLDRFile cldrFile,
-            String xpath) {
+        public List<String> processValues(String[] arguments, String cldrValue) {
             if (valueArg == null) {
                 List<String> values = new ArrayList<String>();
-                values.add(getStringValue(cldrFile, xpath));
+                values.add(cldrValue);
                 return values;
             }
             // Split single args using spaces.
-            String processedValue = processValue(valueArg, xpath, cldrFile, arguments);
+            String processedValue = processValue(valueArg, cldrValue, arguments);
             return splitValues(processedValue);
         }
 
@@ -203,7 +198,7 @@ class RegexManager {
             return args;
         }
 
-        private String processValue(String value, String xpath, CLDRFile cldrFile, String[] arguments) {
+        private String processValue(String value, String cldrValue, String[] arguments) {
             value = processString(value, arguments);
             Matcher matcher = FUNCTION_PATTERN.matcher(value);
             if (matcher.find()) {
@@ -222,7 +217,7 @@ class RegexManager {
                 value = buffer.toString();
             }
             if (value.contains("{value}")) {
-                value = value.replace("{value}", getStringValue(cldrFile, xpath));
+                value = value.replace("{value}", cldrValue);
             }
             return value;
         }
@@ -248,7 +243,7 @@ class RegexManager {
         }
     }
 
-    private static String processString(String value, String[] arguments) {
+     static String processString(String value, String[] arguments) {
         if (value == null) {
             return null;
         }
@@ -318,7 +313,7 @@ class RegexManager {
 
         public boolean findKey(Finder finder) {
             for (String key : map.keySet()) {
-                if (finder.find(key, null)) {
+                if (finder.find(key, null,null)) {
                     return true;
                 }
             }
@@ -368,7 +363,7 @@ class RegexManager {
     private static Transform<String, Finder> regexTransform = new Transform<String, Finder>() {
         @Override
         public Finder transform(String source) {
-            return new FullMatcher(source);
+            return new RegexFinder(source);
         }
     };
 
@@ -414,21 +409,6 @@ class RegexManager {
             if (haltPos[i] < furthestPos) continue;
             System.out.println(results.get(i));
         }
-    }
-
-    /**
-     * @param cldrFile
-     * @param xpath
-     * @return the value of the specified xpath (fallback or otherwise)
-     */
-    static String getStringValue(CLDRFile cldrFile, String xpath) {
-        String value = cldrFile.getStringValue(xpath);
-        // HACK: DAIP doesn't currently make spaces in currency formats non-breaking.
-        // Remove this when fixed.
-        if (NumericType.getNumericType(xpath) == NumericType.CURRENCY) {
-            value = value.replace(' ', '\u00A0');
-        }
-        return value;
     }
 
     RegexLookup<FallbackInfo> fallbackConverter;
@@ -539,8 +519,8 @@ class RegexManager {
         for (Entry<String, String> entry : xpathVariables.entrySet()) {
             cldrVariables.add(entry.getKey(), cldrFile.getStringValue(entry.getValue()));
         }
-        for (R2<Finder, RegexResult> entry : basePathConverter) {
-            processedPathConverter.add(entry.get0(), entry.get1());
+        for (Map.Entry<Finder, RegexResult> entry : basePathConverter) {
+            processedPathConverter.add(entry.getKey(), entry.getValue());
         }
         for (Entry<String, RegexResult> entry : unprocessedMatchers.entrySet()) {
             processedPathConverter.add(cldrVariables.replace(entry.getKey()),
@@ -560,7 +540,7 @@ class RegexManager {
                 }
             });
         xpathVariables = new HashMap<String, String>();
-        BufferedReader reader = FileUtilities.openFile(NewLdml2IcuConverter.class, converterFile);
+        BufferedReader reader = FileReaders.openFile(NewLdml2IcuConverter.class, converterFile);
         VariableReplacer variables = new VariableReplacer();
         Finder xpathMatcher = null;
         RegexResult regexResult = null;
@@ -604,7 +584,7 @@ class RegexManager {
                             xpathConverter.add(xpathMatcher, regexResult);
                         }
                     }
-                    xpathMatcher = new FullMatcher(content[0].replace("[@", "\\[@"));
+                    xpathMatcher = new RegexFinder(content[0].replace("[@", "\\[@"));
                     regexResult = new RegexResult();
                 }
                 if (content.length > 1) {
@@ -711,7 +691,7 @@ class RegexManager {
         rbPattern.append(rbPath.substring(lastIndex));
         FallbackInfo info = new FallbackInfo(argsUsed, args.size());
         info.addItem(xpathMatcher, fallbackXpath, fallbackValue.split("\\s"));
-        fallbackConverter.add(new FullMatcher(rbPattern.toString()), info);
+        fallbackConverter.add(new RegexFinder(rbPattern.toString()), info);
     }
 
     void addFallbackValues(Map<String, CldrArray> pathValueMap) {

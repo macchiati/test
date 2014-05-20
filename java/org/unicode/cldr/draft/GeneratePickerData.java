@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -32,7 +33,7 @@ import java.util.regex.Pattern;
 import org.unicode.cldr.draft.GeneratePickerData.CategoryTable.Separation;
 import org.unicode.cldr.tool.Option;
 import org.unicode.cldr.tool.Option.Options;
-import org.unicode.cldr.util.CldrUtility;
+import org.unicode.cldr.util.CLDRPaths;
 
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UProperty;
@@ -152,8 +153,9 @@ class GeneratePickerData {
     final static Options myOptions = new Options();
 
     enum MyOptions {
-        output(".*", CldrUtility.GEN_DIRECTORY + "picker/", "output data directory"),
-        unicodedata(null, CldrUtility.UCD_DIRECTORY, "Unicode Data directory"),
+        output(".*", CLDRPaths.BASE_DIRECTORY + "tools/java/org/unicode/cldr/draft/picker/",
+            "output data directory"),
+        unicodedata(null, CLDRPaths.UCD_DIRECTORY, "Unicode Data directory"),
         verbose(null, null, "verbose debugging messages"),
         korean(null, null, "generate korean hangul defectives instead"), ;
         // boilerplate
@@ -189,6 +191,9 @@ class GeneratePickerData {
         buildMainTable();
         addEmojiCharacters();
         addManualCorrections("ManualChanges.txt");
+        
+        writeCategories();
+        
         String categoryData = CATEGORYTABLE.toString(true, outputDirectory);
         writeMainFile(outputDirectory, categoryData);
         // writeMainFile(outputDirectory, categoryData);
@@ -213,6 +218,26 @@ class GeneratePickerData {
             + (Compacter.totalNew / Compacter.totalOld));
         System.out.println("DONE");
     }
+
+    public static void writeCategories() throws FileNotFoundException, IOException {
+        PrintWriter out = getFileWriter(outputDirectory, "categories.txt");
+        for (Entry<String, Map<String, USet>> catData : CategoryTable.categoryTable.entrySet()) {
+            String main = catData.getKey();
+            if (main.equals("Latin")) {
+                break;
+            }
+            Map<String, USet> value = catData.getValue();
+            for (Entry<String, USet> subData : value.entrySet()) {
+                String sub = subData.getKey();
+                if (sub.equals("Emoji") || sub.contains("Emotic")) {
+                    continue;
+                }
+                out.println(main + " ;\t" + sub + " ;\t" + simpleList(subData.getValue().strings));
+            }
+        }
+        out.close();
+    }
+
 
     private static void buildMainTable() throws IOException {
         subheader = new Subheader(unicodeDataDirectory, outputDirectory);
@@ -253,10 +278,10 @@ class GeneratePickerData {
 
         addLatin();
         Set<String> EuropeanMinusLatin = new TreeSet<String>(ScriptCategories.EUROPEAN);
-        EuropeanMinusLatin.remove("Latin");
+        EuropeanMinusLatin.remove("Latn");
         Set<String> EastAsianMinusHanAndHangul = new TreeSet<String>(ScriptCategories.EAST_ASIAN);
-        EastAsianMinusHanAndHangul.remove("Han");
-        EastAsianMinusHanAndHangul.remove("Hangul");
+        EastAsianMinusHanAndHangul.remove("Hani");
+        EastAsianMinusHanAndHangul.remove("Hang");
         addProperty("Script", EUROPEAN, buttonComparator, EuropeanMinusLatin);
         addProperty("Script", AFRICAN, buttonComparator, ScriptCategories.AFRICAN);
         addProperty("Script", MIDDLE_EASTERN, buttonComparator, ScriptCategories.MIDDLE_EASTERN);
@@ -422,15 +447,15 @@ class GeneratePickerData {
 
     private static void writeMainFile(String directory, String categoryTable) throws IOException, FileNotFoundException {
         PrintWriter out = getFileWriter(directory, "CharData.java");
-        out.println("package org.unicode.cldr.draft;");
+        out.println("package org.unicode.cldr.draft.picker;");
         out.println("// $Date$");
         out.println("public class CharData {");
         out.println("static String[][] CHARACTERS_TO_NAME = {");
         out.println(buildNames());
-        out.println("  };\r\n" + "  static String[][][] CATEGORIES = {");
+        out.println("  };\n" + "  static String[][][] CATEGORIES = {");
 
         out.println(categoryTable);
-        out.println("  };\r\n" + "}");
+        out.println("  };\n" + "}");
         out.close();
     }
 
@@ -638,7 +663,7 @@ class GeneratePickerData {
     private static String buildNames() {
         StringBuilder result = new StringBuilder();
         for (UnicodeSetIterator it = new UnicodeSetIterator(NAMED_CHARACTERS); it.next();) {
-            result.append("{\"" + it.getString() + "\",\"" + UCharacter.getExtendedName(it.codepoint) + "\"},\r\n");
+            result.append("{\"" + it.getString() + "\",\"" + UCharacter.getExtendedName(it.codepoint) + "\"},\n");
         }
         return result.toString();
     }
@@ -865,12 +890,17 @@ class GeneratePickerData {
             throw new IllegalArgumentException();
         }
 
+        static final UnicodeSet DEPRECATED = new UnicodeSet("[:deprecated:]").freeze();
+        static final UnicodeSet CONTROLS = new UnicodeSet("[[:cc:]]").freeze();
+
         public String toString(boolean displayData, String localDataDirectory) throws FileNotFoundException,
             IOException {
-            UnicodeSet missing = new UnicodeSet(0, 0x10FFFF).removeAll(Typology.SKIP);
-            PrintWriter htmlChart = getFileWriter(localDataDirectory, "header.html");
+            UnicodeSet missing = new UnicodeSet(0, 0x10FFFF).removeAll(Typology.SKIP)
+                .removeAll(DEPRECATED)
+                .removeAll(CONTROLS);
+            PrintWriter htmlChart = getFileWriter(localDataDirectory, "index.html");
             writeHtmlHeader(htmlChart, localDataDirectory, null, "main",
-                "p {font-size:75%; margin:0; margin-left:1em; text-indent:-1em;}");
+                "p {font-size:100%; margin:0; margin-left:1em; text-indent:-1em;}");
             writePageIndex(htmlChart, categoryTable.keySet());
 
             int totalChars = 0, totalCompressed = 0;
@@ -881,7 +911,7 @@ class GeneratePickerData {
                 Map<String, GeneratePickerData.USet> sub = categoryTable.get(category);
                 htmlChart = openChart(htmlChart, localDataDirectory, category, categoryTable.keySet());
 
-                result.append("{{\"" + category + "\"},\r\n");
+                result.append("{{\"" + category + "\"},\n");
                 // clean up results
                 for (Iterator<String> subcategoryIterator = sub.keySet().iterator(); subcategoryIterator.hasNext();) {
                     String subcategory = subcategoryIterator.next();
@@ -923,7 +953,7 @@ class GeneratePickerData {
                     duplicates.addAll(dups);
                     soFar.addAll(valueChars.strings);
                 }
-                result.append("},\r\n");
+                result.append("},\n");
             }
             if (missing.size() != 0) {
                 System.out.println("MISSING!\t" + missing.size() + "\t" + missing.toPattern(false));
@@ -934,7 +964,7 @@ class GeneratePickerData {
             duplicates.clear(); // don't show anymore
             soFar.complement().removeAll(SKIP);
             if (soFar.size() > 0 || duplicates.size() > 0) {
-                result.append("{{\"" + "TODO" + "\"},\r\n");
+                result.append("{{\"" + "TODO" + "\"},\n");
                 if (soFar.size() > 0) {
                     USet temp = new USet(UCA);
                     addAllToCollection(soFar, temp.strings);
@@ -945,7 +975,7 @@ class GeneratePickerData {
                     addAllToCollection(duplicates, temp.strings);
                     addResult(result, temp, "TODO", "Duplicates", displayData);
                 }
-                result.append("},\r\n");
+                result.append("},\n");
             }
             // return results
             System.out.println("Total Chars:\t" + totalChars);
@@ -1002,16 +1032,19 @@ class GeneratePickerData {
             return result.toString();
         }
 
-        private PrintWriter openChart(PrintWriter htmlChart, String localDataDirectory, String category, Set<String> set)
+        private PrintWriter openChart(PrintWriter htmlChart, String localDataDirectory,
+            String category, Set<String> set)
             throws IOException, FileNotFoundException {
             if (htmlChart != null) {
                 htmlChart = writeHtmlFooterAndClose(htmlChart);
             }
             if (category != null) {
-                htmlChart = getFileWriter(localDataDirectory, fileNameFromCategory(category));
+                String fileNameFromCategory = fileNameFromCategory(category);
+                htmlChart = getFileWriter(localDataDirectory, fileNameFromCategory);
                 htmlChart = writeHtmlHeader(htmlChart, localDataDirectory, category, "main",
                     "table, th, td {border-collapse:collapse; border:1px solid blue;}");
                 writeCategoryH1(htmlChart, category);
+                htmlChart.println("<p><a href='index.html'>Index</a></p>");
                 htmlChart.println("<table>");
             }
             return htmlChart;
@@ -1035,15 +1068,19 @@ class GeneratePickerData {
         }
 
         private String fileNameFromCategory(String category) {
-            return "PickerData_" + fixCategoryName(category).replace(' ', '_') + ".html";
+            return "PickerData_" + fixCategoryName(category)
+                .replace(' ', '_')
+                .replace("&", "and") + ".html";
         }
 
         private void writePageIndex(PrintWriter htmlChart, Set<String> set) {
+            htmlChart.println("<h1>Index</h1>");
+            htmlChart.println("<ul>");
             for (String s : set) {
                 s = fixCategoryName(s);
-                htmlChart.println("<p><a href='" + fixHtml(fileNameFromCategory(s)) + "'>" + fixHtml(s) + "</a></p>");
+                htmlChart.println("<li><a href='" + fixHtml(fileNameFromCategory(s)) + "'>" + fixHtml(s) + "</a></li>");
             }
-            htmlChart.println("<p>&nbsp;</p><p>(" + new Date() + ")</p>");
+            htmlChart.println("</ul>\n<p>&nbsp;</p><p>(" + new Date() + ")</p>");
         }
 
         private void writeCategoryH1(PrintWriter htmlChart, String category) {
@@ -1071,7 +1108,7 @@ class GeneratePickerData {
             }
             final String quoteFixedvalueCharsString = valueCharsString.replace("\\", "\\\\").replace("\"", "\\\"");
             result.append("/*" + size + "," + length + "*/" + " {\"" + subcategory + "\",\""
-                + quoteFixedvalueCharsString + "\"},\r\n");
+                + quoteFixedvalueCharsString + "\"},\n");
             if (doDisplayData) {
                 System.out.println("/*" + size + "," + length + "*/" + " " + category + MAIN_SUB_SEPARATOR
                     + subcategory + "\t" + valueSet.toPattern(false) + ", " + toHex(valueCharsString, true));
@@ -1131,8 +1168,16 @@ class GeneratePickerData {
         for (String valueAlias : propertyValues) {
             valueChars.clear();
             // valueChars.applyPropertyAlias(propertyAlias, valueAlias);
-            ScriptCategories.applyPropertyAlias(propertyAlias, valueAlias, valueChars);
-            valueAlias = ScriptCategories.getFixedPropertyValue(propertyAlias, valueAlias);
+            try {
+                ScriptCategories.applyPropertyAlias(propertyAlias, valueAlias, valueChars);
+            } catch (RuntimeException e) {
+                if (propertyAlias == "Script") {
+                    System.out.println("Skipping script " + valueAlias);
+                    continue;
+                }
+                throw e;
+            }
+            valueAlias = ScriptCategories.getFixedPropertyValue(propertyAlias, valueAlias, UProperty.NameChoice.SHORT);
 
             if (DEBUG) System.out.println(valueAlias + ": " + valueChars.size() + ", " + valueChars);
             valueChars.removeAll(SKIP);
@@ -1144,8 +1189,12 @@ class GeneratePickerData {
                 Separation separation = Separation.AUTOMATIC;
                 if (ScriptCategories.HISTORIC_SCRIPTS.contains(valueAlias)) {
                     separation = Separation.ALL_HISTORIC;
+                } else {
+                    int debug = 0;
                 }
-                CATEGORYTABLE.add(title, true, valueAlias, sortItems(sort, propertyAlias, valueAlias), separation,
+                String longName = ScriptCategories.TO_LONG_SCRIPT.transform(valueAlias);
+                CATEGORYTABLE.add(title, true, longName,
+                    sortItems(sort, propertyAlias, longName), separation,
                     it.codepoint);
             }
         }
@@ -1222,6 +1271,30 @@ class GeneratePickerData {
     }
 
     public static Set<Exception> ERROR_COUNT = new LinkedHashSet<Exception>();
+    
+    /**
+     * Provide a simple list of strings
+     * @param source
+     * @return
+     */
+    public static String simpleList(Iterable<String> source) {
+        StringBuilder b = new StringBuilder();
+        for (String s : source) {
+            if (b.length() != 0) {
+                b.append(' ');
+            }
+            if (Character.offsetByCodePoints(s, 0, 1) == s.length()) {
+                if (s.equals("{")) {
+                    b.append('\\');
+                }
+                b.append(s);
+            } else {
+                b.append('{').append(s).append('}');
+            }
+        }
+        return b.toString();
+    }
+
 
     static class USet {
         Collection<String> strings;
@@ -1242,6 +1315,7 @@ class GeneratePickerData {
                 strings = new TreeSet<String>(sorted);
             }
         }
+        
 
         public String toString() {
             String result = Compacter.appendCompacted(strings);
@@ -1269,9 +1343,9 @@ class GeneratePickerData {
                 Set<String> ba = new LinkedHashSet<String>(reversal);
                 ba.removeAll(original);
                 System.out.println("FAILED!!!!");
-                IllegalArgumentException e = new IllegalArgumentException("Failed with: " + original + "\r\n"
-                    + "Range String: " + Compacter.getInternalRangeString(strings) + "\r\n"
-                    + "In original but not restored: " + ab + "\r\n" + "In restored but not original: " + ba + "\r\n"
+                IllegalArgumentException e = new IllegalArgumentException("Failed with: " + original + "\n"
+                    + "Range String: " + Compacter.getInternalRangeString(strings) + "\n"
+                    + "In original but not restored: " + ab + "\n" + "In restored but not original: " + ba + "\n"
                     + "Returned range string: " + CharacterListCompressor.base88DecodeList(result.toString())
                     // CharacterListCompressor.base88Decode(in);
                     );
@@ -1624,7 +1698,7 @@ class GeneratePickerData {
         // }
         // }
 
-        Map<SimplePair, SimplePair> renameCache = new HashMap();
+        Map<SimplePair, SimplePair> renameCache = new HashMap<SimplePair, SimplePair>();
 
         SimplePair rename(String maincategory, String subcategory) {
             final SimplePair originals = new SimplePair(maincategory, subcategory);
@@ -1727,8 +1801,8 @@ class GeneratePickerData {
     }
 
     private static void addEmojiCharacters() throws IOException {
-        File emojiSources = new File(unicodeDataDirectory + "/EmojiSources-6.2.0d1.txt"); // Needs fixing for release vs
-                                                                                          // non-released directory
+        File emojiSources = new File(unicodeDataDirectory + "/EmojiSources.txt"); // Needs fixing for release vs
+                                                                                  // non-released directory
         FileInputStream fis = new FileInputStream(emojiSources);
         BufferedReader in = new BufferedReader(new InputStreamReader(fis, "UTF-8"));
         UnicodeSet emojiCharacters = new UnicodeSet();

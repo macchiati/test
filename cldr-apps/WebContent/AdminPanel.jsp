@@ -26,6 +26,18 @@ String sql = request.getContextPath()+"/survey?sql="+vap+"";
 				<a id='gotoSt' href='<%= lmi %>'><img src="STLogo.png" align="right" border="0" title="[logo]" alt="[logo]" /></a>
 <h1>Survey Tool Administration | <%= SurveyMain.localhost() %></h1>
 <a href='<%= lmi %>'>SurveyTool as Admin</a> | <a href='<%= sql %>'>Raw SQL</a>
+<%
+	if(SurveyMain.testpw!=null&&!SurveyMain.testpw.isEmpty()) {
+		%>
+			| <a href='createAndLogin.jsp?vap=<%= SurveyMain.testpw %>'>CreateAndLogin (CLDR_TESTPW)</a>
+		<%
+	} else {
+		%>
+		| <a href='createAndLogin.jsp?vap=<%= vap %>'>CreateAndLogin (Admin Password!)</a> (set CLDR_TESTPW if you prefer having a test password)
+	<%
+	}
+%>
+		| <a href='cldr-setup.jsp?vap=<%= vap %>'>SurveyTool Setup</a>
 
 <hr>
 <%@ include file="/WEB-INF/tmpl/stnotices.jspf" %>
@@ -42,8 +54,8 @@ String sql = request.getContextPath()+"/survey?sql="+vap+"";
 
 <% if(action.equals("rawload")) {
 %>
-	<% if(CLDRConfig.getInstance().getEnvironment()!=CLDRConfig.Environment.LOCAL) { %>
-	    <h1>Only available in LOCAL context. </h1>
+	<% if(CLDRConfig.getInstance().getEnvironment()!=CLDRConfig.Environment.SMOKETEST) { %>
+	    <h1>Only available in SMOKETEST context. </h1>
 	 <% } else { %>
 	 
 	 

@@ -20,11 +20,12 @@ import org.unicode.cldr.util.With.SimpleIterator;
 
 import com.ibm.icu.dev.util.BagFormatter;
 
+
 public final class FileUtilities {
 
     public static abstract class SemiFileReader extends FileProcessor {
         public final static Pattern SPLIT = Pattern.compile("\\s*;\\s*");
-
+        
         protected abstract boolean handleLine(int lineCount, int start, int end, String[] items);
 
         protected void handleEnd() {
@@ -191,7 +192,7 @@ public final class FileUtilities {
                 throw new IllegalArgumentException("Couldn't open file: " + file + "; relative to class: "
                     + className, e);
             }
-            throw new IllegalArgumentException("Couldn't open file: " + canonicalName
+            throw new IllegalArgumentException("Couldn't open file " + file + "; in path " + canonicalName + "; relative to class: "
                 + className, e);
         }
     }
@@ -266,9 +267,9 @@ public final class FileUtilities {
     }
 
     public static void copyFile(Class<?> class1, String sourceFile, String targetDirectory, String newName) {
-        copyFile(class1, sourceFile, targetDirectory, sourceFile, null);
+        copyFile(class1, sourceFile, targetDirectory, newName, null);
     }
-    
+
     public static void copyFile(Class<?> class1, String sourceFile, String targetDirectory, String newName, String[] replacementList) {
         try {
             PrintWriter out = BagFormatter.openUTF8Writer(targetDirectory, newName);

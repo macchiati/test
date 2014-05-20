@@ -1,6 +1,60 @@
 
-<link rel="stylesheet" type="text/css" href="../styles/factbook.css">
+<script src="../js/jquery-1.8.3.min.js"></script>
 <link rel="stylesheet" type="text/css" href="../styles/print.css">
+<script>
+$(document).ready(function(e) {
+	$("table").width('700');
+	$("table").css('font-size','12px');
+	$("table").css('text-decoration','none');
+	$('a[target="_blank"]').each(function(index, element) {
+		$(this).replaceWith($(this).text());
+	});
+});
+</script>
+<style>
+
+body { width: 800px; font-size: 12px;}
+
+a:link, a:active, a:hover
+	 { text-decoration: none;
+		 font-color: black;
+	}
+</style>
+
+<script>
+$(document).ready(function() { 
+	function GetURLParameter(sParam)
+	{
+		var sPageURL = window.location.search.substring(1);
+		var sURLVariables = sPageURL.split('&');
+		for (var i = 0; i < sURLVariables.length; i++)
+			{ 
+				var sParameterName = sURLVariables[i].split('=');
+					if (sParameterName[0] == sParam)
+						{ 
+							return sParameterName[1];
+						}
+			}
+		}
+
+	var fieldkey = GetURLParameter('fieldkey');
+	var alphaletter = GetURLParameter('alphaletter');
+	var countryname = GetURLParameter('countryname');
+	var countrycode = GetURLParameter('countrycode');
+
+
+	$("#alpha").html(alphaletter);
+	$("#" + fieldkey).addClass('selected');
+	
+	//$('html,body').animate({scrollTop:$('#' + fieldkey).offset.top + 20},1000);
+	$("#" + fieldkey).offset({top: 20});
+	
+});
+</script>
+
+
+
+
 
 
 <script language="javascript" type="text/javascript">
@@ -11,7 +65,7 @@ function MM_openBrWindow(theURL,winName,features) { //v2.0
 //-->
 </script>
 
-<table width="638" border="0" cellspacing="0" cellpadding="0">
+<table width="100%" border="0" cellspacing="0" cellpadding="0" id="fieldlisting1"  >
   <tr height="25">
     <td style="background-image: url(../graphics/gold_gradiant.gif); background-repeat: repeat-x;" class="region">Field Listing<strong> :: Literacy</strong></span></td>
     <td align="right" valign="middle" style="background-image: url(../graphics/gold_gradiant.gif); background-repeat: repeat-x;"> 
@@ -45,7 +99,7 @@ function MM_swapImage() { //v3.0
 </td>
   </tr>
 </table>
-<table id="fieldlisting"  cellpadding="6" cellspacing="2" width="638">
+<table id="fieldlisting"  cellpadding="6" cellspacing="2" width="100%">
   <tr>
     <td colspan="2">
       <span class="category_data">This entry includes a <em>definition</em> of literacy and Census Bureau percentages for the <em>total population</em>, <em>males</em>, and <em>females</em>. There are no universal definitions and standards of literacy. Unless otherwise specified, all rates are based on the most common definition - the ability to read and write at a specified age. Detailing the standards that individual countries use to assess the ability to read and write is beyond the scope of the <em>Factbook</em>. Information on literacy, while not a perfect measure of educational results, is probably the most easily available and valid for international comparisons. Low levels of literacy, and education in general, can impede the economic development of a country in the current rapidly changing, technology-driven world.</span></td>
@@ -56,7 +110,7 @@ function MM_swapImage() { //v3.0
 	</td>
   </tr>
 </table>
-<table width="638" border="0" cellspacing="2" cellpadding="2">
+<table width="100%" border="0" cellspacing="2" cellpadding="2">
   <tr bgcolor="#F8f8e7" valign="middle" height="25">
     
     <th scope="col"width="200" align="middle" style="padding-left: 5px;"><div class="smalltext"><strong>Country</strong></div></th>
@@ -66,7 +120,7 @@ function MM_swapImage() { //v3.0
   </tr>
 </table>
 
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="af" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="af" >
         
       <tr><td colspan="2"><a name="af"></a></td></tr>
       <tr>
@@ -94,7 +148,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="al" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="al" >
       
       <tr><td colspan="2"><a name="al"></a></td></tr>
       <tr>
@@ -109,20 +163,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 9 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 98.7% 
+        <strong>total population:</strong> 96.8% 
       <br />
       
-        <strong>male:</strong> 99.2% 
+        <strong>male:</strong> 98% 
       <br />
       
-        <strong>female:</strong> 98.3% (2001 census) 
+        <strong>female:</strong> 95.7% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ag" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ag" >
         
       <tr><td colspan="2"><a name="ag"></a></td></tr>
       <tr>
@@ -137,20 +191,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 69.9% 
+        <strong>total population:</strong> 72.6% 
       <br />
       
-        <strong>male:</strong> 79.6% 
+        <strong>male:</strong> 81.3% 
       <br />
       
-        <strong>female:</strong> 60.1% (2002 est.) 
+        <strong>female:</strong> 63.9% (2006 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="aq" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="aq" >
       
       <tr><td colspan="2"><a name="aq"></a></td></tr>
       <tr>
@@ -178,7 +232,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="an" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="an" >
         
       <tr><td colspan="2"><a name="an"></a></td></tr>
       <tr>
@@ -206,7 +260,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ao" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ao" >
       
       <tr><td colspan="2"><a name="ao"></a></td></tr>
       <tr>
@@ -221,20 +275,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 70.1% 
+        <strong>total population:</strong> 70.4% 
       <br />
       
-        <strong>male:</strong> 82.7% 
+        <strong>male:</strong> 82.6% 
       <br />
       
-        <strong>female:</strong> 58.1% (2010 est.) 
+        <strong>female:</strong> 58.6% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="av" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="av" >
         
       <tr><td colspan="2"><a name="av"></a></td></tr>
       <tr>
@@ -262,7 +316,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ac" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ac" >
       
       <tr><td colspan="2"><a name="ac"></a></td></tr>
       <tr>
@@ -277,20 +331,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over has completed five or more years of schooling 
       <br />
       
-        <strong>total population:</strong> 85.8% 
+        <strong>total population:</strong> 99% 
       <br />
       
-        <strong>male:</strong> NA 
+        <strong>male:</strong> 98.4% 
       <br />
       
-        <strong>female:</strong> NA (2003 est.) 
+        <strong>female:</strong> 99.4% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ar" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ar" >
         
       <tr><td colspan="2"><a name="ar"></a></td></tr>
       <tr>
@@ -305,20 +359,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 10 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 98.1% 
+        <strong>total population:</strong> 97.9% 
       <br />
       
-        <strong>male:</strong> 98% 
+        <strong>male:</strong> 97.8% 
       <br />
       
-        <strong>female:</strong> 98.1% (2010 census) 
+        <strong>female:</strong> 97.9% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="am" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="am" >
       
       <tr><td colspan="2"><a name="am"></a></td></tr>
       <tr>
@@ -339,14 +393,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 99.7% 
       <br />
       
-        <strong>female:</strong> 99.4% (2010 est.) 
+        <strong>female:</strong> 99.5% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="aa" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="aa" >
         
       <tr><td colspan="2"><a name="aa"></a></td></tr>
       <tr>
@@ -361,20 +415,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 97.3% 
+        <strong>total population:</strong> 96.8% 
       <br />
       
-        <strong>male:</strong> 97.5% 
+        <strong>male:</strong> 96.9% 
       <br />
       
-        <strong>female:</strong> 97.1% (2000 census) 
+        <strong>female:</strong> 96.7% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="as" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="as" >
       
       <tr><td colspan="2"><a name="as"></a></td></tr>
       <tr>
@@ -402,7 +456,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="au" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="au" >
         
       <tr><td colspan="2"><a name="au"></a></td></tr>
       <tr>
@@ -430,7 +484,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="aj" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="aj" >
       
       <tr><td colspan="2"><a name="aj"></a></td></tr>
       <tr>
@@ -458,7 +512,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bf" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bf" >
         
       <tr><td colspan="2"><a name="bf"></a></td></tr>
       <tr>
@@ -486,7 +540,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ba" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ba" >
       
       <tr><td colspan="2"><a name="ba"></a></td></tr>
       <tr>
@@ -507,14 +561,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 96.1% 
       <br />
       
-        <strong>female:</strong> 91.6% (2010 census) 
+        <strong>female:</strong> 91.6% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bg" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bg" >
         
       <tr><td colspan="2"><a name="bg"></a></td></tr>
       <tr>
@@ -529,20 +583,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 56.8% 
+        <strong>total population:</strong> 57.7% 
       <br />
       
-        <strong>male:</strong> 61.3% 
+        <strong>male:</strong> 62% 
       <br />
       
-        <strong>female:</strong> 52.2% (2010 est.) 
+        <strong>female:</strong> 53.4% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="bb" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="bb" >
       
       <tr><td colspan="2"><a name="bb"></a></td></tr>
       <tr>
@@ -570,7 +624,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bo" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bo" >
         
       <tr><td colspan="2"><a name="bo"></a></td></tr>
       <tr>
@@ -591,14 +645,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 99.8% 
       <br />
       
-        <strong>female:</strong> 99.5% (2009 census) 
+        <strong>female:</strong> 99.5% (2009 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="be" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="be" >
       
       <tr><td colspan="2"><a name="be"></a></td></tr>
       <tr>
@@ -626,7 +680,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bh" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bh" >
         
       <tr><td colspan="2"><a name="bh"></a></td></tr>
       <tr>
@@ -654,7 +708,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="bn" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="bn" >
       
       <tr><td colspan="2"><a name="bn"></a></td></tr>
       <tr>
@@ -682,7 +736,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bd" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bd" >
         
       <tr><td colspan="2"><a name="bd"></a></td></tr>
       <tr>
@@ -710,7 +764,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="bt" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="bt" >
       
       <tr><td colspan="2"><a name="bt"></a></td></tr>
       <tr>
@@ -725,20 +779,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 47% 
+        <strong>total population:</strong> 52.8% 
       <br />
       
-        <strong>male:</strong> 60% 
+        <strong>male:</strong> 65% 
       <br />
       
-        <strong>female:</strong> 34% (2003 est.) 
+        <strong>female:</strong> 38.7% (2005 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bl" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bl" >
         
       <tr><td colspan="2"><a name="bl"></a></td></tr>
       <tr>
@@ -753,20 +807,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 86.7% 
+        <strong>total population:</strong> 91.2% 
       <br />
       
-        <strong>male:</strong> 93.1% 
+        <strong>male:</strong> 95.8% 
       <br />
       
-        <strong>female:</strong> 80.7% (2001 census) 
+        <strong>female:</strong> 86.8% (2009 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="bk" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="bk" >
       
       <tr><td colspan="2"><a name="bk"></a></td></tr>
       <tr>
@@ -781,20 +835,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 97.9% 
+        <strong>total population:</strong> 98% 
       <br />
       
-        <strong>male:</strong> 99.4% 
+        <strong>male:</strong> 99.5% 
       <br />
       
-        <strong>female:</strong> 96.5% (2010 est.) 
+        <strong>female:</strong> 96.7% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bc" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bc" >
         
       <tr><td colspan="2"><a name="bc"></a></td></tr>
       <tr>
@@ -809,20 +863,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 84.5% 
+        <strong>total population:</strong> 85.1% 
       <br />
       
-        <strong>male:</strong> 84% 
+        <strong>male:</strong> 84.6% 
       <br />
       
-        <strong>female:</strong> 84.9% (2010 est.) 
+        <strong>female:</strong> 85.6% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="br" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="br" >
       
       <tr><td colspan="2"><a name="br"></a></td></tr>
       <tr>
@@ -837,20 +891,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 88.6% 
+        <strong>total population:</strong> 90.4% 
       <br />
       
-        <strong>male:</strong> 88.4% 
+        <strong>male:</strong> 90.1% 
       <br />
       
-        <strong>female:</strong> 88.8% (2004 est.) 
+        <strong>female:</strong> 90.7% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="vi" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="vi" >
         
       <tr><td colspan="2"><a name="vi"></a></td></tr>
       <tr>
@@ -878,7 +932,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="bx" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="bx" >
       
       <tr><td colspan="2"><a name="bx"></a></td></tr>
       <tr>
@@ -893,20 +947,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 92.7% 
+        <strong>total population:</strong> 95.4% 
       <br />
       
-        <strong>male:</strong> 95.2% 
+        <strong>male:</strong> 97% 
       <br />
       
-        <strong>female:</strong> 90.2% (2001 census) 
+        <strong>female:</strong> 93.9% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bu" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bu" >
         
       <tr><td colspan="2"><a name="bu"></a></td></tr>
       <tr>
@@ -927,14 +981,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 98.7% 
       <br />
       
-        <strong>female:</strong> 98% (2011) 
+        <strong>female:</strong> 98% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="uv" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="uv" >
       
       <tr><td colspan="2"><a name="uv"></a></td></tr>
       <tr>
@@ -949,20 +1003,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 21.8% 
+        <strong>total population:</strong> 28.7% 
       <br />
       
-        <strong>male:</strong> 29.4% 
+        <strong>male:</strong> 36.7% 
       <br />
       
-        <strong>female:</strong> 15.2% (2003 est.) 
+        <strong>female:</strong> 21.6% (2007 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bm" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="bm" >
         
       <tr><td colspan="2"><a name="bm"></a></td></tr>
       <tr>
@@ -977,20 +1031,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 89.9% 
+        <strong>total population:</strong> 92.7% 
       <br />
       
-        <strong>male:</strong> 93.9% 
+        <strong>male:</strong> 95.1% 
       <br />
       
-        <strong>female:</strong> 86.4% (2006 est.) 
+        <strong>female:</strong> 90.4% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="by" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="by" >
       
       <tr><td colspan="2"><a name="by"></a></td></tr>
       <tr>
@@ -1018,8 +1072,36 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cb" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cv" >
         
+      <tr><td colspan="2"><a name="cv"></a></td></tr>
+      <tr>
+      
+      
+      
+        <td valign="top" width="200" style="border-right:2px solid white; padding-left:4px;" class="fl_region"><a href="../geos/cv.html" style="font-weight: bold;" >Cabo Verde</a>
+          
+      
+      <td class="category_data"  valign="top" style="padding-left:5px;">
+      
+        <strong>definition: </strong>age 15 and over can read and write 
+      <br />
+      
+        <strong>total population:</strong> 84.9% 
+      <br />
+      
+        <strong>male:</strong> 89.7% 
+      <br />
+      
+        <strong>female:</strong> 80.3% (2011 est.) 
+        </td>
+        </tr>
+        </table>
+        
+
+        
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="cb" >
+      
       <tr><td colspan="2"><a name="cb"></a></td></tr>
       <tr>
       
@@ -1033,21 +1115,21 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 77.6% 
+        <strong>total population:</strong> 73.9% 
       <br />
       
-        <strong>male:</strong> 85.1% 
+        <strong>male:</strong> 82.8% 
       <br />
       
-        <strong>female:</strong> 70.9% (2008 census) 
+        <strong>female:</strong> 65.9% (2009 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="cm" >
-      
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cm" >
+        
       <tr><td colspan="2"><a name="cm"></a></td></tr>
       <tr>
       
@@ -1061,21 +1143,21 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 75.9% 
+        <strong>total population:</strong> 71.3% 
       <br />
       
-        <strong>male:</strong> 84% 
+        <strong>male:</strong> 78.3% 
       <br />
       
-        <strong>female:</strong> 67.8% (2001 est.) 
+        <strong>female:</strong> 64.8% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ca" >
-        
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ca" >
+      
       <tr><td colspan="2"><a name="ca"></a></td></tr>
       <tr>
       
@@ -1102,35 +1184,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="cv" >
-      
-      <tr><td colspan="2"><a name="cv"></a></td></tr>
-      <tr>
-      
-      
-      
-        <td valign="top" width="200" style="border-right:2px solid white; padding-left:4px;" class="fl_region"><a href="../geos/cv.html" style="font-weight: bold;" >Cape Verde</a>
-          
-      
-      <td class="category_data"  valign="top" style="padding-left:5px;">
-      
-        <strong>definition: </strong>age 15 and over can read and write 
-      <br />
-      
-        <strong>total population:</strong> 84.3% 
-      <br />
-      
-        <strong>male:</strong> 89.3% 
-      <br />
-      
-        <strong>female:</strong> 79.4% (2010 est.) 
-        </td>
-        </tr>
-        </table>
-        
-
-        
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cj" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cj" >
         
       <tr><td colspan="2"><a name="cj"></a></td></tr>
       <tr>
@@ -1145,20 +1199,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over has ever attended school 
       <br />
       
-        <strong>total population:</strong> 98% 
+        <strong>total population:</strong> 98.9% 
       <br />
       
-        <strong>male:</strong> 98% 
+        <strong>male:</strong> 98.7% 
       <br />
       
-        <strong>female:</strong> 98% (1970 est.) 
+        <strong>female:</strong> 99% (2007 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ct" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ct" >
       
       <tr><td colspan="2"><a name="ct"></a></td></tr>
       <tr>
@@ -1173,20 +1227,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 56% 
+        <strong>total population:</strong> 56.6% 
       <br />
       
-        <strong>male:</strong> 69.3% 
+        <strong>male:</strong> 69.6% 
       <br />
       
-        <strong>female:</strong> 43.2% (2010 est.) 
+        <strong>female:</strong> 44.2% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cd" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cd" >
         
       <tr><td colspan="2"><a name="cd"></a></td></tr>
       <tr>
@@ -1201,20 +1255,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write French or Arabic 
       <br />
       
-        <strong>total population:</strong> 34.5% 
+        <strong>total population:</strong> 35.4% 
       <br />
       
-        <strong>male:</strong> 45% 
+        <strong>male:</strong> 45.6% 
       <br />
       
-        <strong>female:</strong> 24.2% (2010 est.) 
+        <strong>female:</strong> 25.4% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ci" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ci" >
       
       <tr><td colspan="2"><a name="ci"></a></td></tr>
       <tr>
@@ -1229,20 +1283,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 95.7% 
+        <strong>total population:</strong> 98.6% 
       <br />
       
-        <strong>male:</strong> 95.8% 
+        <strong>male:</strong> 98.6% 
       <br />
       
-        <strong>female:</strong> 95.6% (2002 census) 
+        <strong>female:</strong> 98.5% (2009 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ch" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ch" >
         
       <tr><td colspan="2"><a name="ch"></a></td></tr>
       <tr>
@@ -1257,20 +1311,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 92.2% 
+        <strong>total population:</strong> 95.1% 
       <br />
       
-        <strong>male:</strong> 96% 
+        <strong>male:</strong> 97.5% 
       <br />
       
-        <strong>female:</strong> 88.5% (2007) 
+        <strong>female:</strong> 92.7% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="kt" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="kt" >
       
       <tr><td colspan="2"><a name="kt"></a></td></tr>
       <tr>
@@ -1288,7 +1342,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ck" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ck" >
         
       <tr><td colspan="2"><a name="ck"></a></td></tr>
       <tr>
@@ -1306,7 +1360,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="co" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="co" >
       
       <tr><td colspan="2"><a name="co"></a></td></tr>
       <tr>
@@ -1321,20 +1375,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 90.4% 
+        <strong>total population:</strong> 93.6% 
       <br />
       
-        <strong>male:</strong> 90.1% 
+        <strong>male:</strong> 93.5% 
       <br />
       
-        <strong>female:</strong> 90.7% (2005 census) 
+        <strong>female:</strong> 93.7% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cn" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cn" >
         
       <tr><td colspan="2"><a name="cn"></a></td></tr>
       <tr>
@@ -1349,20 +1403,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 74.9% 
+        <strong>total population:</strong> 75.5% 
       <br />
       
-        <strong>male:</strong> 80.2% 
+        <strong>male:</strong> 80.5% 
       <br />
       
-        <strong>female:</strong> 69.7% (2010 est.) 
+        <strong>female:</strong> 70.6% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="cg" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="cg" >
       
       <tr><td colspan="2"><a name="cg"></a></td></tr>
       <tr>
@@ -1390,7 +1444,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cf" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cf" >
         
       <tr><td colspan="2"><a name="cf"></a></td></tr>
       <tr>
@@ -1418,7 +1472,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="cw" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="cw" >
       
       <tr><td colspan="2"><a name="cw"></a></td></tr>
       <tr>
@@ -1446,7 +1500,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cs" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cs" >
         
       <tr><td colspan="2"><a name="cs"></a></td></tr>
       <tr>
@@ -1461,20 +1515,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 94.9% 
+        <strong>total population:</strong> 96.3% 
       <br />
       
-        <strong>male:</strong> 94.7% 
+        <strong>male:</strong> 96% 
       <br />
       
-        <strong>female:</strong> 95.1% (2000 census) 
+        <strong>female:</strong> 96.5% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="iv" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="iv" >
       
       <tr><td colspan="2"><a name="iv"></a></td></tr>
       <tr>
@@ -1489,20 +1543,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 56.2% 
+        <strong>total population:</strong> 56.9% 
       <br />
       
-        <strong>male:</strong> 65.2% 
+        <strong>male:</strong> 65.6% 
       <br />
       
-        <strong>female:</strong> 46.6% (2010 est.) 
+        <strong>female:</strong> 47.6% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="hr" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="hr" >
         
       <tr><td colspan="2"><a name="hr"></a></td></tr>
       <tr>
@@ -1517,20 +1571,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 98.8% 
+        <strong>total population:</strong> 98.9% 
       <br />
       
         <strong>male:</strong> 99.5% 
       <br />
       
-        <strong>female:</strong> 98.2% (2010 est.) 
+        <strong>female:</strong> 98.3% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="cu" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="cu" >
       
       <tr><td colspan="2"><a name="cu"></a></td></tr>
       <tr>
@@ -1551,14 +1605,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 99.8% 
       <br />
       
-        <strong>female:</strong> 99.8% (2002 census) 
+        <strong>female:</strong> 99.8% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cy" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="cy" >
         
       <tr><td colspan="2"><a name="cy"></a></td></tr>
       <tr>
@@ -1573,20 +1627,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 97.6% 
+        <strong>total population:</strong> 98.7% 
       <br />
       
-        <strong>male:</strong> 98.9% 
+        <strong>male:</strong> 99.3% 
       <br />
       
-        <strong>female:</strong> 96.3% (2001 census) 
+        <strong>female:</strong> 98.1% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ez" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ez" >
       
       <tr><td colspan="2"><a name="ez"></a></td></tr>
       <tr>
@@ -1607,14 +1661,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 99% 
       <br />
       
-        <strong>female:</strong> 99% (2011 census) 
+        <strong>female:</strong> 99% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="da" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="da" >
         
       <tr><td colspan="2"><a name="da"></a></td></tr>
       <tr>
@@ -1642,7 +1696,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="dj" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="dj" >
       
       <tr><td colspan="2"><a name="dj"></a></td></tr>
       <tr>
@@ -1670,7 +1724,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="do" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="do" >
         
       <tr><td colspan="2"><a name="do"></a></td></tr>
       <tr>
@@ -1698,7 +1752,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="dr" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="dr" >
       
       <tr><td colspan="2"><a name="dr"></a></td></tr>
       <tr>
@@ -1713,20 +1767,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 87% 
+        <strong>total population:</strong> 90.1% 
       <br />
       
-        <strong>male:</strong> 86.8% 
+        <strong>male:</strong> 90% 
       <br />
       
-        <strong>female:</strong> 87.2% (2002 census) 
+        <strong>female:</strong> 90.2% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ec" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ec" >
         
       <tr><td colspan="2"><a name="ec"></a></td></tr>
       <tr>
@@ -1741,20 +1795,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 93.2% 
+        <strong>total population:</strong> 91.6% 
       <br />
       
-        <strong>male:</strong> 94.2% 
+        <strong>male:</strong> 93.1% 
       <br />
       
-        <strong>female:</strong> 92.3% (2010 census) 
+        <strong>female:</strong> 90.2% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="eg" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="eg" >
       
       <tr><td colspan="2"><a name="eg"></a></td></tr>
       <tr>
@@ -1766,23 +1820,23 @@ function MM_swapImage() { //v3.0
       
       <td class="category_data"  valign="top" style="padding-left:5px;">
       
-        <strong>definition: </strong>age 10 and over can read and write 
+        <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 72% 
+        <strong>total population:</strong> 73.9% 
       <br />
       
-        <strong>male:</strong> 80.3% 
+        <strong>male:</strong> 81.7% 
       <br />
       
-        <strong>female:</strong> 63.5% (2010 est.) 
+        <strong>female:</strong> 65.8% (2012 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="es" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="es" >
         
       <tr><td colspan="2"><a name="es"></a></td></tr>
       <tr>
@@ -1797,20 +1851,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 81.1% 
+        <strong>total population:</strong> 84.5% 
       <br />
       
-        <strong>male:</strong> 82.8% 
+        <strong>male:</strong> 87.1% 
       <br />
       
-        <strong>female:</strong> 79.6% (2007 census) 
+        <strong>female:</strong> 82.3% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ek" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ek" >
       
       <tr><td colspan="2"><a name="ek"></a></td></tr>
       <tr>
@@ -1825,20 +1879,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 93.9% 
+        <strong>total population:</strong> 94.2% 
       <br />
       
         <strong>male:</strong> 97.1% 
       <br />
       
-        <strong>female:</strong> 90.6% (2010 est.) 
+        <strong>female:</strong> 91.1% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="er" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="er" >
         
       <tr><td colspan="2"><a name="er"></a></td></tr>
       <tr>
@@ -1853,20 +1907,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 67.8% 
+        <strong>total population:</strong> 68.9% 
       <br />
       
-        <strong>male:</strong> 78.7% 
+        <strong>male:</strong> 79.5% 
       <br />
       
-        <strong>female:</strong> 57.5% (2010 est.) 
+        <strong>female:</strong> 59% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="en" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="en" >
       
       <tr><td colspan="2"><a name="en"></a></td></tr>
       <tr>
@@ -1887,14 +1941,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 99.8% 
       <br />
       
-        <strong>female:</strong> 99.8% (2010 census) 
+        <strong>female:</strong> 99.8% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="et" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="et" >
         
       <tr><td colspan="2"><a name="et"></a></td></tr>
       <tr>
@@ -1909,20 +1963,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 42.7% 
+        <strong>total population:</strong> 39% 
       <br />
       
-        <strong>male:</strong> 50.3% 
+        <strong>male:</strong> 49.1% 
       <br />
       
-        <strong>female:</strong> 35.1% (2003 est.) 
+        <strong>female:</strong> 28.9% (2007 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="fk" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="fk" >
       
       <tr><td colspan="2"><a name="fk"></a></td></tr>
       <tr>
@@ -1940,7 +1994,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="fo" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="fo" >
         
       <tr><td colspan="2"><a name="fo"></a></td></tr>
       <tr>
@@ -1958,7 +2012,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="fj" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="fj" >
       
       <tr><td colspan="2"><a name="fj"></a></td></tr>
       <tr>
@@ -1986,7 +2040,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="fi" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="fi" >
         
       <tr><td colspan="2"><a name="fi"></a></td></tr>
       <tr>
@@ -2014,7 +2068,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="fr" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="fr" >
       
       <tr><td colspan="2"><a name="fr"></a></td></tr>
       <tr>
@@ -2042,7 +2096,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="fp" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="fp" >
         
       <tr><td colspan="2"><a name="fp"></a></td></tr>
       <tr>
@@ -2070,7 +2124,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gb" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gb" >
       
       <tr><td colspan="2"><a name="gb"></a></td></tr>
       <tr>
@@ -2085,20 +2139,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 88.4% 
+        <strong>total population:</strong> 89% 
       <br />
       
-        <strong>male:</strong> 91.9% 
+        <strong>male:</strong> 92.3% 
       <br />
       
-        <strong>female:</strong> 84.9% (2010 est.) 
+        <strong>female:</strong> 85.6% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ga" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ga" >
         
       <tr><td colspan="2"><a name="ga"></a></td></tr>
       <tr>
@@ -2113,20 +2167,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 50% 
+        <strong>total population:</strong> 51.1% 
       <br />
       
-        <strong>male:</strong> 60% 
+        <strong>male:</strong> 60.9% 
       <br />
       
-        <strong>female:</strong> 40.4% (2010 est.) 
+        <strong>female:</strong> 41.9% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gz" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gz" >
       
       <tr><td colspan="2"><a name="gz"></a></td></tr>
       <tr>
@@ -2141,20 +2195,23 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 92.4% 
+        <strong>total population:</strong> 95.3% 
       <br />
       
-        <strong>male:</strong> 96.7% 
+        <strong>male:</strong> 97.9% 
       <br />
       
-        <strong>female:</strong> 88% (2004 est.) 
+        <strong>female:</strong> 92.6% 
+      <br />
+      
+        <strong>note:</strong> estimates are for the Palestinian Territories (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gg" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gg" >
         
       <tr><td colspan="2"><a name="gg"></a></td></tr>
       <tr>
@@ -2175,14 +2232,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 99.8% 
       <br />
       
-        <strong>female:</strong> 99.7% (2010 est.) 
+        <strong>female:</strong> 99.7% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gm" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gm" >
       
       <tr><td colspan="2"><a name="gm"></a></td></tr>
       <tr>
@@ -2210,7 +2267,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gh" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gh" >
         
       <tr><td colspan="2"><a name="gh"></a></td></tr>
       <tr>
@@ -2231,14 +2288,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 78.3% 
       <br />
       
-        <strong>female:</strong> 65.3% (2010 census) 
+        <strong>female:</strong> 65.3% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gi" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gi" >
       
       <tr><td colspan="2"><a name="gi"></a></td></tr>
       <tr>
@@ -2266,7 +2323,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gr" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gr" >
         
       <tr><td colspan="2"><a name="gr"></a></td></tr>
       <tr>
@@ -2281,20 +2338,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 96% 
+        <strong>total population:</strong> 97.3% 
       <br />
       
-        <strong>male:</strong> 97.8% 
+        <strong>male:</strong> 98.4% 
       <br />
       
-        <strong>female:</strong> 94.2% (2001 census) 
+        <strong>female:</strong> 96.3% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gl" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gl" >
       
       <tr><td colspan="2"><a name="gl"></a></td></tr>
       <tr>
@@ -2322,7 +2379,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gj" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gj" >
         
       <tr><td colspan="2"><a name="gj"></a></td></tr>
       <tr>
@@ -2350,7 +2407,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gq" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gq" >
       
       <tr><td colspan="2"><a name="gq"></a></td></tr>
       <tr>
@@ -2378,7 +2435,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gt" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gt" >
         
       <tr><td colspan="2"><a name="gt"></a></td></tr>
       <tr>
@@ -2393,20 +2450,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 69.1% 
+        <strong>total population:</strong> 75.9% 
       <br />
       
-        <strong>male:</strong> 75.4% 
+        <strong>male:</strong> 81.2% 
       <br />
       
-        <strong>female:</strong> 63.3% (2002 census) 
+        <strong>female:</strong> 71.1% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gk" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="gk" >
       
       <tr><td colspan="2"><a name="gk"></a></td></tr>
       <tr>
@@ -2424,7 +2481,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gv" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gv" >
         
       <tr><td colspan="2"><a name="gv"></a></td></tr>
       <tr>
@@ -2452,7 +2509,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="pu" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="pu" >
       
       <tr><td colspan="2"><a name="pu"></a></td></tr>
       <tr>
@@ -2467,20 +2524,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 54.2% 
+        <strong>total population:</strong> 55.3% 
       <br />
       
-        <strong>male:</strong> 68.2% 
+        <strong>male:</strong> 68.9% 
       <br />
       
-        <strong>female:</strong> 40.6% (2010 est.) 
+        <strong>female:</strong> 42.1% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gy" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="gy" >
         
       <tr><td colspan="2"><a name="gy"></a></td></tr>
       <tr>
@@ -2508,7 +2565,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ha" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ha" >
       
       <tr><td colspan="2"><a name="ha"></a></td></tr>
       <tr>
@@ -2523,20 +2580,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 52.9% 
+        <strong>total population:</strong> 48.7% 
       <br />
       
-        <strong>male:</strong> 54.8% 
+        <strong>male:</strong> 53.4% 
       <br />
       
-        <strong>female:</strong> 51.2% (2003 est.) 
+        <strong>female:</strong> 44.6% (2006 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="vt" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="vt" >
         
       <tr><td colspan="2"><a name="vt"></a></td></tr>
       <tr>
@@ -2564,7 +2621,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ho" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ho" >
       
       <tr><td colspan="2"><a name="ho"></a></td></tr>
       <tr>
@@ -2579,20 +2636,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 80% 
+        <strong>total population:</strong> 85.1% 
       <br />
       
-        <strong>male:</strong> 79.8% 
+        <strong>male:</strong> 85.3% 
       <br />
       
-        <strong>female:</strong> 80.2% (2001 census) 
+        <strong>female:</strong> 84.9% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="hk" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="hk" >
         
       <tr><td colspan="2"><a name="hk"></a></td></tr>
       <tr>
@@ -2620,7 +2677,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="hu" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="hu" >
       
       <tr><td colspan="2"><a name="hu"></a></td></tr>
       <tr>
@@ -2641,14 +2698,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 99.2% 
       <br />
       
-        <strong>female:</strong> 98.9% (2010 est.) 
+        <strong>female:</strong> 98.9% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ic" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ic" >
         
       <tr><td colspan="2"><a name="ic"></a></td></tr>
       <tr>
@@ -2676,7 +2733,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="in" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="in" >
       
       <tr><td colspan="2"><a name="in"></a></td></tr>
       <tr>
@@ -2691,20 +2748,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 61% 
+        <strong>total population:</strong> 62.8% 
       <br />
       
-        <strong>male:</strong> 73.4% 
+        <strong>male:</strong> 75.2% 
       <br />
       
-        <strong>female:</strong> 47.8% (2001 census) 
+        <strong>female:</strong> 50.8% (2006 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="id" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="id" >
         
       <tr><td colspan="2"><a name="id"></a></td></tr>
       <tr>
@@ -2719,20 +2776,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 90.4% 
+        <strong>total population:</strong> 92.8% 
       <br />
       
-        <strong>male:</strong> 94% 
+        <strong>male:</strong> 95.6% 
       <br />
       
-        <strong>female:</strong> 86.8% (2004 est.) 
+        <strong>female:</strong> 90.1% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ir" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ir" >
       
       <tr><td colspan="2"><a name="ir"></a></td></tr>
       <tr>
@@ -2747,20 +2804,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 77% 
+        <strong>total population:</strong> 85% 
       <br />
       
-        <strong>male:</strong> 83.5% 
+        <strong>male:</strong> 89.3% 
       <br />
       
-        <strong>female:</strong> 70.4% (2002 est.) 
+        <strong>female:</strong> 80.7% (2008 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="iz" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="iz" >
         
       <tr><td colspan="2"><a name="iz"></a></td></tr>
       <tr>
@@ -2775,20 +2832,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 78.2% 
+        <strong>total population:</strong> 78.5% 
       <br />
       
         <strong>male:</strong> 86% 
       <br />
       
-        <strong>female:</strong> 70.6% (2010 est.) 
+        <strong>female:</strong> 71.2% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ei" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ei" >
       
       <tr><td colspan="2"><a name="ei"></a></td></tr>
       <tr>
@@ -2816,7 +2873,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="im" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="im" >
         
       <tr><td colspan="2"><a name="im"></a></td></tr>
       <tr>
@@ -2834,7 +2891,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="is" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="is" >
       
       <tr><td colspan="2"><a name="is"></a></td></tr>
       <tr>
@@ -2862,7 +2919,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="it" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="it" >
         
       <tr><td colspan="2"><a name="it"></a></td></tr>
       <tr>
@@ -2877,20 +2934,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 98.4% 
+        <strong>total population:</strong> 99% 
       <br />
       
-        <strong>male:</strong> 98.8% 
+        <strong>male:</strong> 99.2% 
       <br />
       
-        <strong>female:</strong> 98% (2001 census) 
+        <strong>female:</strong> 98.7% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="jm" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="jm" >
       
       <tr><td colspan="2"><a name="jm"></a></td></tr>
       <tr>
@@ -2905,20 +2962,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over has ever attended school 
       <br />
       
-        <strong>total population:</strong> 87.9% 
+        <strong>total population:</strong> 87% 
       <br />
       
-        <strong>male:</strong> 84.1% 
+        <strong>male:</strong> 82.1% 
       <br />
       
-        <strong>female:</strong> 91.6% (2003 est.) 
+        <strong>female:</strong> 91.8% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ja" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ja" >
         
       <tr><td colspan="2"><a name="ja"></a></td></tr>
       <tr>
@@ -2946,7 +3003,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="je" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="je" >
       
       <tr><td colspan="2"><a name="je"></a></td></tr>
       <tr>
@@ -2964,7 +3021,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="jo" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="jo" >
         
       <tr><td colspan="2"><a name="jo"></a></td></tr>
       <tr>
@@ -2979,20 +3036,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 92.6% 
+        <strong>total population:</strong> 95.9% 
       <br />
       
-        <strong>male:</strong> 95.8% 
+        <strong>male:</strong> 97.7% 
       <br />
       
-        <strong>female:</strong> 89.2% (2010 est.) 
+        <strong>female:</strong> 93.9% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="kz" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="kz" >
       
       <tr><td colspan="2"><a name="kz"></a></td></tr>
       <tr>
@@ -3007,20 +3064,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 99.5% 
+        <strong>total population:</strong> 99.7% 
       <br />
       
         <strong>male:</strong> 99.8% 
       <br />
       
-        <strong>female:</strong> 99.3% (1999 est.) 
+        <strong>female:</strong> 99.7% (2009 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ke" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ke" >
         
       <tr><td colspan="2"><a name="ke"></a></td></tr>
       <tr>
@@ -3048,7 +3105,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="kr" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="kr" >
       
       <tr><td colspan="2"><a name="kr"></a></td></tr>
       <tr>
@@ -3066,7 +3123,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="kn" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="kn" >
         
       <tr><td colspan="2"><a name="kn"></a></td></tr>
       <tr>
@@ -3081,20 +3138,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 99% 
+        <strong>total population:</strong> 100% 
       <br />
       
-        <strong>male:</strong> 99% 
+        <strong>male:</strong> 100% 
       <br />
       
-        <strong>female:</strong> 99% (1991 est.) 
+        <strong>female:</strong> 100% (2008 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ks" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ks" >
       
       <tr><td colspan="2"><a name="ks"></a></td></tr>
       <tr>
@@ -3122,7 +3179,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="kv" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="kv" >
         
       <tr><td colspan="2"><a name="kv"></a></td></tr>
       <tr>
@@ -3150,7 +3207,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ku" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ku" >
       
       <tr><td colspan="2"><a name="ku"></a></td></tr>
       <tr>
@@ -3165,20 +3222,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 93.3% 
+        <strong>total population:</strong> 93.9% 
       <br />
       
-        <strong>male:</strong> 94.4% 
+        <strong>male:</strong> 95% 
       <br />
       
-        <strong>female:</strong> 91% (2005 census) 
+        <strong>female:</strong> 91.8% (2008 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="kg" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="kg" >
         
       <tr><td colspan="2"><a name="kg"></a></td></tr>
       <tr>
@@ -3193,20 +3250,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 98.7% 
+        <strong>total population:</strong> 99.2% 
       <br />
       
-        <strong>male:</strong> 99.3% 
+        <strong>male:</strong> 99.5% 
       <br />
       
-        <strong>female:</strong> 98.1% (1999 census) 
+        <strong>female:</strong> 99% (2009 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="la" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="la" >
       
       <tr><td colspan="2"><a name="la"></a></td></tr>
       <tr>
@@ -3221,20 +3278,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 73% 
+        <strong>total population:</strong> 72.7% 
       <br />
       
-        <strong>male:</strong> 83% 
+        <strong>male:</strong> 82.5% 
       <br />
       
-        <strong>female:</strong> 63% (2005 Census) 
+        <strong>female:</strong> 63.2% (2005 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="lg" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="lg" >
         
       <tr><td colspan="2"><a name="lg"></a></td></tr>
       <tr>
@@ -3255,14 +3312,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 99.8% 
       <br />
       
-        <strong>female:</strong> 99.8% (2010 est.) 
+        <strong>female:</strong> 99.8% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="le" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="le" >
       
       <tr><td colspan="2"><a name="le"></a></td></tr>
       <tr>
@@ -3277,20 +3334,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 87.4% 
+        <strong>total population:</strong> 89.6% 
       <br />
       
-        <strong>male:</strong> 93.1% 
+        <strong>male:</strong> 93.4% 
       <br />
       
-        <strong>female:</strong> 82.2% (2003 est.) 
+        <strong>female:</strong> 86% (2007 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="lt" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="lt" >
         
       <tr><td colspan="2"><a name="lt"></a></td></tr>
       <tr>
@@ -3318,7 +3375,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="li" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="li" >
       
       <tr><td colspan="2"><a name="li"></a></td></tr>
       <tr>
@@ -3346,7 +3403,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ly" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ly" >
         
       <tr><td colspan="2"><a name="ly"></a></td></tr>
       <tr>
@@ -3361,20 +3418,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 89.2% 
+        <strong>total population:</strong> 89.5% 
       <br />
       
-        <strong>male:</strong> 95.6% 
+        <strong>male:</strong> 95.8% 
       <br />
       
-        <strong>female:</strong> 82.7% (2010 est.) 
+        <strong>female:</strong> 83.3% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ls" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ls" >
       
       <tr><td colspan="2"><a name="ls"></a></td></tr>
       <tr>
@@ -3402,7 +3459,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="lh" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="lh" >
         
       <tr><td colspan="2"><a name="lh"></a></td></tr>
       <tr>
@@ -3423,14 +3480,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 99.7% 
       <br />
       
-        <strong>female:</strong> 99.7% (2010 est.) 
+        <strong>female:</strong> 99.7% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="lu" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="lu" >
       
       <tr><td colspan="2"><a name="lu"></a></td></tr>
       <tr>
@@ -3458,7 +3515,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="mc" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="mc" >
         
       <tr><td colspan="2"><a name="mc"></a></td></tr>
       <tr>
@@ -3473,20 +3530,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 91.3% 
+        <strong>total population:</strong> 95.6% 
       <br />
       
-        <strong>male:</strong> 95.3% 
+        <strong>male:</strong> 97.8% 
       <br />
       
-        <strong>female:</strong> 87.8% (2001 census) 
+        <strong>female:</strong> 93.7% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mk" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mk" >
       
       <tr><td colspan="2"><a name="mk"></a></td></tr>
       <tr>
@@ -3501,20 +3558,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 97.3% 
+        <strong>total population:</strong> 97.4% 
       <br />
       
         <strong>male:</strong> 98.7% 
       <br />
       
-        <strong>female:</strong> 95.9% (2010 est.) 
+        <strong>female:</strong> 96% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ma" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ma" >
         
       <tr><td colspan="2"><a name="ma"></a></td></tr>
       <tr>
@@ -3542,7 +3599,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mi" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mi" >
       
       <tr><td colspan="2"><a name="mi"></a></td></tr>
       <tr>
@@ -3570,7 +3627,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="my" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="my" >
         
       <tr><td colspan="2"><a name="my"></a></td></tr>
       <tr>
@@ -3585,20 +3642,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 88.7% 
+        <strong>total population:</strong> 93.1% 
       <br />
       
-        <strong>male:</strong> 92% 
+        <strong>male:</strong> 95.4% 
       <br />
       
-        <strong>female:</strong> 85.4% (2000 census) 
+        <strong>female:</strong> 90.7% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mv" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mv" >
       
       <tr><td colspan="2"><a name="mv"></a></td></tr>
       <tr>
@@ -3613,20 +3670,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 93.8% 
+        <strong>total population:</strong> 98.4% 
       <br />
       
-        <strong>male:</strong> 93% 
+        <strong>male:</strong> 98.4% 
       <br />
       
-        <strong>female:</strong> 94.7% (2006 Census) 
+        <strong>female:</strong> 98.4% (2006 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ml" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ml" >
         
       <tr><td colspan="2"><a name="ml"></a></td></tr>
       <tr>
@@ -3641,20 +3698,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 27.7% 
+        <strong>total population:</strong> 33.4% 
       <br />
       
-        <strong>male:</strong> 36.1% 
+        <strong>male:</strong> 43.1% 
       <br />
       
-        <strong>female:</strong> 19.8% (2009 census) 
+        <strong>female:</strong> 24.6% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mt" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mt" >
       
       <tr><td colspan="2"><a name="mt"></a></td></tr>
       <tr>
@@ -3666,23 +3723,23 @@ function MM_swapImage() { //v3.0
       
       <td class="category_data"  valign="top" style="padding-left:5px;">
       
-        <strong>definition: </strong>age 10 and over can read and write 
+        <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 92.8% 
+        <strong>total population:</strong> 92.4% 
       <br />
       
-        <strong>male:</strong> 91.7% 
+        <strong>male:</strong> 91.2% 
       <br />
       
-        <strong>female:</strong> 93.9% (2005 Census) 
+        <strong>female:</strong> 93.5% (2005 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="rm" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="rm" >
         
       <tr><td colspan="2"><a name="rm"></a></td></tr>
       <tr>
@@ -3710,7 +3767,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mr" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mr" >
       
       <tr><td colspan="2"><a name="mr"></a></td></tr>
       <tr>
@@ -3725,20 +3782,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 58% 
+        <strong>total population:</strong> 58.6% 
       <br />
       
-        <strong>male:</strong> 64.9% 
+        <strong>male:</strong> 65.3% 
       <br />
       
-        <strong>female:</strong> 51.2% (2010 est.) 
+        <strong>female:</strong> 52% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="mp" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="mp" >
         
       <tr><td colspan="2"><a name="mp"></a></td></tr>
       <tr>
@@ -3753,20 +3810,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 88.5% 
+        <strong>total population:</strong> 88.8% 
       <br />
       
-        <strong>male:</strong> 90.9% 
+        <strong>male:</strong> 91.1% 
       <br />
       
-        <strong>female:</strong> 86.2% (2010 est.) 
+        <strong>female:</strong> 86.7% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mx" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mx" >
       
       <tr><td colspan="2"><a name="mx"></a></td></tr>
       <tr>
@@ -3781,20 +3838,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 86.1% 
+        <strong>total population:</strong> 93.5% 
       <br />
       
-        <strong>male:</strong> 86.9% 
+        <strong>male:</strong> 94.8% 
       <br />
       
-        <strong>female:</strong> 85.3% (2005 Census) 
+        <strong>female:</strong> 92.3% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="fm" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="fm" >
         
       <tr><td colspan="2"><a name="fm"></a></td></tr>
       <tr>
@@ -3822,7 +3879,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="md" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="md" >
       
       <tr><td colspan="2"><a name="md"></a></td></tr>
       <tr>
@@ -3837,20 +3894,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 98.5% 
+        <strong>total population:</strong> 99% 
       <br />
       
-        <strong>male:</strong> 99.1% 
+        <strong>male:</strong> 99.5% 
       <br />
       
-        <strong>female:</strong> 98.1% (2010 est.) 
+        <strong>female:</strong> 98.5% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="mn" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="mn" >
         
       <tr><td colspan="2"><a name="mn"></a></td></tr>
       <tr>
@@ -3878,7 +3935,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mg" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mg" >
       
       <tr><td colspan="2"><a name="mg"></a></td></tr>
       <tr>
@@ -3896,17 +3953,17 @@ function MM_swapImage() { //v3.0
         <strong>total population:</strong> 97.4% 
       <br />
       
-        <strong>male:</strong> 96.9% 
+        <strong>male:</strong> 96.8% 
       <br />
       
-        <strong>female:</strong> 97.9% (2010 est.) 
+        <strong>female:</strong> 97.9% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="mj" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="mj" >
         
       <tr><td colspan="2"><a name="mj"></a></td></tr>
       <tr>
@@ -3921,20 +3978,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 98.4% 
+        <strong>total population:</strong> 98.5% 
       <br />
       
         <strong>male:</strong> 99.4% 
       <br />
       
-        <strong>female:</strong> 97.4% (2010 est.) 
+        <strong>female:</strong> 97.6% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mh" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mh" >
       
       <tr><td colspan="2"><a name="mh"></a></td></tr>
       <tr>
@@ -3962,7 +4019,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="mo" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="mo" >
         
       <tr><td colspan="2"><a name="mo"></a></td></tr>
       <tr>
@@ -3977,20 +4034,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 56.1% 
+        <strong>total population:</strong> 67.1% 
       <br />
       
-        <strong>male:</strong> 68.9% 
+        <strong>male:</strong> 76.1% 
       <br />
       
-        <strong>female:</strong> 43.9% (2009 est.) 
+        <strong>female:</strong> 57.6% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mz" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mz" >
       
       <tr><td colspan="2"><a name="mz"></a></td></tr>
       <tr>
@@ -4018,7 +4075,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="wa" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="wa" >
         
       <tr><td colspan="2"><a name="wa"></a></td></tr>
       <tr>
@@ -4046,7 +4103,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="nr" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="nr" >
       
       <tr><td colspan="2"><a name="nr"></a></td></tr>
       <tr>
@@ -4064,7 +4121,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="np" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="np" >
         
       <tr><td colspan="2"><a name="np"></a></td></tr>
       <tr>
@@ -4079,20 +4136,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 60.3% 
+        <strong>total population:</strong> 57.4% 
       <br />
       
-        <strong>male:</strong> 73% 
+        <strong>male:</strong> 71.1% 
       <br />
       
-        <strong>female:</strong> 48.3% (2010 census) 
+        <strong>female:</strong> 46.7% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="nl" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="nl" >
       
       <tr><td colspan="2"><a name="nl"></a></td></tr>
       <tr>
@@ -4120,7 +4177,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="nc" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="nc" >
         
       <tr><td colspan="2"><a name="nc"></a></td></tr>
       <tr>
@@ -4148,7 +4205,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="nz" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="nz" >
       
       <tr><td colspan="2"><a name="nz"></a></td></tr>
       <tr>
@@ -4176,7 +4233,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="nu" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="nu" >
         
       <tr><td colspan="2"><a name="nu"></a></td></tr>
       <tr>
@@ -4191,20 +4248,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 67.5% 
+        <strong>total population:</strong> 78% 
       <br />
       
-        <strong>male:</strong> 67.2% 
+        <strong>male:</strong> 78.1% 
       <br />
       
-        <strong>female:</strong> 67.8% (2003 est.) 
+        <strong>female:</strong> 77.9% (2005 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ng" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ng" >
       
       <tr><td colspan="2"><a name="ng"></a></td></tr>
       <tr>
@@ -4232,7 +4289,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ni" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ni" >
         
       <tr><td colspan="2"><a name="ni"></a></td></tr>
       <tr>
@@ -4260,7 +4317,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ne" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ne" >
       
       <tr><td colspan="2"><a name="ne"></a></td></tr>
       <tr>
@@ -4288,7 +4345,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="nf" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="nf" >
         
       <tr><td colspan="2"><a name="nf"></a></td></tr>
       <tr>
@@ -4306,7 +4363,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="cq" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="cq" >
       
       <tr><td colspan="2"><a name="cq"></a></td></tr>
       <tr>
@@ -4334,7 +4391,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="no" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="no" >
         
       <tr><td colspan="2"><a name="no"></a></td></tr>
       <tr>
@@ -4362,7 +4419,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mu" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="mu" >
       
       <tr><td colspan="2"><a name="mu"></a></td></tr>
       <tr>
@@ -4377,20 +4434,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 81.4% 
+        <strong>total population:</strong> 86.9% 
       <br />
       
-        <strong>male:</strong> 86.8% 
+        <strong>male:</strong> 90.2% 
       <br />
       
-        <strong>female:</strong> 73.5% (2003 census) 
+        <strong>female:</strong> 81.8% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="pk" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="pk" >
         
       <tr><td colspan="2"><a name="pk"></a></td></tr>
       <tr>
@@ -4418,7 +4475,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ps" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ps" >
       
       <tr><td colspan="2"><a name="ps"></a></td></tr>
       <tr>
@@ -4446,7 +4503,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="pm" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="pm" >
         
       <tr><td colspan="2"><a name="pm"></a></td></tr>
       <tr>
@@ -4461,20 +4518,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 91.9% 
+        <strong>total population:</strong> 94.1% 
       <br />
       
-        <strong>male:</strong> 92.5% 
+        <strong>male:</strong> 94.7% 
       <br />
       
-        <strong>female:</strong> 91.2% (2000 census) 
+        <strong>female:</strong> 93.5% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="pp" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="pp" >
       
       <tr><td colspan="2"><a name="pp"></a></td></tr>
       <tr>
@@ -4489,20 +4546,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 57.3% 
+        <strong>total population:</strong> 62.4% 
       <br />
       
-        <strong>male:</strong> 63.4% 
+        <strong>male:</strong> 65.4% 
       <br />
       
-        <strong>female:</strong> 50.9% (2000 census) 
+        <strong>female:</strong> 59.4% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="pa" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="pa" >
         
       <tr><td colspan="2"><a name="pa"></a></td></tr>
       <tr>
@@ -4517,20 +4574,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 94% 
+        <strong>total population:</strong> 93.9% 
       <br />
       
-        <strong>male:</strong> 94.9% 
+        <strong>male:</strong> 94.8% 
       <br />
       
-        <strong>female:</strong> 93% (2003 est.) 
+        <strong>female:</strong> 92.9% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="pe" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="pe" >
       
       <tr><td colspan="2"><a name="pe"></a></td></tr>
       <tr>
@@ -4545,20 +4602,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 92.9% 
+        <strong>total population:</strong> 89.6% 
       <br />
       
-        <strong>male:</strong> 96.4% 
+        <strong>male:</strong> 94.9% 
       <br />
       
-        <strong>female:</strong> 89.4% (2007 Census) 
+        <strong>female:</strong> 84.6% (2007 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="rp" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="rp" >
         
       <tr><td colspan="2"><a name="rp"></a></td></tr>
       <tr>
@@ -4573,20 +4630,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 92.6% 
+        <strong>total population:</strong> 95.4% 
       <br />
       
-        <strong>male:</strong> 92.5% 
+        <strong>male:</strong> 95% 
       <br />
       
-        <strong>female:</strong> 92.7% (2000 census) 
+        <strong>female:</strong> 95.8% (2008 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="pc" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="pc" >
       
       <tr><td colspan="2"><a name="pc"></a></td></tr>
       <tr>
@@ -4604,7 +4661,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="pl" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="pl" >
         
       <tr><td colspan="2"><a name="pl"></a></td></tr>
       <tr>
@@ -4619,20 +4676,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 99.5% 
+        <strong>total population:</strong> 99.7% 
       <br />
       
-        <strong>male:</strong> 99.7% 
+        <strong>male:</strong> 99.9% 
       <br />
       
-        <strong>female:</strong> 99.4% (2010 est.) 
+        <strong>female:</strong> 99.6% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="po" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="po" >
       
       <tr><td colspan="2"><a name="po"></a></td></tr>
       <tr>
@@ -4647,20 +4704,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 95.2% 
+        <strong>total population:</strong> 95.4% 
       <br />
       
-        <strong>male:</strong> 96.9% 
+        <strong>male:</strong> 97% 
       <br />
       
-        <strong>female:</strong> 93.6% (2010 est.) 
+        <strong>female:</strong> 94% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="rq" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="rq" >
         
       <tr><td colspan="2"><a name="rq"></a></td></tr>
       <tr>
@@ -4675,20 +4732,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 94.1% 
+        <strong>total population:</strong> 90.3% 
       <br />
       
-        <strong>male:</strong> 93.9% 
+        <strong>male:</strong> 89.7% 
       <br />
       
-        <strong>female:</strong> 94.4% (2002 est.) 
+        <strong>female:</strong> 90.9% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="qa" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="qa" >
       
       <tr><td colspan="2"><a name="qa"></a></td></tr>
       <tr>
@@ -4716,7 +4773,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ro" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ro" >
         
       <tr><td colspan="2"><a name="ro"></a></td></tr>
       <tr>
@@ -4737,14 +4794,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 98.3% 
       <br />
       
-        <strong>female:</strong> 97.1% (2010 est.) 
+        <strong>female:</strong> 97.1% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="rs" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="rs" >
       
       <tr><td colspan="2"><a name="rs"></a></td></tr>
       <tr>
@@ -4759,20 +4816,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 99.6% 
+        <strong>total population:</strong> 99.7% 
       <br />
       
         <strong>male:</strong> 99.7% 
       <br />
       
-        <strong>female:</strong> 99.5% (2010 est.) 
+        <strong>female:</strong> 99.6% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="rw" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="rw" >
         
       <tr><td colspan="2"><a name="rw"></a></td></tr>
       <tr>
@@ -4800,7 +4857,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sh" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sh" >
       
       <tr><td colspan="2"><a name="sh"></a></td></tr>
       <tr>
@@ -4828,7 +4885,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="sc" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="sc" >
         
       <tr><td colspan="2"><a name="sc"></a></td></tr>
       <tr>
@@ -4856,7 +4913,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="st" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="st" >
       
       <tr><td colspan="2"><a name="st"></a></td></tr>
       <tr>
@@ -4884,7 +4941,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="sb" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="sb" >
         
       <tr><td colspan="2"><a name="sb"></a></td></tr>
       <tr>
@@ -4912,7 +4969,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="vc" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="vc" >
       
       <tr><td colspan="2"><a name="vc"></a></td></tr>
       <tr>
@@ -4940,7 +4997,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ws" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ws" >
         
       <tr><td colspan="2"><a name="ws"></a></td></tr>
       <tr>
@@ -4955,20 +5012,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 99.7% 
+        <strong>total population:</strong> 98.8% 
       <br />
       
-        <strong>male:</strong> 99.6% 
+        <strong>male:</strong> 99% 
       <br />
       
-        <strong>female:</strong> 99.7% (2003 est.) 
+        <strong>female:</strong> 98.6% (2003 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sm" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sm" >
       
       <tr><td colspan="2"><a name="sm"></a></td></tr>
       <tr>
@@ -4996,7 +5053,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tp" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tp" >
         
       <tr><td colspan="2"><a name="tp"></a></td></tr>
       <tr>
@@ -5011,20 +5068,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 84.9% 
+        <strong>total population:</strong> 69.5% 
       <br />
       
-        <strong>male:</strong> 92.2% 
+        <strong>male:</strong> 80.3% 
       <br />
       
-        <strong>female:</strong> 77.9% (2001 census) 
+        <strong>female:</strong> 60.1% (2008 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sa" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sa" >
       
       <tr><td colspan="2"><a name="sa"></a></td></tr>
       <tr>
@@ -5039,20 +5096,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 86.6% 
+        <strong>total population:</strong> 87.2% 
       <br />
       
-        <strong>male:</strong> 90.4% 
+        <strong>male:</strong> 90.8% 
       <br />
       
-        <strong>female:</strong> 81.3% (2010 est.) 
+        <strong>female:</strong> 82.2% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="sg" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="sg" >
         
       <tr><td colspan="2"><a name="sg"></a></td></tr>
       <tr>
@@ -5067,20 +5124,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 39.3% 
+        <strong>total population:</strong> 49.7% 
       <br />
       
-        <strong>male:</strong> 51.1% 
+        <strong>male:</strong> 61.8% 
       <br />
       
-        <strong>female:</strong> 29.2% (2002 est.) 
+        <strong>female:</strong> 38.7% (2009 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ri" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ri" >
       
       <tr><td colspan="2"><a name="ri"></a></td></tr>
       <tr>
@@ -5095,20 +5152,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 97.9% 
+        <strong>total population:</strong> 98% 
       <br />
       
         <strong>male:</strong> 99.2% 
       <br />
       
-        <strong>female:</strong> 96.7% (2010 est.) 
+        <strong>female:</strong> 96.9% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="se" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="se" >
         
       <tr><td colspan="2"><a name="se"></a></td></tr>
       <tr>
@@ -5129,14 +5186,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 91.4% 
       <br />
       
-        <strong>female:</strong> 92.3% (2002 census) 
+        <strong>female:</strong> 92.3% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sl" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sl" >
       
       <tr><td colspan="2"><a name="sl"></a></td></tr>
       <tr>
@@ -5151,20 +5208,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write English, Mende, Temne, or Arabic 
       <br />
       
-        <strong>total population:</strong> 35.1% 
+        <strong>total population:</strong> 43.3% 
       <br />
       
-        <strong>male:</strong> 46.9% 
+        <strong>male:</strong> 54.7% 
       <br />
       
-        <strong>female:</strong> 24.4% (2004 est.) 
+        <strong>female:</strong> 32.6% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="sn" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="sn" >
         
       <tr><td colspan="2"><a name="sn"></a></td></tr>
       <tr>
@@ -5179,20 +5236,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 92.5% 
+        <strong>total population:</strong> 95.9% 
       <br />
       
-        <strong>male:</strong> 96.6% 
+        <strong>male:</strong> 98% 
       <br />
       
-        <strong>female:</strong> 88.6% (2000 census) 
+        <strong>female:</strong> 93.8% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="lo" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="lo" >
       
       <tr><td colspan="2"><a name="lo"></a></td></tr>
       <tr>
@@ -5220,7 +5277,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="si" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="si" >
         
       <tr><td colspan="2"><a name="si"></a></td></tr>
       <tr>
@@ -5241,14 +5298,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 99.7% 
       <br />
       
-        <strong>female:</strong> 99.7% (2010 est.) 
+        <strong>female:</strong> 99.7% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="bp" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="bp" >
       
       <tr><td colspan="2"><a name="bp"></a></td></tr>
       <tr>
@@ -5259,14 +5316,24 @@ function MM_swapImage() { //v3.0
           
       
       <td class="category_data"  valign="top" style="padding-left:5px;">
-      NA 
+      
+        <strong>definition: </strong>age 15 and over can read and write 
+      <br />
+      
+        <strong>total population:</strong> 84.1% 
+      <br />
+      
+        <strong>male:</strong> 88.9% 
+      <br />
+      
+        <strong>female:</strong> 79.2% 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="so" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="so" >
         
       <tr><td colspan="2"><a name="so"></a></td></tr>
       <tr>
@@ -5294,7 +5361,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sf" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sf" >
       
       <tr><td colspan="2"><a name="sf"></a></td></tr>
       <tr>
@@ -5309,20 +5376,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 86.4% 
+        <strong>total population:</strong> 93% 
       <br />
       
-        <strong>male:</strong> 87% 
+        <strong>male:</strong> 93.9% 
       <br />
       
-        <strong>female:</strong> 85.7% (2003 est.) 
+        <strong>female:</strong> 92.2% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="od" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="od" >
         
       <tr><td colspan="2"><a name="od"></a></td></tr>
       <tr>
@@ -5343,14 +5410,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 40% 
       <br />
       
-        <strong>female:</strong> 16% 
+        <strong>female:</strong> 16% (2009) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sp" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sp" >
       
       <tr><td colspan="2"><a name="sp"></a></td></tr>
       <tr>
@@ -5378,7 +5445,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ce" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ce" >
         
       <tr><td colspan="2"><a name="ce"></a></td></tr>
       <tr>
@@ -5406,7 +5473,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="su" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="su" >
       
       <tr><td colspan="2"><a name="su"></a></td></tr>
       <tr>
@@ -5421,20 +5488,23 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 61.1% 
+        <strong>total population:</strong> 71.9% 
       <br />
       
-        <strong>male:</strong> 71.8% 
+        <strong>male:</strong> 80.7% 
       <br />
       
-        <strong>female:</strong> 50.5% (2003 est.) 
+        <strong>female:</strong> 63.2% 
+      <br />
+      
+        <strong>note:</strong> pre-secession of South Sudan (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ns" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ns" >
         
       <tr><td colspan="2"><a name="ns"></a></td></tr>
       <tr>
@@ -5449,20 +5519,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 89.6% 
+        <strong>total population:</strong> 94.7% 
       <br />
       
-        <strong>male:</strong> 92% 
+        <strong>male:</strong> 95.4% 
       <br />
       
-        <strong>female:</strong> 87.2% (2004 census) 
+        <strong>female:</strong> 94% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sv" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sv" >
       
       <tr><td colspan="2"><a name="sv"></a></td></tr>
       <tr>
@@ -5480,7 +5550,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="wz" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="wz" >
         
       <tr><td colspan="2"><a name="wz"></a></td></tr>
       <tr>
@@ -5495,20 +5565,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 81.6% 
+        <strong>total population:</strong> 87.8% 
       <br />
       
-        <strong>male:</strong> 82.6% 
+        <strong>male:</strong> 88.4% 
       <br />
       
-        <strong>female:</strong> 80.8% (2003 est.) 
+        <strong>female:</strong> 87.3% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sw" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sw" >
       
       <tr><td colspan="2"><a name="sw"></a></td></tr>
       <tr>
@@ -5536,7 +5606,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="sz" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="sz" >
         
       <tr><td colspan="2"><a name="sz"></a></td></tr>
       <tr>
@@ -5564,7 +5634,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sy" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="sy" >
       
       <tr><td colspan="2"><a name="sy"></a></td></tr>
       <tr>
@@ -5579,20 +5649,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 79.6% 
+        <strong>total population:</strong> 84.1% 
       <br />
       
-        <strong>male:</strong> 86% 
+        <strong>male:</strong> 90.3% 
       <br />
       
-        <strong>female:</strong> 73.6% (2004 census) 
+        <strong>female:</strong> 77.7% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tw" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tw" >
         
       <tr><td colspan="2"><a name="tw"></a></td></tr>
       <tr>
@@ -5620,7 +5690,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ti" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ti" >
       
       <tr><td colspan="2"><a name="ti"></a></td></tr>
       <tr>
@@ -5641,14 +5711,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 99.8% 
       <br />
       
-        <strong>female:</strong> 99.6% (2010 est.) 
+        <strong>female:</strong> 99.6% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tz" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tz" >
         
       <tr><td colspan="2"><a name="tz"></a></td></tr>
       <tr>
@@ -5663,20 +5733,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write Kiswahili (Swahili), English, or Arabic 
       <br />
       
-        <strong>total population:</strong> 69.4% 
+        <strong>total population:</strong> 67.8% 
       <br />
       
-        <strong>male:</strong> 77.5% 
+        <strong>male:</strong> 75.5% 
       <br />
       
-        <strong>female:</strong> 62.2% (2002 census) 
+        <strong>female:</strong> 60.8% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="th" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="th" >
       
       <tr><td colspan="2"><a name="th"></a></td></tr>
       <tr>
@@ -5691,20 +5761,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 92.6% 
+        <strong>total population:</strong> 93.5% 
       <br />
       
-        <strong>male:</strong> 94.9% 
+        <strong>male:</strong> 95.6% 
       <br />
       
-        <strong>female:</strong> 90.5% (2000 census) 
+        <strong>female:</strong> 91.5% (2005 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tt" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tt" >
         
       <tr><td colspan="2"><a name="tt"></a></td></tr>
       <tr>
@@ -5719,20 +5789,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 58.6% 
+        <strong>total population:</strong> 58.3% 
       <br />
       
-        <strong>male:</strong> NA 
+        <strong>male:</strong> 63.6% 
       <br />
       
-        <strong>female:</strong> NA (2002) 
+        <strong>female:</strong> 53% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="to" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="to" >
       
       <tr><td colspan="2"><a name="to"></a></td></tr>
       <tr>
@@ -5747,20 +5817,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 60.9% 
+        <strong>total population:</strong> 60.4% 
       <br />
       
-        <strong>male:</strong> 75.4% 
+        <strong>male:</strong> 74.1% 
       <br />
       
-        <strong>female:</strong> 46.9% (2003 est.) 
+        <strong>female:</strong> 48% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tl" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tl" >
         
       <tr><td colspan="2"><a name="tl"></a></td></tr>
       <tr>
@@ -5778,7 +5848,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="tn" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="tn" >
       
       <tr><td colspan="2"><a name="tn"></a></td></tr>
       <tr>
@@ -5793,20 +5863,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>can read and write Tongan and/or English 
       <br />
       
-        <strong>total population:</strong> 98.9% 
+        <strong>total population:</strong> 99% 
       <br />
       
-        <strong>male:</strong> 98.8% 
+        <strong>male:</strong> 99% 
       <br />
       
-        <strong>female:</strong> 99% (1999 est.) 
+        <strong>female:</strong> 99.1% (2006 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="td" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="td" >
         
       <tr><td colspan="2"><a name="td"></a></td></tr>
       <tr>
@@ -5821,20 +5891,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 98.6% 
+        <strong>total population:</strong> 98.8% 
       <br />
       
-        <strong>male:</strong> 99.1% 
+        <strong>male:</strong> 99.2% 
       <br />
       
-        <strong>female:</strong> 98% (2003 est.) 
+        <strong>female:</strong> 98.5% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ts" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ts" >
       
       <tr><td colspan="2"><a name="ts"></a></td></tr>
       <tr>
@@ -5849,20 +5919,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 74.3% 
+        <strong>total population:</strong> 79.1% 
       <br />
       
-        <strong>male:</strong> 83.4% 
+        <strong>male:</strong> 87.4% 
       <br />
       
-        <strong>female:</strong> 65.3% (2004 census) 
+        <strong>female:</strong> 71.1% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tu" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tu" >
         
       <tr><td colspan="2"><a name="tu"></a></td></tr>
       <tr>
@@ -5877,20 +5947,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 87.4% 
+        <strong>total population:</strong> 94.1% 
       <br />
       
-        <strong>male:</strong> 95.3% 
+        <strong>male:</strong> 97.9% 
       <br />
       
-        <strong>female:</strong> 79.6% (2004 est.) 
+        <strong>female:</strong> 90.3% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="tx" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="tx" >
       
       <tr><td colspan="2"><a name="tx"></a></td></tr>
       <tr>
@@ -5905,20 +5975,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 98.8% 
+        <strong>total population:</strong> 99.6% 
       <br />
       
-        <strong>male:</strong> 99.3% 
+        <strong>male:</strong> 99.7% 
       <br />
       
-        <strong>female:</strong> 98.3% (1999 est.) 
+        <strong>female:</strong> 99.5% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tk" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="tk" >
         
       <tr><td colspan="2"><a name="tk"></a></td></tr>
       <tr>
@@ -5946,7 +6016,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="tv" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="tv" >
       
       <tr><td colspan="2"><a name="tv"></a></td></tr>
       <tr>
@@ -5964,7 +6034,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ug" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ug" >
         
       <tr><td colspan="2"><a name="ug"></a></td></tr>
       <tr>
@@ -5979,20 +6049,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 66.8% 
+        <strong>total population:</strong> 73.2% 
       <br />
       
-        <strong>male:</strong> 76.8% 
+        <strong>male:</strong> 82.6% 
       <br />
       
-        <strong>female:</strong> 57.7% (2002 census) 
+        <strong>female:</strong> 64.6% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="up" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="up" >
       
       <tr><td colspan="2"><a name="up"></a></td></tr>
       <tr>
@@ -6013,14 +6083,14 @@ function MM_swapImage() { //v3.0
         <strong>male:</strong> 99.8% 
       <br />
       
-        <strong>female:</strong> 99.6% (2010 est.) 
+        <strong>female:</strong> 99.7% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ae" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ae" >
         
       <tr><td colspan="2"><a name="ae"></a></td></tr>
       <tr>
@@ -6035,20 +6105,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 77.9% 
+        <strong>total population:</strong> 90% 
       <br />
       
-        <strong>male:</strong> 76.1% 
+        <strong>male:</strong> 89.5% 
       <br />
       
-        <strong>female:</strong> 81.7% (2003 est.) 
+        <strong>female:</strong> 91.5% (2005 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="uk" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="uk" >
       
       <tr><td colspan="2"><a name="uk"></a></td></tr>
       <tr>
@@ -6076,7 +6146,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="us" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="us" >
         
       <tr><td colspan="2"><a name="us"></a></td></tr>
       <tr>
@@ -6104,7 +6174,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="uy" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="uy" >
       
       <tr><td colspan="2"><a name="uy"></a></td></tr>
       <tr>
@@ -6119,20 +6189,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 98% 
+        <strong>total population:</strong> 98.1% 
       <br />
       
         <strong>male:</strong> 97.6% 
       <br />
       
-        <strong>female:</strong> 98.4% (2003 est.) 
+        <strong>female:</strong> 98.5% (2010 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="uz" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="uz" >
         
       <tr><td colspan="2"><a name="uz"></a></td></tr>
       <tr>
@@ -6147,20 +6217,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 99.3% 
+        <strong>total population:</strong> 99.4% 
       <br />
       
         <strong>male:</strong> 99.6% 
       <br />
       
-        <strong>female:</strong> 99% (2003 est.) 
+        <strong>female:</strong> 99.2% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="nh" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="nh" >
       
       <tr><td colspan="2"><a name="nh"></a></td></tr>
       <tr>
@@ -6175,20 +6245,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 74% 
+        <strong>total population:</strong> 83.2% 
       <br />
       
-        <strong>male:</strong> NA 
+        <strong>male:</strong> NA 84.9% 
       <br />
       
-        <strong>female:</strong> NA (1999 census) 
+        <strong>female:</strong> NA 81.6% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ve" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="ve" >
         
       <tr><td colspan="2"><a name="ve"></a></td></tr>
       <tr>
@@ -6203,20 +6273,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 93% 
+        <strong>total population:</strong> 95.5% 
       <br />
       
-        <strong>male:</strong> 93.3% 
+        <strong>male:</strong> 95.7% 
       <br />
       
-        <strong>female:</strong> 92.7% (2001 census) 
+        <strong>female:</strong> 95.4% (2009 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="vm" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="vm" >
       
       <tr><td colspan="2"><a name="vm"></a></td></tr>
       <tr>
@@ -6231,20 +6301,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 94% 
+        <strong>total population:</strong> 93.4% 
       <br />
       
-        <strong>male:</strong> 96.1% 
+        <strong>male:</strong> 95.4% 
       <br />
       
-        <strong>female:</strong> 92% (2002 est.) 
+        <strong>female:</strong> 91.4% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="vq" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="vq" >
         
       <tr><td colspan="2"><a name="vq"></a></td></tr>
       <tr>
@@ -6272,7 +6342,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="wf" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="wf" >
       
       <tr><td colspan="2"><a name="wf"></a></td></tr>
       <tr>
@@ -6300,7 +6370,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="we" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="we" >
         
       <tr><td colspan="2"><a name="we"></a></td></tr>
       <tr>
@@ -6315,20 +6385,23 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 92.4% 
+        <strong>total population:</strong> 95.3% 
       <br />
       
-        <strong>male:</strong> 96.7% 
+        <strong>male:</strong> 97.9% 
       <br />
       
-        <strong>female:</strong> 88% (2004 est.) 
+        <strong>female:</strong> 92.6% 
+      <br />
+      
+        <strong>notes:</strong> estimates are for the Palestinian Territories (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="wi" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="wi" >
       
       <tr><td colspan="2"><a name="wi"></a></td></tr>
       <tr>
@@ -6346,7 +6419,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="xx" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="xx" >
         
       <tr><td colspan="2"><a name="xx"></a></td></tr>
       <tr>
@@ -6377,7 +6450,7 @@ function MM_swapImage() { //v3.0
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ym" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="ym" >
       
       <tr><td colspan="2"><a name="ym"></a></td></tr>
       <tr>
@@ -6392,20 +6465,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write 
       <br />
       
-        <strong>total population:</strong> 63.9% 
+        <strong>total population:</strong> 65.3% 
       <br />
       
-        <strong>male:</strong> 81.2% 
+        <strong>male:</strong> 82.1% 
       <br />
       
-        <strong>female:</strong> 46.8% (2010 est.) 
+        <strong>female:</strong> 48.5% (2011 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="za" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#FFFFFF" id="za" >
         
       <tr><td colspan="2"><a name="za"></a></td></tr>
       <tr>
@@ -6420,20 +6493,20 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write English 
       <br />
       
-        <strong>total population:</strong> 80.6% 
+        <strong>total population:</strong> 61.4% 
       <br />
       
-        <strong>male:</strong> 86.8% 
+        <strong>male:</strong> 71.9% 
       <br />
       
-        <strong>female:</strong> 74.8% (2003 est.) 
+        <strong>female:</strong> 51.8% (2007 est.) 
         </td>
         </tr>
         </table>
         
 
         
-        <table width="638" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="zi" >
+        <table width="100%" cellspacing="4" cellpadding="0" border="0" style="padding-bottom:4px;"  bgcolor="#EEEEEE" id="zi" >
       
       <tr><td colspan="2"><a name="zi"></a></td></tr>
       <tr>
@@ -6448,25 +6521,33 @@ function MM_swapImage() { //v3.0
         <strong>definition: </strong>age 15 and over can read and write English 
       <br />
       
-        <strong>total population:</strong> 90.7% 
+        <strong>total population:</strong> 83.6% 
       <br />
       
-        <strong>male:</strong> 94.2% 
+        <strong>male:</strong> 87.8% 
       <br />
       
-        <strong>female:</strong> 87.2% (2003 est.) 
+        <strong>female:</strong> 80.1% (2011 est.) 
 </td>
 </tr>
 </table>
 
-</tr>
-</table>
-
-	<script src="../scripts/findDOM.js" type="text/javascript"></script>
-	<script src="../scripts/DataEntryLibrary.js"	type="text/javascript"></script>
-	<script src="../scripts/processAnchors.js"	type="text/javascript"></script>
-	<script language="javascript" type="text/javascript">
-		highlightSelectedFieldKey( );
-	</script>
-  
-
+  <script>
+	$(document).ready(function() {
+		// Show or hide the sticky footer button
+		$(window).scroll(function() {
+			if ($(this).scrollTop() > 350) {
+				$('.go-top1').fadeIn(100);
+			} else {
+				$('.go-top1').fadeOut(100);
+			}
+		});
+		
+		// Animate the scroll to top
+		$('.go-top1').click(function(event) {
+			event.preventDefault();
+			
+			$('html, body').animate({scrollTop: 350}, 300);
+		})
+	});
+</script>	

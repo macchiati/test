@@ -76,7 +76,8 @@ public class CheckNumbers extends FactoryCheckCLDR {
      * It is called for each new file needing testing. The first two lines will always
      * be the same; checking for null, and calling the super.
      */
-    public CheckCLDR setCldrFileToCheck(CLDRFile cldrFileToCheck, Map<String, String> options,
+    @Override
+    public CheckCLDR setCldrFileToCheck(CLDRFile cldrFileToCheck, Options options,
         List<CheckStatus> possibleErrors) {
         if (cldrFileToCheck == null) return this;
         super.setCldrFileToCheck(cldrFileToCheck, options, possibleErrors);
@@ -96,7 +97,7 @@ public class CheckNumbers extends FactoryCheckCLDR {
      * exit as fast as possible except where the path is one that you are testing.
      */
     @Override
-    public CheckCLDR handleCheck(String path, String fullPath, String value, Map<String, String> options,
+    public CheckCLDR handleCheck(String path, String fullPath, String value, Options options,
         List<CheckStatus> result) {
 
         if (fullPath == null) return this; // skip paths that we don't have
@@ -220,11 +221,9 @@ public class CheckNumbers extends FactoryCheckCLDR {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
             result.add(new CheckStatus().setCause(this).setMainType(CheckStatus.errorType)
                 .setSubtype(Subtype.illegalNumberFormat)
-                .setMessage("Error in creating number format {0}; {1}",
-                    new Object[] { e.getClass().getName(), e }));
+                .setMessage(e.getMessage() == null ? e.toString() : e.getMessage()));
         }
         return this;
     }
@@ -249,7 +248,7 @@ public class CheckNumbers extends FactoryCheckCLDR {
             // Any unquoted non-special chars are allowed in front of or behind the numerical
             // symbols, but not in between, e.g. " 0000" is okay but "0 000" is not.
             int firstIdx = -1;
-            for (int i = 0, len = subPattern.length() ; i < len ; i++) {
+            for (int i = 0, len = subPattern.length(); i < len; i++) {
                 char c = subPattern.charAt(i);
                 if (c == '0' || c == '#') {
                     firstIdx = i;
@@ -270,7 +269,8 @@ public class CheckNumbers extends FactoryCheckCLDR {
      * Override this method if you are going to provide examples of usage.
      * Only needed for more complicated cases, like number patterns.
      */
-    public CheckCLDR handleGetExamples(String path, String fullPath, String value, Map options, List result) {
+    @Override
+    public CheckCLDR handleGetExamples(String path, String fullPath, String value, Options options, List result) {
         if (path.indexOf("/numbers") < 0) return this;
         try {
             if (path.indexOf("/pattern") >= 0 && path.indexOf("/patternDigit") < 0) {
@@ -286,7 +286,7 @@ public class CheckNumbers extends FactoryCheckCLDR {
     }
 
     private void checkDecimalFormatConsistency(XPathParts parts, String path, String value,
-            List<CheckStatus> result, NumericType type) {
+        List<CheckStatus> result, NumericType type) {
         // Look for duplicates of decimal formats with the same number
         // system and type.
         // Decimal formats of the same type should have the same number
@@ -500,11 +500,11 @@ public class CheckNumbers extends FactoryCheckCLDR {
             return this;
         }
 
-        protected void getArguments(Map inout) {
+        protected void getArguments(Map<String, String> inout) {
             currentPattern = currentInput = currentFormatted = currentReparsed = "?";
             double d;
             try {
-                currentPattern = (String) inout.get("pattern");
+                currentPattern = inout.get("pattern");
                 if (currentPattern != null)
                     df.applyPattern(currentPattern);
                 else
@@ -514,7 +514,7 @@ public class CheckNumbers extends FactoryCheckCLDR {
                 return;
             }
             try {
-                currentInput = (String) inout.get("input");
+                currentInput = inout.get("input");
                 if (currentInput == null) {
                     currentInput = getSampleInput();
                 }

@@ -10,8 +10,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import org.unicode.cldr.unittest.TestAll.TestInfo;
 import org.unicode.cldr.util.Builder;
+import org.unicode.cldr.util.CLDRConfig;
 import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.Containment;
 import org.unicode.cldr.util.DateTimeCanonicalizer.DateTimePatternType;
@@ -29,7 +29,7 @@ import com.ibm.icu.text.DateTimePatternGenerator.VariableField;
 import com.ibm.icu.text.UnicodeSet;
 
 public class FindPreferredHours {
-    private static TestInfo INFO = TestInfo.getInstance();
+    private static CLDRConfig INFO = ToolConfig.getToolInstance();
     private static final CLDRFile ENGLISH = INFO.getEnglish();
     private static final UnicodeSet DIGITS = new UnicodeSet("[0-9]").freeze();
 
@@ -136,7 +136,8 @@ public class FindPreferredHours {
                     if (item instanceof VariableField) {
                         String itemString = item.toString();
                         char c = itemString.charAt(0);
-                        if (PreferredAndAllowedHour.HOURS.contains(c)) {
+
+                        if (PreferredAndAllowedHour.HourStyle.isHourCharacter(c)) {
                             lang2Hours.put(locale, new Hours(type, itemString));
                         }
                     }
@@ -270,8 +271,9 @@ public class FindPreferredHours {
                 + "preferred=\""
                 + preferredAndAllowedHour.preferred
                 + "\""
-                + (preferredAndAllowedHour.allowed == null ? "" : " allowed=\""
-                    + CollectionUtilities.join(preferredAndAllowedHour.allowed, " ") + "\"")
+                + " allowed=\""
+                + CollectionUtilities.join(preferredAndAllowedHour.allowed, " ")
+                + "\""
                 + " regions=\"" + CollectionUtilities.join(regions, " ") + "\""
                 + "/>");
         }

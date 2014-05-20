@@ -7,9 +7,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import org.unicode.cldr.unittest.TestAll;
 import org.unicode.cldr.util.CLDRFile;
-import org.unicode.cldr.util.CldrUtility;
+import org.unicode.cldr.util.CLDRPaths;
 import org.unicode.cldr.util.Counter;
 import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.LanguageTagParser;
@@ -26,7 +25,7 @@ public class ShowChildren {
 
         long startTime = System.currentTimeMillis();
 
-        Factory cldrFactory = Factory.make(CldrUtility.MAIN_DIRECTORY, ".*");
+        Factory cldrFactory = Factory.make(CLDRPaths.MAIN_DIRECTORY, ".*");
         Set<String> locales = new TreeSet<String>(cldrFactory.getAvailable());
 
         Relation<String, String> parent2children = Relation.of(new TreeMap<String, Set<String>>(), TreeSet.class);
@@ -39,7 +38,7 @@ public class ShowChildren {
         }
         PrettyPath prettyPath = new PrettyPath();
 
-        final CLDRFile english = TestAll.TestInfo.getInstance().getEnglish();
+        final CLDRFile english = ToolConfig.getToolInstance().getEnglish();
         Counter<String> deviations = new Counter<String>();
 
         for (Entry<String, Set<String>> entry : parent2children.keyValuesSet()) {

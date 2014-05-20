@@ -27,6 +27,9 @@ CG; Congo - Brazzaville; Republic of the Congo
 CI; Ivory Coast; Cote d'Ivoire
 CI; Ivory Coast; Côte d'Ivoire
 CI; Ivory Coast; C�te d'Ivoire
+CI; Ivory Coast; Ivory Coast
+
+CV; Cape Verde; Cabo Verde
 
 CY; Cyprus; Akrotiri
 CY; Cyprus; Dhekelia
@@ -41,6 +44,7 @@ FM; Micronesia; Fed. Sts. Micronesia
 FM; Micronesia; Federated States of Micronesia
 FM; Micronesia; Micronesia, Fed. Sts.
 FM; Micronesia; Micronesia, Federated States of
+FM; ; Micronesia (Federated States of)
 
 FO; Faroe Islands; Faeroe Islands
 
@@ -109,6 +113,7 @@ PS; Palestinian Territory; Palestinian Autonomous Territories
 PS; Palestinian Territory; Palestinian Territory, Occupied
 PS; Palestinian Territory; West Bank
 PS; Palestinian Territory; West Bank and Gaza
+PS; Palestine; Palestine
 
 RE; Reunion; Réunion
 
@@ -123,6 +128,7 @@ SY; Syria; Syrian Arab Republic
 SH; Saint Helena; Saint Helena, Ascension, and Tristan da Cunha
 
 TL; East Timor; Timor-Leste
+TL; East Timor; East Timor
 
 TW; Taiwan; Province of China Taiwan
 TW; Taiwan; Taiwan, Province of China
@@ -144,6 +150,7 @@ VG; British Virgin Islands; Virgin Islands, British
 VI; U.S. Virgin Islands; Virgin Islands
 VI; U.S. Virgin Islands; Virgin Islands (U.S.)
 VI; U.S. Virgin Islands; Virgin Islands, U.S.
+VI; ; United States of Virgin Islands
 
 VN; Vietnam; Viet Nam
 
@@ -155,6 +162,36 @@ ZZ; Unknown; n/a
 CW; Curaçao; Curacao
 SX; Sint Maarten; Sint Maarten
 MF; Saint Martin; St. Martin (French part)
+
+TC; Turks and Caicos Islands ; Turks
+TC; Turks and Caicos Islands ; Caicos Islands
+GB; UK ; Northern Ireland
+GB; UK ; Scotland
+GB; UK ; Wales
+GB; UK ; Cornwall
+GB; UK ; United Kingdom of Great Britain and Northern Ireland
+
+VG; ;	Virgin Islands (British)
+RS; ;	Serbia and Montenegro
+RE; ;	Reunion
+PS; ;	Palestinian Territory
+CD; ;	Congo, Democratic Republic
+FX; ;	France, Metropolitan
+SH; ;	St. Helena
+SJ; ;	Svalbard and Jan Mayen Islands
+VA; ;	Vatican
+CW; ;	Netherlands Antilles
+WF; ;	Wallis and Futuna Islands
+HM; ;	Heard and McDonald Islands
+PM; ;	St. Pierre and Miquelon
+
+DO; ; Dominica Republic
+RW; ; Rwanda
+RW;; Rawanda
+RW;; Republic of Rwanda
+US;; United States of America
+RS;; Yugoslavia
+KM;; Comros
 
 skip;	skip;	Arab World
 skip;	skip;	Caribbean small states

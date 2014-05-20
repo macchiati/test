@@ -2,7 +2,6 @@ package org.unicode.cldr.test;
 
 import java.util.BitSet;
 import java.util.List;
-import java.util.Map;
 
 import org.unicode.cldr.test.CheckCLDR.CheckStatus.Subtype;
 import org.unicode.cldr.util.CLDRFile;
@@ -99,14 +98,15 @@ public class CheckExemplars extends FactoryCheckCLDR {
 
     // Allowed[:script=common:][:script=inherited:][:alphabetic=false:]
 
-    public CheckCLDR setCldrFileToCheck(CLDRFile cldrFileToCheck, Map<String, String> options,
+    @Override
+    public CheckCLDR setCldrFileToCheck(CLDRFile cldrFileToCheck, Options options,
         List<CheckStatus> possibleErrors) {
         if (cldrFileToCheck == null) return this;
         super.setCldrFileToCheck(cldrFileToCheck, options, possibleErrors);
         String locale = cldrFileToCheck.getLocaleID();
         col = Collator.getInstance(new ULocale(locale));
         spaceCol = Collator.getInstance(new ULocale(locale));
-        spaceCol.setStrength(col.PRIMARY);
+        spaceCol.setStrength(Collator.PRIMARY);
         isRoot = cldrFileToCheck.getLocaleID().equals("root");
         prettyPrinter = new PrettyPrinter()
             .setOrdering(col != null ? col : Collator.getInstance(ULocale.ROOT))
@@ -130,7 +130,7 @@ public class CheckExemplars extends FactoryCheckCLDR {
         return this;
     }
 
-    public CheckCLDR handleCheck(String path, String fullPath, String value, Map<String, String> options,
+    public CheckCLDR handleCheck(String path, String fullPath, String value, Options options,
         List<CheckStatus> result) {
         if (fullPath == null) return this; // skip paths that we don't have
         if (path.indexOf("/exemplarCharacters") < 0) return this;
@@ -149,7 +149,7 @@ public class CheckExemplars extends FactoryCheckCLDR {
                 UnicodeSet combined = new UnicodeSet(mainSet).addAll(auxiliarySet);
                 checkMixedScripts("main+auxiliary", combined, result);
 
-                if (false && auxiliarySet.containsSome(mainSet)) {
+                if (auxiliarySet.containsSome(mainSet)) {
                     UnicodeSet overlap = new UnicodeSet(mainSet).retainAll(auxiliarySet).removeAll(HangulSyllables);
                     if (overlap.size() != 0) {
                         String fixedExemplar1 = new PrettyPrinter()
@@ -163,7 +163,7 @@ public class CheckExemplars extends FactoryCheckCLDR {
                                 .setCause(this)
                                 .setMainType(CheckStatus.warningType)
                                 .setSubtype(Subtype.auxiliaryExemplarsOverlap)
-                                .setMessage("Auxiliary overlaps with main \u200E{0}\u200E",
+                                .setMessage("Auxiliary characters also exist in main: \u200E{0}\u200E",
                                     new Object[] { fixedExemplar1 }));
                     }
                 }
@@ -190,6 +190,23 @@ public class CheckExemplars extends FactoryCheckCLDR {
                         .setSubtype(Subtype.missingPunctuationCharacters)
                         .setMessage("Punctuation exemplar characters are missing quotation marks for this locale: {0}",
                             characters);
+                    result.add(message);
+                }
+            } else if (type == ExemplarType.index) {
+                // Check that the index exemplar characters are in case-completed union of main and auxiliary exemplars
+                UnicodeSet auxiliarySet = getResolvedCldrFileToCheck().getExemplarSet("auxiliary", CLDRFile.WinningChoice.WINNING);
+                if (auxiliarySet == null) {
+                    auxiliarySet = new UnicodeSet();
+                }
+                UnicodeSet mainAndAuxAllCase = new UnicodeSet(mainSet).addAll(auxiliarySet).closeOver(UnicodeSet.ADD_CASE_MAPPINGS);
+                UnicodeSet indexBadChars = new UnicodeSet(value).removeAll(mainAndAuxAllCase);
+
+                if (!indexBadChars.isEmpty()) {
+                    CheckStatus message = new CheckStatus().setCause(this)
+                        .setMainType(CheckStatus.warningType)
+                        .setSubtype(Subtype.charactersNotInMainOrAuxiliaryExemplars)
+                        .setMessage("Index exemplars include characters not in main or auxiliary exemplars: {0}",
+                            indexBadChars.toPattern(false));
                     result.add(message);
                 }
             }

@@ -36,7 +36,7 @@ import com.ibm.icu.text.UnicodeFilter;
 
 public class CLDRTransforms {
 
-    public static final String TRANSFORM_DIR = (CldrUtility.COMMON_DIRECTORY + "transforms/");
+    public static final String TRANSFORM_DIR = (CLDRPaths.COMMON_DIRECTORY + "transforms/");
 
     static final CLDRTransforms SINGLETON = new CLDRTransforms();
 
@@ -91,7 +91,7 @@ public class CLDRTransforms {
         Set<String> ordered;
 
         if (namesMatchingRegex == null) {
-            files = Arrays.asList(new File(TRANSFORM_DIR).list());
+            files = getAvailableIds();
             ordered = r.dependencyOrder.getOrderedItems(files, null, true);
         } else {
             Matcher filter = Pattern.compile(namesMatchingRegex).matcher("");
@@ -108,6 +108,10 @@ public class CLDRTransforms {
 
     }
 
+    public static List<String> getAvailableIds() {
+        return Arrays.asList(new File(TRANSFORM_DIR).list());
+    }
+
     public Set<String> getOverriddenTransliterators() {
         return Collections.unmodifiableSet(overridden);
     }
@@ -119,7 +123,7 @@ public class CLDRTransforms {
         // the following are file names, not IDs, so the dependencies have to go both directions
         // List<String> extras = new ArrayList<String>();
 
-        Relation<Matcher, String> dependsOn = new Relation(new LinkedHashMap(), LinkedHashSet.class);
+        Relation<Matcher, String> dependsOn = Relation.of(new LinkedHashMap<Matcher, Set<String>>(), LinkedHashSet.class);
         {
             addDependency("Latin-(Jamo|Hangul)(/.*)?", "Latin-ConjoiningJamo", "ConjoiningJamo-Latin");
             addDependency("(Jamo|Hangul)-Latin(/.*)?", "Latin-ConjoiningJamo", "ConjoiningJamo-Latin");
@@ -268,7 +272,7 @@ public class CLDRTransforms {
      * @param directionInfo
      * @return
      */
-    public String getIcuRulesFromXmlFile(String dir, String cldrFileName, ParsedTransformID directionInfo) {
+    public static String getIcuRulesFromXmlFile(String dir, String cldrFileName, ParsedTransformID directionInfo) {
         final MyHandler myHandler = new MyHandler(cldrFileName, directionInfo);
         XMLFileReader xfr = new XMLFileReader().setHandler(myHandler);
         xfr.read(dir + cldrFileName, XMLFileReader.CONTENT_HANDLER | XMLFileReader.ERROR_HANDLER, true);

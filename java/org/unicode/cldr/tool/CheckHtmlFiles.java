@@ -8,11 +8,10 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -20,6 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.unicode.cldr.tool.Option.Options;
+import org.unicode.cldr.util.CLDRPaths;
 import org.unicode.cldr.util.CldrUtility;
 import org.unicode.cldr.util.Counter;
 import org.unicode.cldr.util.RegexUtilities;
@@ -28,28 +28,35 @@ import org.unicode.cldr.util.SimpleHtmlParser.Type;
 
 import com.ibm.icu.dev.util.TransliteratorUtilities;
 import com.ibm.icu.text.BreakIterator;
-import com.ibm.icu.text.Transliterator;
-import com.ibm.icu.text.UnicodeSet;
 import com.ibm.icu.util.Output;
 import com.ibm.icu.util.ULocale;
 
 public class CheckHtmlFiles {
+
     final static Options myOptions = new Options();
     final static Writer LOG = new OutputStreamWriter(System.out);
     static Pattern WELLFORMED_HEADER = Pattern.compile("\\s*(\\d+(\\.\\d+)*\\s*).*");
-    static Pattern SUPPRESS_SECTION_NUMBER = Pattern.compile("Migration|References|Acknowledgments|Modifications|Revision \\d+");
-    static Pattern SUPPRESS_REVISION = Pattern.compile("Revision \\d+");
-    
+    static Pattern SUPPRESS_SECTION_NUMBER = Pattern.compile(
+        "(Annex [A-Z]: .*)" +
+        "(Appendix [A-Z]: .*)" +
+        "|Migration( Issues)?" +
+        "|Step \\d+.*" +
+        "|Example \\d+.*" +
+        "|D\\d+\\.\\s.*" +
+        "|References" +
+        "|Acknowledge?ments" +
+        "|Modifications" +
+        "|(Revision \\d+\\.?)");
+    static Pattern SUPPRESS_REVISION = Pattern.compile("Revision \\d+\\.?");
+    static Pattern SPACES = Pattern.compile("\\s+");
+
     enum MyOptions {
-        old(
-            ".*",
-            "/Users/markdavis/Google Drive/Backup-2012-10-09/Documents/indigo/cldr-archive/cldr-22.1/specs/ldml/tr35\\.html",
-            "source data (regex)"),
-            target(".*", CldrUtility.BASE_DIRECTORY + "specs/ldml/tr35(-.*)?\\.html", "target data (regex)"),
-            verbose(null, null, "verbose debugging messages"),
-            contents(".*", CldrUtility.BASE_DIRECTORY + "specs/ldml/tr35(-.*)?\\.html", "generate contents"),
-            // /cldr-archive
-            ;
+//        old(".*", "/Users/markdavis/Google Drive/Backup-2012-10-09/Documents/indigo/cldr-archive/cldr-22.1/specs/ldml/tr35\\.html", "source data (regex)"),
+        target(".*", CLDRPaths.BASE_DIRECTORY + "specs/ldml/tr35(-.*)?\\.html", "target data (regex); ucd for Unicode docs."),
+        verbose(null, null, "verbose debugging messages"),
+//        contents(".*", CLDRPaths.BASE_DIRECTORY + "specs/ldml/tr35(-.*)?\\.html", "generate contents"),
+        // /cldr-archive
+        ;
 
         // boilerplate
         final Option option;
@@ -63,45 +70,57 @@ public class CheckHtmlFiles {
     static boolean doContents;
 
     public static void main(String[] args) throws IOException {
-        myOptions.parse(MyOptions.old, args, true);
+        System.out.println("First do a replace of <a\\s+name=\"([^\"]*)\"\\s*> by <a name=\"$1\" href=\"#$1\">");
+        System.out.println("Then check for all links with no anchors: <a([^>]*)></a>");
+        System.out.println("Then check for all links that don't start with name or href <a (?!href|name)");
+
+        myOptions.parse(MyOptions.target, args, true);
         verbose = MyOptions.verbose.option.doesOccur();
 
-        if (MyOptions.contents.option.doesOccur()) {
-            Data target = new Data().getSentences(MyOptions.contents.option.getValue());
-            return;
+        String targetString = MyOptions.target.option.getValue();
+        if (targetString.equalsIgnoreCase("ucd")) {
+            targetString = CLDRPaths.BASE_DIRECTORY + "../unicode-draft/reports/tr(\\d+)/tr(\\d+).html";
         }
-        Data source = new Data().getSentences(MyOptions.old.option.getValue());
-        Data target = new Data().getSentences(MyOptions.target.option.getValue());
-
-        int missingCount = 0, extraCount = 0;
-        int line = 0;
-        for (String sentence : source) {
-            ++line;
-            long sourceCount = source.getCount(sentence);
-            long targetCount = target.getCount(sentence);
-            if (targetCount == 0) {
-                System.out.println(line + "\tMISSING:\t" + sourceCount + "≠" + targetCount + "\t" + sentence);
-                ++missingCount;
-            }
+        Data target = new Data().getSentences(targetString);
+        if (target.count == 0) {
+            throw new IllegalArgumentException("No files matched with " + targetString);
         }
-        line = 0;
-        for (String sentence : target) {
-            ++line;
-            long sourceCount = source.getCount(sentence);
-            long targetCount = target.getCount(sentence);
-            if (sourceCount == 0) {
-                System.out.println(line + "\tEXTRA:\t" + targetCount + "≠" + sourceCount + "\t" + sentence);
-                ++extraCount;
-            }
-        }
-        System.out.println("Missing:\t" + missingCount);
-        System.out.println("Extra:\t" + extraCount);
+//        Data source = new Data().getSentences(MyOptions.old.option.getValue());
+//        String file = MyOptions.target.option.getValue();
+//
+//        Data target = new Data().getSentences(file);
+//
+//        int missingCount = 0, extraCount = 0;
+//        int line = 0;
+//        for (String sentence : source) {
+//            ++line;
+//            long sourceCount = source.getCount(sentence);
+//            long targetCount = target.getCount(sentence);
+//            if (targetCount == 0) {
+//                System.out.println(line + "\tMISSING:\t" + sourceCount + "≠" + targetCount + "\t" + sentence);
+//                ++missingCount;
+//            }
+//        }
+//        line = 0;
+//        for (String sentence : target) {
+//            ++line;
+//            long sourceCount = source.getCount(sentence);
+//            long targetCount = target.getCount(sentence);
+//            if (sourceCount == 0) {
+//                System.out.println(line + "\tEXTRA:\t" + targetCount + "≠" + sourceCount + "\t" + sentence);
+//                ++extraCount;
+//            }
+//        }
+//        System.out.println("Missing:\t" + missingCount);
+//        System.out.println("Extra:\t" + extraCount);
     }
 
     static Pattern WHITESPACE = Pattern.compile("[\\s]+");
+    static Pattern BADSECTION = Pattern.compile("^\\s*(\\d+\\s*)?Section\\s*\\d+\\s*[-:]\\s*");
+
     static final Set<String> FORCEBREAK = new HashSet<String>();
     static {
-        FORCEBREAK.addAll(Arrays.asList("table", "div", "blockquote", 
+        FORCEBREAK.addAll(Arrays.asList("table", "div", "blockquote",
             "p", "br", "td", "th", "h1", "h2", "h3", "h4", "h5", "li"));
     }
     static final Set<String> DO_CONTENTS = new HashSet<String>();
@@ -110,7 +129,17 @@ public class CheckHtmlFiles {
     }
 
     static class Levels implements Comparable<Levels> {
-        int[] levels = new int[10];
+        final int[] levels = new int[10];
+        final int h2_start;
+
+        public Levels(int h2_start) {
+            levels[0] = h2_start; // special adjustment of starting header level
+            this.h2_start = h2_start;
+        }
+
+        public Levels() {
+            this(0);
+        }
 
         /**
          * h2 = level 0, h3 is level 1, etc.
@@ -120,23 +149,26 @@ public class CheckHtmlFiles {
         Levels next(int level, Output<Boolean> missingLevel) {
             level -= 2; // h2 = level 0
             missingLevel.value = false;
-            for (int i = 0; i < level; ++i) {
+            if (levels[0] < h2_start) {
+                missingLevel.value = true;
+            }
+            for (int i = 1; i < level; ++i) {
                 if (levels[i] == 0) {
                     missingLevel.value = true;
                 }
             }
             levels[level]++;
-            for (int i = level+1; i < levels.length; ++i) {
+            for (int i = level + 1; i < levels.length; ++i) {
                 levels[i] = 0;
             }
             return this;
         }
 
         public int getDepth() {
-            for (int i = 0; ; ++i) {
+            for (int i = 0;; ++i) {
                 int level = levels[i];
                 if (level == 0) {
-                    return i-1;
+                    return i - 1;
                 }
             }
         }
@@ -144,7 +176,7 @@ public class CheckHtmlFiles {
         @Override
         public String toString() {
             StringBuilder b = new StringBuilder();
-            for (int i = 0; ; ++i) {
+            for (int i = 0;; ++i) {
                 int level = levels[i];
                 if (level == 0) {
                     return b.toString();
@@ -191,7 +223,6 @@ public class CheckHtmlFiles {
         }
     }
 
-
     static class HeadingInfo {
         private Levels levels = new Levels();
         private String text = "";
@@ -204,19 +235,20 @@ public class CheckHtmlFiles {
         public void setLevel(String headingLabel) {
             level = headingLabel.charAt(1) - '0';
         }
+
         @Override
         public String toString() {
             //   <h3><a name="Identity_Elements" href="#Identity_Elements">5.3 Identity Elements</a></h3>
-            String id = ids.iterator().next();
-            String result = "<h" + level + ">" 
-            + "<a name=\"" + id + "\" href=\"#" + id + "\">"
-            + (suppressSection ? "" : levels + " ") 
-            + TransliteratorUtilities.toHTML.transform(text)
-            + "</a>";
+            String id = ids.isEmpty() ? "NOID" : ids.iterator().next();
+            String result = "<h" + level + ">"
+                + "<a name=\"" + id + "\" href=\"#" + id + "\">"
+                + (suppressSection ? "" : levels + " ")
+                + TransliteratorUtilities.toHTML.transform(text)
+                + "</a>";
             if (ids.size() > 1) {
                 boolean first = true;
                 for (String id2 : ids) {
-                    if (first){
+                    if (first) {
                         first = false;
                     } else {
                         result += "<a name=\"" + id2 + "\"></a>";
@@ -225,30 +257,46 @@ public class CheckHtmlFiles {
             }
             return result + "</h" + level + ">";
         }
+
         public String toHeader() {
             String id = ids.iterator().next();
-            return ("<li>"  
-                + (suppressSection ? "" : levels + " ") 
-                + "<a href=\"#" + id + "\">" 
+            return ("<li>"
+                + (suppressSection ? "" : levels + " ")
+                + "<a href=\"#" + id + "\">"
                 + TransliteratorUtilities.toHTML.transform(text)
                 + "</a>");
         }
 
-        public boolean isContents() {
-            return text.toString().endsWith("Contents");
+        public void addText(String toAppend) {
+            text += TransliteratorUtilities.fromHTML.transform(toAppend);
+            text = SPACES.matcher(text).replaceAll(" ").trim(); // clean up all spaces; make more efficient later
         }
+
+        public boolean isContents() {
+            return text.toString().startsWith("Contents");
+        }
+
         void addId(String id) {
             this.ids.add(id);
         }
+
         public void setLevels(Levels levels, Set<String> errors) {
             this.levels.set(levels);
             String error = "";
+            if (badSectionMatcher.reset(text).find()) {
+                text = text.substring(badSectionMatcher.end());
+                error += "Extra 'Section...' at start; ";
+            }
             if (!headerMatcher.reset(text).matches()) {
                 if (!SUPPRESS_SECTION_NUMBER.matcher(text).matches()) {
                     error += "Missing section numbers; ";
                 }
             } else {
                 text = text.substring(headerMatcher.end(1));
+                if (text.startsWith(".")) {
+                    text = text.substring(1).trim();
+                    error += "Extra . at start; ";
+                }
                 Levels parsedLevels = Levels.parse(headerMatcher.group(1));
                 if (levels.compareTo(parsedLevels) != 0) {
                     error += "Section numbers mismatch, was " + parsedLevels + "; ";
@@ -263,6 +311,7 @@ public class CheckHtmlFiles {
             }
             suppressSection = SUPPRESS_SECTION_NUMBER.matcher(text).matches();
         }
+
         public void addIds(Counter<String> idCounter) {
             for (String id : ids) {
                 idCounter.add(id, 1);
@@ -271,12 +320,19 @@ public class CheckHtmlFiles {
     }
 
     static Matcher headerMatcher = WELLFORMED_HEADER.matcher("");
+    static Matcher badSectionMatcher = BADSECTION.matcher("");
 
     static class HeadingInfoList extends ArrayList<HeadingInfo> {
         private static final long serialVersionUID = -6722150173224993960L;
-        Levels lastBuildLevel = new Levels();
+        Levels lastBuildLevel;
         private Set<String> errors = new LinkedHashSet<String>();
         Output<Boolean> missingLevel = new Output<Boolean>(false);
+        private String fileName;
+
+        public HeadingInfoList(String fileName, int h2_START) {
+            this.fileName = fileName;
+            lastBuildLevel = new Levels(h2_START);
+        }
 
         public boolean add(HeadingInfo h) {
             if (SUPPRESS_REVISION.matcher(h.text).matches()) {
@@ -284,16 +340,16 @@ public class CheckHtmlFiles {
             }
             h.setLevels(lastBuildLevel.next(h.level, missingLevel), errors);
             if (missingLevel.value) {
-                errors.add("Missing Level in: " + h);
+                errors.add("FATAL: Missing Level in: " + h);
             }
             return super.add(h);
         }
 
         static final String PAD = "\t";
-        
+
         public void listContents() {
-            
-            System.out.println("*REVISED TOC*");
+
+            System.out.println("\n*REVISED TOC*");
             Counter<String> idCounter = new Counter<String>();
 
             Levels lastLevel = new Levels();
@@ -302,7 +358,7 @@ public class CheckHtmlFiles {
             int liCount = 0;
             for (HeadingInfo h : this) {
                 h.addIds(idCounter);
-                
+
                 int levelDiff = h.levels.getDepth() - lastLevel.getDepth();
                 lastLevel = h.levels;
                 if (levelDiff > 0) {
@@ -334,7 +390,6 @@ public class CheckHtmlFiles {
 
                 //              <li>1.1 <a href="#Conformance">Conformance</a></li>
 
-
                 //                <ul class="toc">
                 //                <li>1 <a href="#Introduction">Introduction</a>
                 //                  <ul class="toc">
@@ -362,41 +417,73 @@ public class CheckHtmlFiles {
             System.out.println(pad + "</ul>");
             --ulCount;
             if (liCount != 0 || ulCount != 0) {
-                throw new IllegalArgumentException("Mismatched counts, " + liCount + ", " + ulCount);
+                throw new IllegalArgumentException("Mismatched counts in generated contents, li:" + liCount + ", ul:" + ulCount);
             }
             for (String id : idCounter) {
                 long count = idCounter.get(id);
                 if (count != 1) {
-                    errors.add("Non-Unique ID: " + id);
+                    errors.add("FATAL: Non-Unique ID: " + id);
                 }
             }
         }
-        
-        public void showErrors() {
+
+        public int showErrors() {
+            int fatalCount = 0;
             if (!errors.isEmpty()) {
                 System.out.println("\n*ERRORS*\n");
                 for (String error : errors) {
-                    System.out.println(error);
+                    if (error.startsWith("FATAL:")) {
+                        System.out.println(fileName + "\t" + error);
+                        fatalCount++;
+                    }
+                }
+                if (fatalCount == 0) {
+                    for (String error : errors) {
+                        System.out.println(fileName + "\t" + error);
+                    }
                 }
             }
+            if (this.size() == 0) {
+                System.out.println("No header items (eg <h2>) captured.");
+                fatalCount = 1;
+            }
+            return fatalCount;
         }
     }
 
     static class Data implements Iterable<String> {
         List<String> sentences = new ArrayList<String>();
         Counter<String> hashedSentences = new Counter<String>();
+        int count = 0;
 
         public Data getSentences(String fileRegex) throws IOException {
-            File sourceFile = new File(fileRegex);
-            File sourceDirectory = sourceFile.getParentFile();
+            int firstParen = fileRegex.indexOf('(');
+            int lastSlash = fileRegex.lastIndexOf('/', firstParen);
+            String base = fileRegex.substring(0, lastSlash);
+            String regex = fileRegex.substring(lastSlash+1);
+            
+            //File sourceFile = new File(fileRegex);
+            File sourceDirectory = new File(base);
             if (!sourceDirectory.exists()) {
                 throw new IllegalArgumentException("Can't find " + sourceDirectory);
             }
-            int count = 0;
-            Matcher m = Pattern.compile(sourceFile.getName()).matcher("");
+            String canonicalBase = sourceDirectory.getCanonicalPath();
+            Matcher m = Pattern.compile(canonicalBase + "/" + regex).matcher("");
+            System.out.println("Matcher: " + m);
+
+            return getSentences(sourceDirectory, m); 
+        }
+        
+        public Data getSentences(File sourceDirectory, Matcher m) throws IOException {
             Matcher wsMatcher = WHITESPACE.matcher("");
+            //System.out.println("Processing:\t" + sourceDirectory);
             for (File file : sourceDirectory.listFiles()) {
-                String fileString = file.getName().toString();
+                if (file.isDirectory()) {
+                    getSentences(file, m);
+                    continue;
+                }
+                String fileString = file.getCanonicalFile().toString();
+                File fileCanonical = new File(fileString);
                 if (!m.reset(fileString).matches()) {
                     if (verbose) {
                         System.out.println("Skipping: " + RegexUtilities.showMismatch(m, fileString)
@@ -404,16 +491,17 @@ public class CheckHtmlFiles {
                     }
                     continue;
                 }
+                int H2_START = fileString.contains("tr18") ? -1 : 0;
                 ++count;
-                
-                System.out.println("\nProcessing:\t" + fileString + "\n");
-                
-                Reader in = new FileReader(new File(sourceDirectory, fileString));
+
+                System.out.println("\nProcessing:\t" + sourceDirectory + "/" + fileString + "\n");
+
+                Reader in = new FileReader(fileCanonical);
                 SimpleHtmlParser parser = new SimpleHtmlParser().setReader(in);
                 StringBuilder buffer = new StringBuilder();
                 StringBuilder content = new StringBuilder();
                 HeadingInfo heading = new HeadingInfo();
-                HeadingInfoList headingInfoList = new HeadingInfoList();
+                HeadingInfoList headingInfoList = new HeadingInfoList(fileCanonical.getName(), H2_START);
                 String contentString;
                 boolean inHeading = false;
                 boolean inPop = false;
@@ -421,10 +509,12 @@ public class CheckHtmlFiles {
                 boolean haveContents = false;
                 main: while (true) {
                     Type x = parser.next(content);
-                    //                    LOG.write(x + ":\t");
-                    //                    parser.writeResult(x, content, LOG);
-                    //                    LOG.write("\n");
-                    //                    LOG.flush();
+                    if (verbose) {
+                        LOG.write(x + ":\t");
+                        SimpleHtmlParser.writeResult(x, content, LOG);
+                        LOG.write("\n");
+                        LOG.flush();
+                    }
                     switch (x) {
                     case ATTRIBUTE:
                         contentString = content.toString().toLowerCase(Locale.ENGLISH);
@@ -475,7 +565,7 @@ public class CheckHtmlFiles {
                             ? TransliteratorUtilities.fromHTML.transform(contentString)
                                 : contentString);
                         if (inHeading) {
-                            heading.text += contentString;
+                            heading.addText(contentString);
                         }
                         break;
                     case DONE:
@@ -502,11 +592,12 @@ public class CheckHtmlFiles {
                     hashedSentences.add(sentence, 1);
                     sentences.add(sentence);
                 }
-                headingInfoList.listContents();
-                headingInfoList.showErrors();
-            }
-            if (count == 0) {
-                throw new IllegalArgumentException("No files matched with " + m.pattern() + " in " + sourceDirectory);
+                int fatalCount = headingInfoList.showErrors();
+                if (fatalCount == 0) {
+                    headingInfoList.listContents();
+                } else {
+                    System.out.println("\nFix fatal errors in " + fileString + " before contents can be generated");
+                }
             }
             return this;
         }
@@ -519,7 +610,6 @@ public class CheckHtmlFiles {
          */
         private String normalizeWhitespace(CharSequence input) {
             Matcher m = WHITESPACE.matcher(input);
-            int pos = input.toString().indexOf('\n');
             StringBuilder buffer = new StringBuilder();
             int last = 0;
             while (m.find()) {

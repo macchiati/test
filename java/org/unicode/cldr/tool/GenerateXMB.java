@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
@@ -25,7 +26,6 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.unicode.cldr.draft.FileUtilities;
 import org.unicode.cldr.test.CheckExemplars;
 import org.unicode.cldr.test.CoverageLevel2;
 import org.unicode.cldr.test.DisplayAndInputProcessor;
@@ -33,10 +33,9 @@ import org.unicode.cldr.test.QuickCheck;
 import org.unicode.cldr.tool.Option.Options;
 import org.unicode.cldr.util.Builder;
 import org.unicode.cldr.util.CLDRFile;
-import org.unicode.cldr.util.CLDRFile.Status;
-import org.unicode.cldr.util.CldrUtility;
-import com.ibm.icu.util.Output;
+import org.unicode.cldr.util.CLDRPaths;
 import org.unicode.cldr.util.Factory;
+import org.unicode.cldr.util.FileCopier;
 import org.unicode.cldr.util.LanguageTagParser;
 import org.unicode.cldr.util.Level;
 import org.unicode.cldr.util.PathDescription;
@@ -79,6 +78,7 @@ import com.ibm.icu.text.PluralRules;
 import com.ibm.icu.text.SimpleDateFormat;
 import com.ibm.icu.text.Transform;
 import com.ibm.icu.text.UnicodeSet;
+import com.ibm.icu.util.Output;
 import com.ibm.icu.util.TimeZone;
 import com.ibm.icu.util.ULocale;
 
@@ -96,7 +96,7 @@ public class GenerateXMB {
     private static final HashSet<String> REGION_LOCALES = new HashSet<String>(Arrays.asList(stock.split("\\|")));
 
     final static Options myOptions = new Options("In normal usage, you set the -t option for the target.")
-        .add("target", ".*", CldrUtility.TMP_DIRECTORY + "dropbox/xmb/",
+        .add("target", ".*", CLDRPaths.TMP_DIRECTORY + "dropbox/xmb/",
             "The target directory for building. Will generate an English .xmb file, and .wsb files for other languages.")
         .add(
             "file",
@@ -110,7 +110,7 @@ public class GenerateXMB {
         .add("jason", ".*", "Generate JSON versions instead")
         .add("zone", null, "Show metazoneinfo and exit")
         .add("wsb", ".*", "Show metazoneinfo and exit")
-        .add("kompare", ".*", CldrUtility.BASE_DIRECTORY + "../DATA/cldr/common/google-bulk-imports",
+        .add("kompare", ".*", CLDRPaths.BASE_DIRECTORY + "../DATA/cldr/common/google-bulk-imports",
             "Compare data with directory; generate files in -target.")
         .add("project_name", 'n', ".*", "CLDR", "The ID of the project.");
 
@@ -159,7 +159,7 @@ public class GenerateXMB {
         String targetDir = myOptions.get("target").getValue();
         countFile = BagFormatter.openUTF8Writer(targetDir + "/log/", "counts.txt");
 
-        Factory cldrFactory1 = Factory.make(CldrUtility.MAIN_DIRECTORY, ".*");
+        Factory cldrFactory1 = Factory.make(CLDRPaths.MAIN_DIRECTORY, ".*");
         CLDRFile english = cldrFactory1.make("en", true);
         CLDRFile englishTop = cldrFactory1.make("en", false);
         DTD_VERSION = englishTop.getDtdVersion();
@@ -198,7 +198,7 @@ public class GenerateXMB {
         // Test each xml file for validity
         // Generate strings that let the user choose the placeholder style hh vs HH,...???
 
-        Factory cldrFactory2 = Factory.make(CldrUtility.MAIN_DIRECTORY, fileMatcherString);
+        Factory cldrFactory2 = Factory.make(CLDRPaths.MAIN_DIRECTORY, fileMatcherString);
         LanguageTagParser ltp = new LanguageTagParser();
 
         for (String file : cldrFactory2.getAvailable()) {
@@ -246,7 +246,7 @@ public class GenerateXMB {
             // System.out.println("Checking " + file);
             CLDRFile submitted = cldrFactory2.make(file, false);
             CLDRFile trunk = cldrFactory1.make(file, true);
-            for (String path : With.in(submitted.iterator(null, CLDRFile.ldmlComparator))) {
+            for (String path : With.in(submitted.iterator(null, submitted.getComparator()))) {
                 if (pathMatcher != null && !pathMatcher.reset(path).matches()) {
                     continue;
                 }
@@ -373,7 +373,7 @@ public class GenerateXMB {
     private static void showDefaultContents(String targetDir, CLDRFile english) throws IOException {
         PrintWriter out = BagFormatter.openUTF8Writer(targetDir + "/log/", "locales.txt");
         String[] locales = stock.split("\\|");
-        Set<R2<String, String>> sorted = new TreeSet();
+        Set<R2<String, String>> sorted = new TreeSet<R2<String, String>>();
         for (String locale : locales) {
             if (locale.isEmpty()) continue;
             String name = english.getName(locale);
@@ -565,7 +565,8 @@ public class GenerateXMB {
         PrintWriter out = BagFormatter.openUTF8Writer(targetDir, file + "." + extension);
 
         if (isEnglish) {
-            FileUtilities.appendFile(GenerateXMB.class, "xmb-dtd.xml", out);
+            FileCopier.copy(GenerateXMB.class, "xmb-dtd.xml", out);
+//            FileUtilities.appendFile(GenerateXMB.class, "xmb-dtd.xml", out);
             out.println("<!-- " + localeName + " -->");
             out.println("<messagebundle class='" + projectId + "'> <!-- version: " + DTD_VERSION + ", date: " + DATE
                 + " -->");
@@ -573,8 +574,14 @@ public class GenerateXMB {
             out.println("</messagebundle>");
 
             PrintWriter out3File = BagFormatter.openUTF8Writer(targetDir, "IdToPath.java");
-            out3File.println("package org.unicode.cldr.test;");
+            out3File.println("package org.unicode.cldr.tool;");
+            out3File.println();
             out3File.println("import java.util.HashMap;");
+            out3File.println();
+            out3File.println("/**");
+            out3File.println(" * Autogenerated by GenerateXMB for use by ConvertXTB.");
+            out3File.println(" * Do not manually edit this file.");
+            out3File.println(" */");
             out3File.println("public class IdToPath {");
             out3File.println("  static final HashMap<String,String> map = new HashMap<String,String>();");
             out3File.println("  public static String getPath(String id) {");
@@ -591,7 +598,9 @@ public class GenerateXMB {
             out3File.println("}");
             out3File.close();
         } else {
-            FileUtilities.appendFile(GenerateXMB.class, "wsb-dtd.xml", out);
+            
+//            FileUtilities.appendFile(GenerateXMB.class, "wsb-dtd.xml", out);
+            FileCopier.copy(GenerateXMB.class, "wsb-dtd.xml", out);
             out.println("<!-- " + localeName + " -->");
             out.println("<worldserverbundles lazarus_id='dummy' date='" + DATE + "'> <!-- version: " + DTD_VERSION
                 + " -->");
@@ -987,8 +996,8 @@ public class GenerateXMB {
 
     static class EnglishInfo implements Iterable<PathInfo> {
 
-        final Map<String, PathInfo> pathToPathInfo = new TreeMap();
-        final Map<Long, PathInfo> longToPathInfo = new HashMap();
+        final Map<String, PathInfo> pathToPathInfo = new TreeMap<String, PathInfo>();
+        final Map<Long, PathInfo> longToPathInfo = new HashMap<Long, PathInfo>();
         final CLDRFile english;
 
         PathInfo getPathInfo(long hash) {
@@ -1005,7 +1014,7 @@ public class GenerateXMB {
 
         EnglishInfo(String targetDir, CLDRFile english, CLDRFile root) throws Exception {
 
-            Map<String, String> oldPathValueMap = ReadXMB.load(CldrUtility.BASE_DIRECTORY +
+            Map<String, String> oldPathValueMap = ReadXMB.load(CLDRPaths.BASE_DIRECTORY +
                 "/cldr-tools/org/unicode/cldr/unittest/data/xmb/",
                 "en.xml");
 
@@ -1013,7 +1022,7 @@ public class GenerateXMB {
 
             this.english = english;
             // we don't want the fully resolved paths, but we do want the direct inheritance from root.
-            Status status = new Status();
+            //Status status = new Status();
             Map<String, List<Set<String>>> starredPaths = new TreeMap<String, List<Set<String>>>();
 
             HashSet<String> metazonePaths = new HashSet<String>();
@@ -1074,7 +1083,7 @@ public class GenerateXMB {
 
             Relation<String, String> reasonsToPaths = Relation.of(new TreeMap<String, Set<String>>(), TreeSet.class);
             Set<String> missingDescriptions = new TreeSet<String>();
-            Output<String[]> pathArguments = new Output<String[]>();
+            //Output<String[]> pathArguments = new Output<String[]>();
 
             CoverageLevel2 coverageLevel = CoverageLevel2.getInstance("en");
             RegexLookup<Boolean> coverageAllow = new RegexLookup<Boolean>()
@@ -1187,8 +1196,15 @@ public class GenerateXMB {
         reasonsToPaths.put(descriptionStatus + "\t" + level, path + "\t" + value);
     }
 
-    static final long START_TIME = new Date(2000 - 1900, 1 - 1, 0).getTime();
-    static final long END_TIME = new Date(2015 - 1900, 1 - 1, 0).getTime();
+    // Get Date-Time in milliseconds
+    private static long getDateTimeinMillis(int year, int month, int date) {
+        Calendar cal = Calendar.getInstance();
+        cal.set(year, month, date);
+        return cal.getTimeInMillis();
+    }
+
+    static final long START_TIME = getDateTimeinMillis(2000, 1, 0);
+    static final long END_TIME = getDateTimeinMillis(2015, 1, 0);
     static final long DELTA_TIME = 15 * 60 * 1000;
     static final long MIN_DAYLIGHT_PERIOD = 90L * 24 * 60 * 60 * 1000;
 
@@ -1301,7 +1317,6 @@ public class GenerateXMB {
             ArrayList<MetazoneInfo> result = new ArrayList<MetazoneInfo>();
 
             Map<String, String> zoneToCountry = sc.getZoneToCounty();
-            Map<String, Set<String>> countryToZoneSet = sc.getCountryToZoneSet();
 
             Map<String, Map<String, String>> metazoneToRegionToZone = supplementalDataInfo.getMetazoneToRegionToZone();
             for (String metazone : supplementalDataInfo.getAllMetazones()) {

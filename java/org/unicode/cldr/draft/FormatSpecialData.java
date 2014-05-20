@@ -13,7 +13,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.unicode.cldr.draft.ScriptCategories.RemapType;
-import org.unicode.cldr.util.CldrUtility;
+import org.unicode.cldr.util.CLDRPaths;
+import org.unicode.cldr.util.FileReaders;
 import org.unicode.cldr.util.CldrUtility.CollectionComparator;
 
 import com.ibm.icu.dev.util.BagFormatter;
@@ -37,7 +38,7 @@ public class FormatSpecialData {
     public static final UnicodeSet specialIPA = new UnicodeSet("[βΒ θΘ χΧ]");
 
     public static void main(String[] args) throws IOException {
-        String resource = FileUtilities.getRelativeFileName(FormatSpecialData.class, "ScriptData.txt");
+        String resource = FileReaders.getRelativeFileName(FormatSpecialData.class, "ScriptData.txt");
         final UnicodeMap<Set<String>> pivot = new UnicodeMap<Set<String>>();
         ;
 
@@ -50,7 +51,7 @@ public class FormatSpecialData {
                 continue;
             }
             String specialName = type.toString().toLowerCase() + "Specials";
-            PrintWriter out = BagFormatter.openUTF8Writer(CldrUtility.GEN_DIRECTORY + "special/", specialName + ".txt");
+            PrintWriter out = BagFormatter.openUTF8Writer(CLDRPaths.GEN_DIRECTORY + "special/", specialName + ".txt");
             pivot.clear();
             addDataToPivot(string2uset, pivot);
             if (type == RemapType.SCRIPT) {

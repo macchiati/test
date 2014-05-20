@@ -34,11 +34,29 @@
 		http://www.unicode.org/cldr )
 	</javaee:description>
 	<servlet>
+		<!--  we use Java 1.7 for our JSPs. -->
+		<servlet-name>jsp</servlet-name>
+		<init-param>
+			<param-name>compilerSourceVM</param-name>
+			<param-value>1.7</param-value>
+		</init-param>
+		<init-param>
+			<param-name>compilerTargetVM</param-name>
+			<param-value>1.7</param-value>
+		</init-param>
+	</servlet>
+	<servlet>
 		<servlet-name>SurveyMain</servlet-name>
 		<servlet-class>
 			org.unicode.cldr.web.SurveyMain
 		</servlet-class>
 		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet>
+		<servlet-name>FeedBack</servlet-name>
+		<servlet-class>
+			org.unicode.cldr.web.FeedBack
+		</servlet-class>
 	</servlet>
 	<servlet>
 		<servlet-name>v</servlet-name>
@@ -89,6 +107,10 @@
 	<servlet-mapping>
 		<servlet-name>SurveyAjax</servlet-name>
 		<url-pattern>/SurveyAjax</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>FeedBack</servlet-name>
+		<url-pattern>/feedback</url-pattern>
 	</servlet-mapping>
 	<resource-ref>
 		<description>

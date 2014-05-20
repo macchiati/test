@@ -17,6 +17,7 @@ import com.ibm.icu.text.DecimalFormat;
 import com.ibm.icu.text.DecimalFormatSymbols;
 import com.ibm.icu.text.MessageFormat;
 import com.ibm.icu.text.NumberFormat;
+import com.ibm.icu.text.RuleBasedCollator;
 import com.ibm.icu.text.SimpleDateFormat;
 import com.ibm.icu.text.UTF16;
 import com.ibm.icu.text.UnicodeSet;
@@ -28,6 +29,8 @@ import com.ibm.icu.util.ULocale;
 public class ICUServiceBuilder {
     public static Currency NO_CURRENCY = Currency.getInstance("XXX");
     private CLDRFile cldrFile;
+    private CLDRFile collationFile;
+    private static Map<CLDRLocale, ICUServiceBuilder> ISBMap = new HashMap<CLDRLocale, ICUServiceBuilder>();
 
     private static TimeZone utc = TimeZone.getTimeZone("GMT");
     private static DateFormat iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", ULocale.ENGLISH);
@@ -81,6 +84,10 @@ public class ICUServiceBuilder {
         return cldrFile;
     }
 
+    public CLDRFile getCollationFile() {
+        return collationFile;
+    }
+
     public ICUServiceBuilder setCldrFile(CLDRFile cldrFile) {
         if (!cldrFile.isResolved()) throw new IllegalArgumentException("CLDRFile must be resolved");
         this.cldrFile = cldrFile;
@@ -90,6 +97,54 @@ public class ICUServiceBuilder {
         cacheDateFormatSymbols.clear();
         cacheDecimalFormatSymbols.clear();
         return this;
+    }
+
+    public static ICUServiceBuilder forLocale(CLDRLocale locale) {
+
+        ICUServiceBuilder result = ISBMap.get(locale);
+
+        if (result == null) {
+            result = new ICUServiceBuilder();
+
+            if (locale != null) {
+                result.cldrFile = Factory.make(CLDRPaths.MAIN_DIRECTORY, ".*").make(locale.getBaseName(), true);
+                result.collationFile = Factory.make(CLDRPaths.COLLATION_DIRECTORY, ".*").makeWithFallback(locale.getBaseName());
+            }
+            result.supplementalData = SupplementalDataInfo.getInstance(CLDRPaths.DEFAULT_SUPPLEMENTAL_DIRECTORY);
+            result.cacheDateFormats.clear();
+            result.cacheNumberFormats.clear();
+            result.cacheDateFormatSymbols.clear();
+            result.cacheDecimalFormatSymbols.clear();
+
+            ISBMap.put(locale, result);
+        }
+        return result;
+    }
+
+    public RuleBasedCollator getRuleBasedCollator(String type) throws Exception {
+        String rules = "";
+        String collationType;
+        if ("default".equals(type)) {
+            String path = "//ldml/collations/defaultCollation";
+            collationType = collationFile.getWinningValue(path);
+        } else {
+            collationType = type;
+        }
+
+        String path = "//ldml/collations/collation[@type=\"" + collationType + "\"]/cr";
+        rules = collationFile.getStringValue(path);
+
+        RuleBasedCollator col;
+        if (rules.length() > 0)
+            col = new RuleBasedCollator(rules);
+        else
+            col = (RuleBasedCollator) RuleBasedCollator.getInstance();
+
+        return col;
+    }
+
+    public RuleBasedCollator getRuleBasedCollator() throws Exception {
+        return getRuleBasedCollator("default");
     }
 
     public SimpleDateFormat getDateFormat(String calendar, int dateIndex, int timeIndex) {
@@ -116,7 +171,6 @@ public class ICUServiceBuilder {
         result = getFullFormat(calendar, pattern, numbersOverride);
         cacheDateFormats.put(key, result);
         // System.out.println("created " + key);
-        SimpleDateFormat sdf = (SimpleDateFormat) result.clone();
         return (SimpleDateFormat) result.clone();
     }
 
@@ -156,8 +210,6 @@ public class ICUServiceBuilder {
         DateFormatSymbols result = cacheDateFormatSymbols.get(key);
         if (result != null) return (DateFormatSymbols) result.clone();
 
-        DateFormatSymbols gregorianBackup = null;
-        boolean notGregorian = !calendar.equals("gregorian");
         String[] last;
         // TODO We would also like to be able to set the new symbols leapMonthPatterns & shortYearNames
         // (related to Chinese calendar) to their currently-winning values. Until we have the necessary
@@ -179,7 +231,7 @@ public class ICUServiceBuilder {
 
         int minEras = (calendar.equals("chinese") || calendar.equals("dangi")) ? 0 : 1;
 
-        List temp = getArray(prefix + "eras/eraAbbr/era[@type=\"", 0, null, "\"]", minEras);
+        List<String> temp = getArray(prefix + "eras/eraAbbr/era[@type=\"", 0, null, "\"]", minEras);
         formatData.setEras(last = (String[]) temp.toArray(new String[temp.size()]));
         if (minEras != 0) checkFound(last);
         // if (temp.size() < 2 && notGregorian) {
@@ -333,7 +385,7 @@ public class ICUServiceBuilder {
         String postfix = "\"]";
         boolean isDay = type.equals("day");
         final int arrayCount = isDay ? 7 : type.equals("month") ? 12 : 4;
-        List temp = getArray(prefix, isDay ? 0 : 1, isDay ? Days : null, postfix, arrayCount);
+        List<String> temp = getArray(prefix, isDay ? 0 : 1, isDay ? Days : null, postfix, arrayCount);
         if (isDay) temp.add(0, "");
         String[] result = (String[]) temp.toArray(new String[temp.size()]);
         checkFound(result);
@@ -372,9 +424,6 @@ public class ICUServiceBuilder {
     }
 
     private static String[] NumberNames = { "integer", "decimal", "percent", "scientific" }; // // "standard", , "INR",
-                                                                                             // "CHF", "GBP"
-    private static int firstReal = 1;
-    private static int firstCurrency = 4;
 
     public String getNumberNames(int i) {
         return NumberNames[i];
@@ -460,6 +509,7 @@ public class ICUServiceBuilder {
         // CLDRFile cldrFile = cldrFactory.make(localeID, true);
         return _getNumberFormat(currency, CURRENCY, currencySymbol, null);
     }
+
     public DecimalFormat getCurrencyFormat(String currency, String currencySymbol, String numberSystem) {
         // CLDRFile cldrFile = cldrFactory.make(localeID, true);
         return _getNumberFormat(currency, CURRENCY, currencySymbol, numberSystem);

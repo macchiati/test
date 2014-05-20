@@ -15,10 +15,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Stack;
 
 import org.xml.sax.Attributes;
@@ -32,8 +29,6 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.ext.DeclHandler;
 import org.xml.sax.ext.LexicalHandler;
 import org.xml.sax.helpers.XMLReaderFactory;
-
-import com.ibm.icu.dev.util.Relation;
 
 /**
  * Convenience class to make reading XML data files easier. The main method is read();
@@ -65,8 +60,11 @@ public class XMLFileReader {
 
         public void handleAttributeDecl(String eName, String aName, String type, String mode, String value) {
         };
-        
+
         public void handleEndDtd() {
+        }
+
+        public void handleStartDtd(String name, String publicId, String systemId) {
         };
     }
 
@@ -91,12 +89,54 @@ public class XMLFileReader {
         try {
             InputStream fis = new FileInputStream(fileName);
             // fis = new DebuggingInputStream(fis);
-            return read(fileName, new InputStreamReader(fis, Charset.forName("UTF-8")), handlers, validating);
+            return read(fileName, fis, handlers, validating);
         } catch (IOException e) {
             throw (IllegalArgumentException) new IllegalArgumentException("Can't read " + fileName).initCause(e);
         }
     }
 
+    /**
+     * read from a Stream
+     * @param fileName
+     * @param handlers
+     * @param validating
+     * @param fis
+     * @return
+     */
+    public XMLFileReader read(String fileName, InputStream fis, int handlers, boolean validating) {
+        return read(fileName, new InputStreamReader(fis, Charset.forName("UTF-8")), handlers, validating);
+    }
+
+    /**
+     * read from a CLDR resource
+     * @param fileName
+     * @param handlers
+     * @param validating
+     * @param fis
+     * @see CldrUtility#getInputStream(String)
+     * @return
+     */
+    public XMLFileReader readCLDRResource(String resName, int handlers, boolean validating) {
+        
+        return read(resName, CldrUtility.getInputStream(resName), handlers, validating);
+    }
+
+    /**
+     * read from an arbitrary
+     * @param fileName
+     * @param handlers
+     * @param validating
+     * @param fis
+     * @see CldrUtility#getInputStream(String)
+     * @return
+     */
+    public XMLFileReader read(String resName, Class<?> callingClass, int handlers, boolean validating) {
+        
+        return read(resName, CldrUtility.getInputStream(callingClass, resName), handlers, validating);
+    }
+
+
+    
     public XMLFileReader read(String systemID, Reader reader, int handlers, boolean validating) {
         try {
             XMLReader xmlReader = createXMLReader(validating);
@@ -117,7 +157,8 @@ public class XMLFileReader {
             is.setSystemId(systemID);
             try {
                 xmlReader.parse(is);
-            } catch (AbortException e) {} // ok
+            } catch (AbortException e) {
+            } // ok
             reader.close();
             return this;
         } catch (SAXParseException e) {
@@ -133,7 +174,7 @@ public class XMLFileReader {
     private class MyContentHandler implements ContentHandler, LexicalHandler, DeclHandler, ErrorHandler {
         StringBuffer chars = new StringBuffer();
         StringBuffer commentChars = new StringBuffer();
-        Stack startElements = new Stack();
+        Stack<String> startElements = new Stack<String>();
         StringBuffer tempPath = new StringBuffer();
         boolean lastIsStart = false;
 
@@ -175,6 +216,7 @@ public class XMLFileReader {
                 + ", publicId: " + publicId
                 + ", systemId: " + systemId
                 );
+            simpleHandler.handleStartDtd(name, publicId, systemId);
         }
 
         public void endDTD() throws SAXException {
@@ -305,7 +347,7 @@ public class XMLFileReader {
             throw exception;
         }
     }
-    
+
     static final class AbortException extends RuntimeException {
         private static final long serialVersionUID = 1L;
     }
@@ -376,22 +418,6 @@ public class XMLFileReader {
         }
     }
 
-    public static Relation<String, String> loadPathValues(String filename, Relation<String, String> data) {
-        return loadPathValues(filename, data, true);
-    }
-
-
-    public static Relation<String, String> loadPathValues(String filename, Relation<String, String> data, boolean validating) {
-        try {
-            new XMLFileReader()
-                .setHandler(new PathValueHandler(data))
-                .read(filename, -1, validating);
-            return data;
-        } catch (Exception e) {
-            throw new IllegalArgumentException(filename, e);
-        }
-    }
-    
     public static List<Pair<String, String>> loadPathValues(String filename, List<Pair<String, String>> data, boolean validating) {
         try {
             new XMLFileReader()
@@ -403,23 +429,8 @@ public class XMLFileReader {
         }
     }
 
-
-    static final class PathValueHandler extends SimpleHandler {
-        Relation<String, String> data = Relation.of(new LinkedHashMap<String, Set<String>>(), LinkedHashSet.class);
-
-        public PathValueHandler(Relation<String, String> data) {
-            super();
-            this.data = data;
-        }
-
-        @Override
-        public void handlePathValue(String path, String value) {
-            data.put(path, value);
-        }
-    }
-    
     static final class PathValueListHandler extends SimpleHandler {
-        List<Pair<String, String>> data = new ArrayList();
+        List<Pair<String, String>> data = new ArrayList<Pair<String, String>>();
 
         public PathValueListHandler(List<Pair<String, String>> data) {
             super();

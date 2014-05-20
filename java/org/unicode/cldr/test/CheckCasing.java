@@ -1,7 +1,6 @@
 package org.unicode.cldr.test;
 
 import java.util.List;
-import java.util.Map;
 
 import org.unicode.cldr.test.CheckCLDR.CheckStatus.Subtype;
 import org.unicode.cldr.util.CLDRFile;
@@ -26,7 +25,8 @@ public class CheckCasing extends CheckCLDR {
     ULocale uLocale = null;
     BreakIterator breaker = null;
 
-    public CheckCLDR setCldrFileToCheck(CLDRFile cldrFileToCheck, Map<String, String> options,
+    @Override
+    public CheckCLDR setCldrFileToCheck(CLDRFile cldrFileToCheck, Options options,
         List<CheckStatus> possibleErrors) {
         if (cldrFileToCheck == null) return this;
         super.setCldrFileToCheck(cldrFileToCheck, options, possibleErrors);
@@ -36,7 +36,7 @@ public class CheckCasing extends CheckCLDR {
     }
 
     // If you don't need any file initialization or postprocessing, you only need this one routine
-    public CheckCLDR handleCheck(String path, String fullPath, String value, Map<String, String> options,
+    public CheckCLDR handleCheck(String path, String fullPath, String value, Options options,
         List<CheckStatus> result) {
         // it helps performance to have a quick reject of most paths
         if (fullPath == null) return this; // skip paths that we don't have
@@ -68,6 +68,9 @@ public class CheckCasing extends CheckCLDR {
         case titlecase_firstword:
             newValue = TitleCaseFirst(uLocale, value);
             break;
+        default:
+            break;
+
         }
         if (!newValue.equals(value)) {
             // the following is how you signal an error or warning (or add a demo....)
@@ -88,7 +91,7 @@ public class CheckCasing extends CheckCLDR {
             return value;
         }
         breaker.setText(value);
-        int first = breaker.first();
+        breaker.first();
         int endOfFirstWord = breaker.next();
         return UCharacter.toTitleCase(uLocale, value.substring(0, endOfFirstWord), breaker)
             + value.substring(endOfFirstWord);

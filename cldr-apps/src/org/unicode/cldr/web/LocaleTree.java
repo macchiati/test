@@ -1,11 +1,11 @@
 package org.unicode.cldr.web;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.CLDRLocale;
 import org.unicode.cldr.util.CLDRLocale.CLDRFormatter;
 
@@ -76,12 +76,12 @@ public class LocaleTree {
         if (t != null || v != null) {
             if (v == null) {
                 lm.put(localeName.getDisplayCountry(displayLocale), localeName);
-            } else if(t != null){
+            } else if (t != null) {
                 lm.put(localeName.getDisplayCountry(displayLocale) + " (" + localeName.getDisplayVariant(displayLocale) + ")",
-                        localeName);
+                    localeName);
             } else {
                 lm.put("(" + localeName.getDisplayVariant(displayLocale) + ")",
-                        localeName);
+                    localeName);
             }
         }
     }
@@ -108,6 +108,10 @@ public class LocaleTree {
      */
     public Set<String> getTopLocales() {
         return localeListMap.keySet();
+    }
+
+    public Collection<CLDRLocale> getTopCLDRLocales() {
+        return localeListMap.values();
     }
 
     public Map<String, CLDRLocale> getSubLocales(CLDRLocale locale) {

@@ -16,14 +16,23 @@ import="org.unicode.cldr.web.*"
 
 <%
 String sid = request.getParameter("s");
-CookieSession cs;
-if((CookieSession.sm==null)||(cs = CookieSession.retrieve(sid))==null||cs.user==null) {
-	response.sendRedirect(request.getContextPath()+"/survey");
+// use a variable to store the state whether to redirect
+boolean doRedirectToSurvey=false;
+CookieSession cs=null;
+if (sid == null || sid.isEmpty()) {
+	// null SID -> redirect
+	doRedirectToSurvey = true;
+} else {
+	// SID is not null or empty -> retrieve the session
+	cs = CookieSession.retrieve(sid);
+	doRedirectToSurvey = (CookieSession.sm == null ||
+		cs == null ||
+		cs.user == null);
+}
+if (doRedirectToSurvey) {
+	response.sendRedirect(request.getContextPath() + "/survey");
 	return;
 }
-
-
-
 %>
 
 <div class='helpHtml'>
@@ -36,10 +45,22 @@ if((CookieSession.sm==null)||(cs = CookieSession.retrieve(sid))==null||cs.user==
 <% 
 
 String email = request.getParameter("email");
+
+if(SurveyMain.isUnofficial() && email==null) {
+	email = cs.user.email;
+	%>	
+		    <div class='unofficial' title='Not an official SurveyTool' >
+		        <%= WebContext.iconHtml(request,"warn","Unofficial Site") %>Unofficial
+		    </div>
+	<%
+}
+
 if(email==null) email="";
 
 if(request.getParameter("emailbad")!=null) { %>
 <div class='ferrbox'><%= WebContext.iconHtml(request, "stop", "error") %> Invalid address or access denied: <address><%= email %></address></div>
+<% } else if(request.getParameter("filebad")!=null) { %>
+<div class='ferrbox'><%= WebContext.iconHtml(request, "stop", "error") %> No file was uploaded, or a file error occured.</div>
 <% } 
 
 if(request.getParameter("s")==null) { %>

@@ -72,11 +72,15 @@ public abstract class CLDRConverterTool {
         public final String from;
         public final String to;
         public final String xpath;
+        public final String rbPath;
+        public final String value;
 
-        public Alias(String from, String to, String xpath) {
+        public Alias(String from, String to, String xpath, String rbPath, String value) {
             this.from = from;
             this.to = to;
             this.xpath = xpath;
+            this.rbPath = rbPath;
+            this.value = value;
         }
     }
 
@@ -161,7 +165,6 @@ public abstract class CLDRConverterTool {
         return main;
     }
 
-
     /**
      * Computes the convertible xpaths by walking through the xpathList given and applying the rules
      * in children of <path> elements.
@@ -240,7 +243,7 @@ public abstract class CLDRConverterTool {
                     Level cv = Level.get(level.level);
                     // only include the xpaths that have the coverage level at least the coverage
                     // level specified by the locale
-                    if (sdi.getCoverageLevel(xpath,localeName).compareTo(cv) <= 0) {
+                    if (sdi.getCoverageLevel(xpath, localeName).compareTo(cv) <= 0) {
                         String draftVal = attr.get(LDMLConstants.DRAFT);
                         if (level.draft != null) {
                             if (draftVal == null

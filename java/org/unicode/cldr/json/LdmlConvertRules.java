@@ -12,7 +12,7 @@ class LdmlConvertRules {
 
     /** File set that will not be processed in JSON transformation. */
     public static final Set<String> IGNORE_FILE_SET = Builder.with(new HashSet<String>())
-        .add("supplementalMetadata").add("coverageLevels").freeze();
+        .add("coverageLevels").add("pluralRanges").freeze();
 
     /**
      * The attribute list that should become part of the name in form of
@@ -34,11 +34,17 @@ class LdmlConvertRules {
         "territoryContainment:group:status",
         "decimalFormat:pattern:count",
         "unit:unitPattern:count",
+        "field:relative:type",
+        "field:relativeTime:type",
+        "relativeTime:relativeTimePattern:count",
+        "listPatterns:listPattern:type",
+        "timeZoneNames:regionFormat:type",
+        "units:durationUnit:type",
         "weekData:minDays:territories",
         "weekData:firstDay:territories",
         "weekData:weekendStart:territories",
         "weekData:weekendEnd:territories",
-        "supplementalData:plurals:type",
+        "supplemental:plurals:type",
         "pluralRules:pluralRule:count"
     };
 
@@ -56,7 +62,7 @@ class LdmlConvertRules {
      * should be really converted as,
      * "arab": {
      * "_value": "Arabic-Indic Digits",
-     * "@key": "numbers"
+     * "_key": "numbers"
      * }
      */
     private static final String[] ATTR_AS_VALUE_LIST = {
@@ -89,6 +95,12 @@ class LdmlConvertRules {
         "calendar:calendarSystem:type",
         "codeMappings:territoryCodes:numeric",
         "codeMappings:territoryCodes:alpha3",
+
+        // common/supplemental/supplementalMetaData.xml
+        "validity:variable:type",
+        "deprecated:deprecatedItems:elements",
+        "deprecated:deprecatedItems:attributes",
+        "deprecated:deprecatedItems:type",
 
         // in common/supplemental/telephoneCodeData.xml
         "codesByTerritory:telephoneCountryCode:code",
@@ -181,7 +193,7 @@ class LdmlConvertRules {
      * @return True if the attribute should be suppressed.
      */
     public static boolean IsSuppresedAttr(String attr) {
-        return attr.endsWith("_q");
+        return attr.endsWith("_q") || attr.endsWith("-q");
     }
 
     /**
@@ -204,7 +216,6 @@ class LdmlConvertRules {
         "dateFormat", "standard", "type",
         "dateTimeFormat", "standard", "type",
         "timeFormat", "standard", "type",
-        "currencyFormat", "standard", "type",
         "decimalFormat", "standard", "type",
         "percentFormat", "standard", "type",
         "scientificFormat", "standard", "type",
@@ -284,7 +295,7 @@ class LdmlConvertRules {
     public static final String[] ELEMENT_NEED_SORT = {
         "zone", "timezone", "zoneItem", "typeMap", "dayPeriodRule",
         "pluralRules", "personList", "calendarPreferenceData", "character-fallback", "types", "timeData", "minDays",
-        "firstDay", "weekendStart", "weekendEnd", "parentLocale"
+        "firstDay", "weekendStart", "weekendEnd"
     };
 
     /**
@@ -299,11 +310,15 @@ class LdmlConvertRules {
             "|.*/windowsZones[^/]*/mapTimezones[^/]*/" +
             "|.*/metaZones[^/]*/mapTimezones[^/]*/" +
             "|.*/segmentation[^/]*/variables[^/]*/" +
+            "|.*/segmentation[^/]*/exceptions[^/]*/" +
             "|.*/transform[^/]*/tRules[^/]*/" +
             "|.*/region/region[^/]*/" +
             "|.*/keyword[^/]*/key[^/]*/" +
             "|.*/telephoneCodeData[^/]*/codesByTerritory[^/]*/" +
             "|.*/metazoneInfo[^/]*/timezone\\[[^\\]]*\\]/" +
+            "|.*/metadata[^/]*/validity[^/]*/" +
+            "|.*/metadata[^/]*/suppress[^/]*/" +
+            "|.*/metadata[^/]*/deprecated[^/]*/" +
             ")(.*)");
 
     /**
@@ -320,7 +335,7 @@ class LdmlConvertRules {
         "//ldml/numbers/otherNumberingSystems/traditional",
         "//ldml/numbers/otherNumberingSystems/finance"
     };
-    
+
     /**
      * A simple class to hold the specification of a path transformation.
      */
@@ -356,40 +371,53 @@ class LdmlConvertRules {
             + CLDRFile.GEN_VERSION + "\"\\]"),
 
         // Transform underscore to hyphen-minus in language keys
-        new PathTransformSpec("(.*/language\\[@type=\"[a-z]{2,3})_([^\"]*\"\\])", "$1-$2"),
+        new PathTransformSpec("(.*/language\\[@type=\"[a-z]{2,3})_([^\"]*\"\\](\\[@alt=\"short\"])?)", "$1-$2"),
 
         // Separate "ellipsis" from its type as another layer.
         new PathTransformSpec("(.*/ellipsis)\\[@type=\"([^\"]*)\"\\](.*)$",
             "$1/$2$3"),
 
-
         // Remove unnecessary dateFormat/pattern
         new PathTransformSpec(
-            "(.*/calendars)/calendar\\[@type=\"([^\"]*)\"\\](.*)Length\\[@type=\"([^\"]*)\"\\]/(date|time|dateTime)Format\\[@type=\"([^\"]*)\"\\]/pattern\\[@type=\"([^\"]*)\"\\](.*)", 
+            "(.*/calendars)/calendar\\[@type=\"([^\"]*)\"\\](.*)Length\\[@type=\"([^\"]*)\"\\]/(date|time|dateTime)Format\\[@type=\"([^\"]*)\"\\]/pattern\\[@type=\"([^\"]*)\"\\](.*)",
             "$1/$2/$5Formats/$4$8"),
 
         // Separate calendar type
-            new PathTransformSpec("(.*/calendars)/calendar\\[@type=\"([^\"]*)\"\\](.*)$",
-                    "$1/$2$3"),
+        new PathTransformSpec("(.*/calendars)/calendar\\[@type=\"([^\"]*)\"\\](.*)$",
+            "$1/$2$3"),
 
         // Separate "metazone" from its type as another layer.
         new PathTransformSpec("(.*/metazone)\\[@type=\"([^\"]*)\"\\]/(.*)$", "$1/$2/$3"),
 
         // Split out types into its various fields
         new PathTransformSpec("(.*)/types/type\\[@type=\"([^\"]*)\"\\]\\[@key=\"([^\"]*)\"\\](.*)$",
-                    "$1/types/$3/$2$4"),
+            "$1/types/$3/$2$4"),
 
+        new PathTransformSpec(
+            "(.*/numbers/(decimal|scientific|percent|currency)Formats\\[@numberSystem=\"([^\"]*)\"\\])/(decimal|scientific|percent|currency)FormatLength/(decimal|scientific|percent|currency)Format\\[@type=\"standard\"]/pattern.*$",
+            "$1/standard"),
+
+        new PathTransformSpec(
+            "(.*/numbers/currencyFormats\\[@numberSystem=\"([^\"]*)\"\\])/currencyFormatLength/currencyFormat\\[@type=\"accounting\"]/pattern.*$",
+            "$1/accounting"),
         // Add "type" attribute with value "standard" if there is no "type" in
         // "decimalFormatLength".
         new PathTransformSpec(
-            "(.*/numbers/(decimal|currency|scientific|percent)Formats\\[@numberSystem=\"([^\"]*)\"\\]/(decimal|currency|scientific|percent)FormatLength)/(.*)$",
+            "(.*/numbers/(decimal|scientific|percent)Formats\\[@numberSystem=\"([^\"]*)\"\\]/(decimal|scientific|percent)FormatLength)/(.*)$",
             "$1[@type=\"standard\"]/$5"),
+
+        new PathTransformSpec(
+            "(.*/listPattern)/(.*)$", "$1[@type=\"standard\"]/$2"),
 
         new PathTransformSpec("(.*/languagePopulation)\\[@type=\"([^\"]*)\"\\](.*)",
             "$1/$2$3"),
 
+        new PathTransformSpec("(.*/languageAlias)\\[@type=\"([^\"]*)\"\\](.*)", "$1/$2$3"),
+        new PathTransformSpec("(.*/scriptAlias)\\[@type=\"([^\"]*)\"\\](.*)", "$1/$2$3"),
+        new PathTransformSpec("(.*/territoryAlias)\\[@type=\"([^\"]*)\"\\](.*)", "$1/$2$3"),
+        new PathTransformSpec("(.*/variantAlias)\\[@type=\"([^\"]*)\"\\](.*)", "$1/$2$3"),
+        new PathTransformSpec("(.*/zoneAlias)\\[@type=\"([^\"]*)\"\\](.*)", "$1/$2$3"),
         new PathTransformSpec("(.*/alias)(.*)", "$1/alias$2"),
-
 
         new PathTransformSpec("(.*currencyData/region)(.*)", "$1/region$2"),
 

@@ -1,11 +1,14 @@
 package org.unicode.cldr.tool;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +22,10 @@ import org.unicode.cldr.draft.ScriptMetadata;
 import org.unicode.cldr.draft.ScriptMetadata.Info;
 import org.unicode.cldr.util.Builder;
 import org.unicode.cldr.util.CLDRFile;
+import org.unicode.cldr.util.CLDRLocale;
+import org.unicode.cldr.util.CLDRPaths;
 import org.unicode.cldr.util.CldrUtility;
+import org.unicode.cldr.util.Containment;
 import org.unicode.cldr.util.Counter;
 import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.Iso639Data;
@@ -27,6 +33,7 @@ import org.unicode.cldr.util.Iso639Data.Scope;
 import org.unicode.cldr.util.LanguageTagParser;
 import org.unicode.cldr.util.LocaleIDParser;
 import org.unicode.cldr.util.Log;
+import org.unicode.cldr.util.SimpleFactory;
 import org.unicode.cldr.util.StandardCodes;
 import org.unicode.cldr.util.SupplementalDataInfo;
 import org.unicode.cldr.util.SupplementalDataInfo.BasicLanguageData;
@@ -40,6 +47,7 @@ import com.ibm.icu.dev.util.Relation;
 import com.ibm.icu.impl.Row;
 import com.ibm.icu.impl.Row.R2;
 import com.ibm.icu.impl.Row.R3;
+import com.ibm.icu.impl.Row.R4;
 import com.ibm.icu.lang.UScript;
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.NumberFormat;
@@ -62,6 +70,7 @@ public class GenerateMaximalLocales {
     private static final String DEBUG_ADD_KEY = "und_Latn_ZA";
 
     private static final boolean SHOW_ADD = CldrUtility.getProperty("GenerateMaximalLocalesDebug", false);
+    private static final boolean SUPPRESS_CHANGES = CldrUtility.getProperty("GenerateMaximalLocalesSuppress", false);
 
     enum OutputStyle {
         PLAINTEXT, C, C_ALT, XML
@@ -78,11 +87,25 @@ public class GenerateMaximalLocales {
 
     private static final boolean tryDifferent = true;
 
-    private static Factory factory = Factory.make(CldrUtility.MAIN_DIRECTORY, ".*");
+    private static final File list[] = { new File(CLDRPaths.MAIN_DIRECTORY), new File(CLDRPaths.SEED_DIRECTORY) };
+
+    private static Factory factory = SimpleFactory.make(list, ".*");
     private static SupplementalDataInfo supplementalData = SupplementalDataInfo
-        .getInstance(CldrUtility.SUPPLEMENTAL_DIRECTORY);
+        .getInstance(CLDRPaths.SUPPLEMENTAL_DIRECTORY);
     private static StandardCodes standardCodes = StandardCodes.make();
     private static CLDRFile english = factory.make("en", false);
+    static Relation<String, String> cldrContainerToLanguages = Relation.of(new HashMap(), HashSet.class);
+    static {
+        for (CLDRLocale locale : ToolConfig.getToolInstance().getCldrFactory().getAvailableCLDRLocales()) {
+            String region = locale.getCountry();
+            if (region == null || region.isEmpty() || Containment.isLeaf(region)) {
+                continue;
+            }
+            cldrContainerToLanguages.put(region, locale.getLanguage());
+        }
+        cldrContainerToLanguages.freeze();
+        System.out.println("Keep containers " + cldrContainerToLanguages);
+    }
 
     private static int errorCount;
 
@@ -249,7 +272,7 @@ public class GenerateMaximalLocales {
         final int minTotalPopulation = 10000000;
         final int minTerritoryPopulation = 1000000;
         final double minTerritoryPercent = 1.0 / 3;
-        Map<String, Set<RowData>> languageToReason = new TreeMap();
+        Map<String, Set<RowData>> languageToReason = new TreeMap<String, Set<RowData>>();
         Counter<String> languageToLiteratePopulation = new Counter<String>();
         NumberFormat nf = NumberFormat.getIntegerInstance(ULocale.ENGLISH);
         nf.setGroupingUsed(true);
@@ -267,7 +290,7 @@ public class GenerateMaximalLocales {
         OfficialStatus minimalStatus = OfficialStatus.official_regional; // OfficialStatus.de_facto_official;
         Map<String, String> languages = new TreeMap<String, String>();
         for (String language : standardCodes.getAvailableCodes("language")) {
-            String path = CLDRFile.getKey(english.LANGUAGE_NAME, language);
+            String path = CLDRFile.getKey(CLDRFile.LANGUAGE_NAME, language);
             String result = english.getStringValue(path);
             if (result != null) {
                 languages.put(language, result);
@@ -300,6 +323,10 @@ public class GenerateMaximalLocales {
                 }
                 if (add) {
                     add(languageToReason, language, territory, status, literatePopulation);
+                    // Add the containing regions
+                    for (String container : Containment.leafToContainer(territory)) {
+                        add(languageToReason, language, container, OfficialStatus.unknown, literatePopulation);
+                    }
                 }
             }
         }
@@ -417,7 +444,7 @@ public class GenerateMaximalLocales {
         // go through all the cldr locales, and add default contents
         // now computed from toMaximized
         Set<String> available = factory.getAvailable();
-        Relation<String, String> toChildren = new Relation(new TreeMap(), TreeSet.class);
+        Relation<String, String> toChildren = Relation.of(new TreeMap<String, Set<String>>(), TreeSet.class);
         LanguageTagParser ltp = new LanguageTagParser();
 
         // System.out.println(maximize("az_Latn_AZ", toMaximized));
@@ -483,10 +510,12 @@ public class GenerateMaximalLocales {
                 + "\tin\t" + debugStuff);
         }
 
+        defaultLocaleContent.remove("und_ZZ"); // und_ZZ isn't ever a real locale.
+
         showDefaultContentDifferencesAndFix(defaultLocaleContent);
 
-        Log.setLogNoBOM(CldrUtility.GEN_DIRECTORY + "/supplemental", "supplementalMetadata.xml");
-        BufferedReader oldFile = BagFormatter.openUTF8Reader(CldrUtility.SUPPLEMENTAL_DIRECTORY,
+        Log.setLogNoBOM(CLDRPaths.GEN_DIRECTORY + "/supplemental", "supplementalMetadata.xml");
+        BufferedReader oldFile = BagFormatter.openUTF8Reader(CLDRPaths.SUPPLEMENTAL_DIRECTORY,
             "supplementalMetadata.xml");
         CldrUtility.copyUpTo(oldFile, Pattern.compile("\\s*<defaultContent locales=\"\\s*"), Log.getLog(), false);
 
@@ -547,25 +576,39 @@ public class GenerateMaximalLocales {
     // }
 
     private static class MaxData {
-        Relation<String, Row.R3<Double, String, String>> languages = new Relation(new TreeMap(), TreeSet.class);
-        Map<String, Counter<String>> languagesToScripts = new TreeMap();
-        Map<String, Counter<String>> languagesToRegions = new TreeMap();
+        Relation<String, Row.R3<Double, String, String>> languages = Relation.of(new TreeMap<String, Set<Row.R3<Double, String, String>>>(), TreeSet.class);
+        Map<String, Counter<String>> languagesToScripts = new TreeMap<String, Counter<String>>();
+        Map<String, Counter<String>> languagesToRegions = new TreeMap<String, Counter<String>>();
 
-        Relation<String, Row.R3<Double, String, String>> scripts = new Relation(new TreeMap(), TreeSet.class);
-        Map<String, Counter<String>> scriptsToLanguages = new TreeMap();
-        Map<String, Counter<String>> scriptsToRegions = new TreeMap();
+        Relation<String, Row.R3<Double, String, String>> scripts = Relation.of(new TreeMap<String, Set<Row.R3<Double, String, String>>>(), TreeSet.class);
+        Map<String, Counter<String>> scriptsToLanguages = new TreeMap<String, Counter<String>>();
+        Map<String, Counter<String>> scriptsToRegions = new TreeMap<String, Counter<String>>();
 
-        Relation<String, Row.R3<Double, String, String>> regions = new Relation(new TreeMap(), TreeSet.class);
-        Map<String, Counter<String>> regionsToLanguages = new TreeMap();
-        Map<String, Counter<String>> regionsToScripts = new TreeMap();
+        Relation<String, Row.R3<Double, String, String>> regions = Relation.of(new TreeMap<String, Set<Row.R3<Double, String, String>>>(), TreeSet.class);
+        Map<String, Counter<String>> regionsToLanguages = new TreeMap<String, Counter<String>>();
+        Map<String, Counter<String>> regionsToScripts = new TreeMap<String, Counter<String>>();
 
-        Relation<Row.R2<String, String>, Row.R2<Double, String>> languageScripts = new Relation(new TreeMap(),
+        Map<String, Counter<Row.R2<String, String>>> containersToLanguage = new TreeMap();
+        Relation<String, Row.R4<Double, String, String, String>> containersToLangRegion = Relation.of(
+            new TreeMap<String, Set<Row.R4<Double, String, String, String>>>(), TreeSet.class);
+
+        Relation<Row.R2<String, String>, Row.R2<Double, String>> languageScripts = Relation.of(
+            new TreeMap<Row.R2<String, String>, Set<Row.R2<Double, String>>>(),
             TreeSet.class);
-        Relation<Row.R2<String, String>, Row.R2<Double, String>> scriptRegions = new Relation(new TreeMap(),
+        Relation<Row.R2<String, String>, Row.R2<Double, String>> scriptRegions = Relation.of(
+            new TreeMap<Row.R2<String, String>, Set<Row.R2<Double, String>>>(),
             TreeSet.class);
-        Relation<Row.R2<String, String>, Row.R2<Double, String>> languageRegions = new Relation(new TreeMap(),
+        Relation<Row.R2<String, String>, Row.R2<Double, String>> languageRegions = Relation.of(
+            new TreeMap<Row.R2<String, String>, Set<Row.R2<Double, String>>>(),
             TreeSet.class);
 
+        /**
+         * Add population information. "order" is the negative of the population (makes the first be the highest).
+         * @param language
+         * @param script
+         * @param region
+         * @param order
+         */
         void add(String language, String script, String region, Double order) {
             languages.put(language, Row.of(order, script, region));
             // addCounter(languagesToScripts, language, script, order);
@@ -583,6 +626,20 @@ public class GenerateMaximalLocales {
             scriptRegions.put(Row.of(script, region), Row.of(order, language));
             languageRegions.put(Row.of(language, region), Row.of(order, script));
 
+            Set<String> containerSet = Containment.leafToContainer(region);
+            if (containerSet != null) {
+                for (String container : containerSet) {
+
+                    containersToLangRegion.put(container, Row.of(order, language, script, region));
+                    Counter<R2<String, String>> data = containersToLanguage.get(container);
+                    if (data == null) {
+                        containersToLanguage.put(container, data = new Counter<R2<String, String>>());
+                    }
+                    data.add(Row.of(language, script), (long) (double) order);
+
+                }
+            }
+
             if (SHOW_ADD) System.out.println("Data:\t" + language + "\t" + script + "\t" + region + "\t" + order);
         }
         // private void addCounter(Map<String, Counter<String>> map, String key, String key2, Double count) {
@@ -599,115 +656,66 @@ public class GenerateMaximalLocales {
     private static final double MIN_UNOFFICIAL_CLDR_LANGUAGE_SIZE = 100000;
     private static final double UNOFFICIAL_SCALE_DOWN = 0.2;
 
+    private static final List<String> KEEP_TARGETS = Arrays.asList("und_Arab_PK", "und_Latn_ET");
     // Many of the overrides below can be removed once the language/pop/country data is updated.
     private static final Map<String, String> LANGUAGE_OVERRIDES = CldrUtility.asMap(new String[][] {
-        { "agq", "agq_Latn_CM" },
-        { "az", "az_Latn_AZ" },
-        { "bas", "bas_Latn_CM" },
-        { "br", "br_Latn_FR" },
-        { "byn", "byn_Ethi_ER" },
-        { "cch", "cch_Latn_NG" },
-        { "chr", "chr_Cher_US" },
-        { "dav", "dav_Latn_KE" },
-        { "dua", "dua_Latn_CM" },
-        { "dyo", "dyo_Latn_SN" },
-        { "ebu", "ebu_Latn_KE" },
-        { "ewo", "ewo_Latn_CM" },
+        { "eo", "eo_Latn_001" },
+        { "eo_Latn", "eo_Latn_001" },
         { "es", "es_Latn_ES" },
         { "es_Latn", "es_Latn_ES" },
-        { "fur", "fur_Latn_IT" },
-        { "gv", "gv_Latn_GB" },
-        { "kcg", "kcg_Latn_NG" },
-        { "khq", "khq_Latn_ML" },
-        { "kpe", "kpe_Latn_LR" },
-        { "ksf", "ksf_Latn_CM" },
-        { "kw", "kw_Latn_GB" },
+        { "hsb", "hsb_Latn_DE" },
+        { "hsb_Latn", "hsb_Latn_DE" },
+        { "jgo", "jgo_Latn_CM" },
+        { "ku_Arab", "ku_Arab_IQ" },
+        { "man", "man_Latn_GM" },
+        { "man_Latn", "man_Latn_GM" },
+        { "mas", "mas_Latn_KE" },
+        { "mas_Latn", "mas_Latn_KE" },
         { "mgh", "mgh_Latn_MZ" },
+        { "mgo", "mgo_Latn_CM" },
         { "mn", "mn_Cyrl_MN" },
         { "mn_Cyrl", "mn_Cyrl_MN" },
-        { "mua", "mua_Latn_CM" },
-        { "nmg", "nmg_Latn_CM" },
+        { "ms_Arab", "ms_Arab_MY" },
         { "nus", "nus_Latn_SD" },
-        { "ny", "ny_Latn_MW" },
-        { "pa", "pa_Guru_IN" },
-        { "ps", "ps_Arab_AF" },
-        { "ps_Arab", "ps_Arab_AF" },
-        { "rwk", "rwk_Latn_TZ" },
-        { "saq", "saq_Latn_KE" },
+        { "pap", "pap_Latn_AW" },
+        { "pap_Latn", "pap_Latn_AW" },
+        { "prg", "prg_Latn_001" },
+        { "prg_Latn", "prg_Latn_001" },
         { "sbp", "sbp_Latn_TZ" },
+        { "shi", "shi_Tfng_MA" },
+        { "shi_Tfng", "shi_Tfng_MA" },
+        { "shi_MA", "shi_Tfng_MA" },
         { "sr_Latn", "sr_Latn_RS" },
         { "ss", "ss_Latn_ZA" },
         { "ss_Latn", "ss_Latn_ZA" },
-        { "ssy", "ssy_Latn_ER" },
-        { "sw", "sw_Latn_TZ" },
-        { "sw_Latn", "sw_Latn_TZ" },
         { "swc", "swc_Latn_CD" },
+        { "ti", "ti_Ethi_ET" },
+        { "ti_Ethi", "ti_Ethi_ET" },
         { "und", "en_Latn_US" },
         { "und_Arab", "ar_Arab_EG" },
         { "und_Arab_PK", "ur_Arab_PK" },
-        { "und_Cher", "chr_Cher_US" },
-        { "und_CV", "pt_Latn_CV" },
-        { "und_Hani", "zh_Hans_CN" },
-        { "und_Hani_CN", "zh_Hans_CN" },
-        { "und_Latn_CV", "pt_Latn_CV" },
-        { "und_Latn_PH", "fil_Latn_PH" },
-        { "und_Latn_RS", "sr_Latn_RS" },
-        { "und_Latn_SY", "fr_Latn_SY" },
-        { "und_LR", "en_Latn_LR" },
-        { "und_PH", "fil_Latn_PH" },
-        { "und_SS", "en_Latn_SS" },
-        { "trv", "trv_Latn_TW" },
-        { "twq", "twq_Latn_NE" },
-        { "tzm", "tzm_Latn_MA" },
-        { "yav", "yav_Latn_CM" },
-        { "zh_Hani", "zh_Hans_CN" },
         { "und_Bopo", "zh_Bopo_TW" },
-        { "und_Copt", "cop_Copt_EG" },
-        { "und_Dsrt", "en_Dsrt_US" },
+        { "und_Hani", "zh_Hani_CN" },
+        { "und_Hani_CN", "zh_Hani_CN" },
+        { "und_Kana", "ja_Kana_JP" },
+        { "und_Kana_JP", "ja_Kana_JP" },
         { "und_Latn", "en_Latn_US" },
-        { "az", "az_Latn_AZ" },
-        { "az_Arab", "az_Arab_IR" },
-        { "az_IR", "az_Arab_IR" },
-        { "ckb", "ckb_Arab_IQ" },
-        { "ckb_Arab", "ckb_Arab_IQ" },
-        { "ckb_IQ", "ckb_Arab_IQ" },
-        { "ckb_IR", "ckb_Arab_IR" },
-        { "es", "es_Latn_ES" },
-        { "ku", "ku_Latn_TR" },
-        { "ku_Arab", "ku_Arab_IQ" },
-        { "ku_Latn", "ku_Latn_TR" },
-        { "ku_SY", "ku_Latn_SY" },
-        { "ku_TR", "ku_Latn_TR" },
-        { "nds", "nds_Latn_DE" },
-        { "oc", "oc_Latn_FR" },
-        { "pap", "pap_Latn_AN" },
-        { "shi", "shi_Tfng_MA" },
-        { "sid", "sid_Latn_ET" },
-        { "und_Arab_PK", "ur_Arab_PK" },
-        { "und_LR", "en_Latn_LR" },
-        { "kaj", "kaj_Latn_NG" },
-        { "kv", "kv_Cyrl_RU" },
-        { "und_AN", "pap_Latn_AN" },
-        { "und_Arab_PK", "ur_Arab_PK" },
-        { "und_LR", "en_Latn_LR" },
+        { "und_Latn_ET", "en_Latn_ET" },
+        { "und_Latn_NE", "ha_Latn_NE" },
+        { "und_Latn_PH", "fil_Latn_PH" },
+        { "und_ML", "bm_Latn_ML" },
+        { "und_Latn_ML", "bm_Latn_ML" },
+        { "und_MU", "mfe_Latn_MU" },
+        { "und_NE", "ha_Latn_NE" },
+        { "und_PH", "fil_Latn_PH" },
+        { "und_PK", "ur_Arab_PK" },
+        { "und_SO", "so_Latn_SO" },
         { "und_SS", "en_Latn_SS" },
-        { "yi", "yi_Hebr_IL" },
-        { "eo", "eo_Latn_001" },
+        { "und_TK", "tkl_Latn_TK" },
         { "vo", "vo_Latn_001" },
-        { "ia", "ia_Latn_001" },
-        { "jgo", "jgo_Latn_CM" },
-        { "kkj", "kkj_Latn_CM" },
-        { "mgo", "mgo_Latn_CM" },
-        { "nnh", "nnh_Latn_CM" },
-        { "ms_Arab", "ms_Arab_MY" },
+        { "vo_Latn", "vo_Latn_001" },
+        { "zh_Hani", "zh_Hani_CN" },
     });
-
-    // private static final Map<String,String> LANGUAGE_SEGMENT_OVERRIDES = Utility.asMap(new String[][]{
-    // {"es_Latn_ES", "1e10"},
-    // {"en_Latn_US", "1e10"},
-    // {"trv_Latn_TW", "1e10"},
-    // //"pa_Arab_PK"
-    // });
 
     private static NumberFormat percent = NumberFormat.getPercentInstance();
     private static NumberFormat number = NumberFormat.getIntegerInstance();
@@ -718,7 +726,7 @@ public class GenerateMaximalLocales {
         // Set<Row.R3<String,String,String>,Double> rowsToCounts = new TreeMap();
         MaxData maxData = new MaxData();
         Set<String> cldrLocales = factory.getAvailable();
-        Set<String> otherTerritories = new TreeSet(standardCodes.getGoodAvailableCodes("territory"));
+        Set<String> otherTerritories = new TreeSet<String>(standardCodes.getGoodAvailableCodes("territory"));
 
         // process all the information to get the top values for each triple.
         // each of the combinations of 1 or 2 components gets to be a key.
@@ -778,7 +786,7 @@ public class GenerateMaximalLocales {
             { "bss", "Latn", "CM" },
             { "gez", "Ethi", "ET" },
             { "ken", "Latn", "CM" },
-            { "syr", "Syrc", "SY" },
+            { "und", "Arab", "PK" },
             { "wa", "Latn", "BE" }
         }) {
             maxData.add(additions[0], additions[1], additions[2], 1.0);
@@ -789,14 +797,6 @@ public class GenerateMaximalLocales {
             if (region.length() == 3) continue; // FIX ONCE WE ADD REGIONS
             maxData.add("en", "Latn", region, 1.0);
         }
-
-        // add override segments
-        // double higherThanAny = -1e12;
-        // for (String locale : LANGUAGE_SEGMENT_OVERRIDES) {
-        // String[] parts = locale.split("_");
-        // maxData.add(parts[0], parts[1], parts[2], higherThanAny);
-        // higherThanAny += 1; // lower slightly for next one
-        // }
 
         // get a reverse mapping, so that we can add the aliases
 
@@ -831,8 +831,8 @@ public class GenerateMaximalLocales {
         // now, get the best for each one
         for (String language : maxData.languages.keySet()) {
             R3<Double, String, String> value = maxData.languages.getAll(language).iterator().next();
-            final Comparable script = value.get1();
-            final Comparable region = value.get2();
+            final Comparable<String> script = value.get1();
+            final Comparable<String> region = value.get2();
             add(language, language + "_" + script + "_" + region, toMaximized, "L->SR", Override.REPLACE_EXISTING,
                 SHOW_ADD);
         }
@@ -847,8 +847,8 @@ public class GenerateMaximalLocales {
 
         for (String script : maxData.scripts.keySet()) {
             R3<Double, String, String> value = maxData.scripts.getAll(script).iterator().next();
-            final Comparable language = value.get1();
-            final Comparable region = value.get2();
+            final Comparable<String> language = value.get1();
+            final Comparable<String> region = value.get2();
             add("und_" + script, language + "_" + script + "_" + region, toMaximized, "S->LR",
                 Override.REPLACE_EXISTING, SHOW_ADD);
         }
@@ -864,8 +864,8 @@ public class GenerateMaximalLocales {
 
         for (String region : maxData.regions.keySet()) {
             R3<Double, String, String> value = maxData.regions.getAll(region).iterator().next();
-            final Comparable language = value.get1();
-            final Comparable script = value.get2();
+            final Comparable<String> language = value.get1();
+            final Comparable<String> script = value.get2();
             add("und_" + region, language + "_" + script + "_" + region, toMaximized, "R->LS",
                 Override.REPLACE_EXISTING, SHOW_ADD);
         }
@@ -879,29 +879,66 @@ public class GenerateMaximalLocales {
                 SHOW_ADD);
         }
 
+        for (Entry<String, Counter<R2<String, String>>> containerAndInfo : maxData.containersToLanguage.entrySet()) {
+            String region = containerAndInfo.getKey();
+            if (region.equals("001")) {
+                continue;
+            }
+            Counter<R2<String, String>> data = containerAndInfo.getValue();
+            Set<R2<String, String>> keysetSortedByCount = data.getKeysetSortedByCount(true);
+            if (true) { // debug
+                System.out.println("Container2L:\t" + region + "\t" + shorten(data.getEntrySetSortedByCount(true, null)));
+                System.out.println("Container2LR:\t" + region + "\t" + maxData.containersToLangRegion.get(region));
+            }
+            R2<String, String> value = keysetSortedByCount.iterator().next(); // will get most negative
+            final Comparable<String> language = value.get0();
+            final Comparable<String> script = value.get1();
+
+            // fix special cases like es-419, where a locale exists.
+            // for those cases, what we add as output is the container. Otherwise the region.
+            Set<String> skipLanguages = cldrContainerToLanguages.get(region);
+            if (skipLanguages != null
+                && skipLanguages.contains(language)) {
+                add("und_" + region, language + "_" + script + "_" + region, toMaximized, "R*->LS",
+                    Override.REPLACE_EXISTING, SHOW_ADD);
+                continue;
+            }
+
+            // we now have the best language and script. Find the best region for that
+            for (R4<Double, String, String, String> e : maxData.containersToLangRegion.get(region)) {
+                final Comparable<String> language2 = e.get1();
+                final Comparable<String> script2 = e.get2();
+                if (language2.equals(language) && script2.equals(script)) {
+                    add("und_" + region, language + "_" + script + "_" + e.get3(), toMaximized, "R*->LS",
+                        Override.REPLACE_EXISTING, SHOW_ADD);
+                    break;
+                }
+            }
+        }
+
         for (R2<String, String> languageScript : maxData.languageScripts.keySet()) {
             R2<Double, String> value = maxData.languageScripts.getAll(languageScript).iterator().next();
-            final Comparable language = languageScript.get0();
-            final Comparable script = languageScript.get1();
-            final Comparable region = value.get1();
+            final Comparable<String> language = languageScript.get0();
+            final Comparable<String> script = languageScript.get1();
+            final Comparable<String> region = value.get1();
             add(language + "_" + script, language + "_" + script + "_" + region, toMaximized, "LS->R",
                 Override.REPLACE_EXISTING, SHOW_ADD);
         }
 
         for (R2<String, String> scriptRegion : maxData.scriptRegions.keySet()) {
             R2<Double, String> value = maxData.scriptRegions.getAll(scriptRegion).iterator().next();
-            final Comparable script = scriptRegion.get0();
-            final Comparable region = scriptRegion.get1();
-            final Comparable language = value.get1();
+            final Comparable<String> script = scriptRegion.get0();
+            final Comparable<String> region = scriptRegion.get1();
+            final Comparable<String> language = value.get1();
             add("und_" + script + "_" + region, language + "_" + script + "_" + region, toMaximized, "SR->L",
                 Override.REPLACE_EXISTING, SHOW_ADD);
         }
 
         for (R2<String, String> languageRegion : maxData.languageRegions.keySet()) {
             R2<Double, String> value = maxData.languageRegions.getAll(languageRegion).iterator().next();
-            final Comparable language = languageRegion.get0();
-            final Comparable region = languageRegion.get1();
-            final Comparable script = value.get1();
+            final Comparable<String> language = languageRegion.get0();
+            final Comparable<String> region = languageRegion.get1();
+            final Comparable<String> script = value.get1();
             add(language + "_" + region, language + "_" + script + "_" + region, toMaximized, "LR->S",
                 Override.REPLACE_EXISTING, SHOW_ADD);
         }
@@ -923,9 +960,17 @@ public class GenerateMaximalLocales {
         }
     }
 
+    public static String shorten(Object data) {
+        String info = data.toString();
+        if (info.length() > 255) {
+            info = info.substring(0, 127) + "…";
+        }
+        return info;
+    }
+
     private static void doAlt(Map<String, String> toMaximized) {
         // TODO Auto-generated method stub
-        Map<String, String> temp = new TreeMap();
+        Map<String, String> temp = new TreeMap<String, String>();
         for (String locale : toMaximized.keySet()) {
             String target = toMaximized.get(locale);
             temp.put(toAlt(locale, true), toAlt(target, true));
@@ -1076,7 +1121,7 @@ public class GenerateMaximalLocales {
         String oldValue = toAdd.get(key);
         if (oldValue == null) {
             if (showAction) {
-                System.out.println("Adding:\t" + key + "\t=>\t" + value + "\t\t\t\t" + kind);
+                System.out.println("Adding:\t\t" + getName(key) + "\t=>\t" + getName(value) + "\t\t\t\t" + kind);
             }
         } else if (override == Override.KEEP_EXISTING || value.equals(oldValue)) {
             // if (showAction) {
@@ -1085,10 +1130,14 @@ public class GenerateMaximalLocales {
             return;
         } else {
             if (showAction) {
-                System.out.println("Replacing:\t" + key + "\t=>\t" + value + "\t, was\t" + oldValue + "\t\t" + kind);
+                System.out.println("Replacing:\t" + getName(key) + "\t=>\t" + getName(value) + "\t, was\t" + getName(oldValue) + "\t\t" + kind);
             }
         }
         toAdd.put(key, value);
+    }
+
+    private static String getName(String value) {
+        return ConvertLanguageData.getLanguageCodeAndName(value);
     }
 
     // private static void addCountries(Map<String, String> toMaximized) {
@@ -1281,7 +1330,7 @@ public class GenerateMaximalLocales {
 
     private static void printLikelySubtags(Map<String, String> fluffup) throws IOException {
 
-        PrintWriter out = BagFormatter.openUTF8Writer(CldrUtility.GEN_DIRECTORY,
+        PrintWriter out = BagFormatter.openUTF8Writer(CLDRPaths.GEN_DIRECTORY,
             "/supplemental/likelySubtags" + (OUTPUT_STYLE == OutputStyle.XML ? ".xml" : ".txt"));
         String spacing = OUTPUT_STYLE == OutputStyle.PLAINTEXT ? "\t" : " ";
         String header = OUTPUT_STYLE != OutputStyle.XML ? "const MapToMaximalSubtags default_subtags[] = {"
@@ -1315,7 +1364,7 @@ public class GenerateMaximalLocales {
             if (OUTPUT_STYLE == OutputStyle.XML) {
                 out.println("\t\t<likelySubtag from=\"" + printingLocale +
                     "\" to=\"" + printingTarget + "\"" +
-                    "/>" + CldrUtility.LINE_SEPARATOR +"\t\t" + "<!--" + comment + "-->");
+                    "/>" + CldrUtility.LINE_SEPARATOR + "\t\t" + "<!--" + comment + "-->");
             } else {
                 if (first) {
                     first = false;
@@ -1453,14 +1502,14 @@ public class GenerateMaximalLocales {
                 if (targetParser.set(target).getRegion().equals(UNKNOWN_REGION)) {
                     removals.add(locale);
                     if (SHOW_ADD)
-                        System.out.println("Removing:\t" + locale + "\t=>\t" + target
+                        System.out.println("Removing:\t" + getName(locale) + "\t=>\t" + getName(target)
                             + "\t\t - Unknown Region in target");
                     continue;
                 }
                 if (targetParser.getScript().equals(UNKNOWN_SCRIPT)) {
                     removals.add(locale);
                     if (SHOW_ADD)
-                        System.out.println("Removing:\t" + locale + "\t=>\t" + target
+                        System.out.println("Removing:\t" + getName(locale) + "\t=>\t" + getName(target)
                             + "\t\t - Unknown Script in target");
                     continue;
                 }
@@ -1470,7 +1519,7 @@ public class GenerateMaximalLocales {
                     if (region.equals(UNKNOWN_REGION)) {
                         removals.add(locale);
                         if (SHOW_ADD)
-                            System.out.println("Removing:\t" + locale + "\t=>\t" + target
+                            System.out.println("Removing:\t" + getName(locale) + "\t=>\t" + getName(target)
                                 + "\t\t - Unknown Region in source");
                         continue;
                     }
@@ -1479,7 +1528,7 @@ public class GenerateMaximalLocales {
                     String newTarget = fluffup.get(newLocale);
                     if (newTarget != null) {
                         newTarget = targetParser.set(newTarget).setRegion(region).toString();
-                        if (target.equals(newTarget)) {
+                        if (target.equals(newTarget) && !KEEP_TARGETS.contains(locale)) {
                             removals.add(locale);
                             if (SHOW_ADD)
                                 System.out.println("Removing:\t" + locale + "\t=>\t" + target + "\t\tRedundant with "
@@ -1504,7 +1553,7 @@ public class GenerateMaximalLocales {
                     String newTarget = fluffup.get(newLocale);
                     if (newTarget != null) {
                         newTarget = targetParser.set(newTarget).setScript(script).toString();
-                        if (target.equals(newTarget)) {
+                        if (target.equals(newTarget) && !KEEP_TARGETS.contains(locale)) {
                             removals.add(locale);
                             if (SHOW_ADD)
                                 System.out.println("Removing:\t" + locale + "\t=>\t" + target + "\t\tRedundant with "
@@ -1804,7 +1853,7 @@ public class GenerateMaximalLocales {
             errors.clear();
         }
         Set<String> changes = compareMapsAndFixNew("*WARNING* Default Content: ", oldDefaultContent, newDefaultContent,
-            "ms_Arab", "ms_Arab_ID");
+            "ar", "ar_001");
         System.out.println(CollectionUtilities.join(changes, "\n"));
         defaultLocaleContent.clear();
         defaultLocaleContent.addAll(newDefaultContent.values());
@@ -1827,29 +1876,46 @@ public class GenerateMaximalLocales {
             .addAll(oldContent.keySet()).get()) {
             String oldValue = oldContent.get(parent);
             String newValue = newContent.get(parent);
-            if (CldrUtility.equals(oldValue, newValue)) {
-                continue;
-            }
             String overrideValue = allowedOverrideValuesTest.get(parent);
             if (overrideValue != null) {
-                oldValue = overrideValue;
+                newValue = overrideValue;
+            }
+            if (CldrUtility.equals(oldValue, newValue)) {
+                continue;
             }
             String message;
             if (oldValue == null) {
                 message = "Adding " + ConvertLanguageData.getLanguageCodeAndName(parent) + " => "
                     + ConvertLanguageData.getLanguageCodeAndName(newValue);
+                newContent.put(parent, newValue);
             } else if (newValue == null) {
-                message = "Suppressing removal of "
-                    + ConvertLanguageData.getLanguageCodeAndName(parent) + " => "
-                    + ConvertLanguageData.getLanguageCodeAndName(oldValue);
-                newContent.put(parent, oldValue);
+                if (SUPPRESS_CHANGES) {
+                    message = "Suppressing removal of "
+                        + ConvertLanguageData.getLanguageCodeAndName(parent) + " => "
+                        + ConvertLanguageData.getLanguageCodeAndName(oldValue);
+                    newContent.put(parent, oldValue);
+                } else {
+                    message = "Removing "
+                        + ConvertLanguageData.getLanguageCodeAndName(parent) + " => "
+                        + ConvertLanguageData.getLanguageCodeAndName(oldValue);
+                    newContent.remove(oldValue);
+                }
             } else {
-                message = "Suppressing change of "
-                    + ConvertLanguageData.getLanguageCodeAndName(parent) + " => "
-                    + ConvertLanguageData.getLanguageCodeAndName(oldValue) + " to "
-                    + ConvertLanguageData.getLanguageCodeAndName(newValue);
-                newContent.remove(newValue);
-                newContent.put(parent, oldValue);
+                if (SUPPRESS_CHANGES) {
+                    message = "Suppressing change of "
+                        + ConvertLanguageData.getLanguageCodeAndName(parent) + " => "
+                        + ConvertLanguageData.getLanguageCodeAndName(oldValue) + " to "
+                        + ConvertLanguageData.getLanguageCodeAndName(newValue);
+                    newContent.remove(newValue);
+                    newContent.put(parent, oldValue);
+                } else {
+                    message = "Changing "
+                        + ConvertLanguageData.getLanguageCodeAndName(parent) + " => "
+                        + ConvertLanguageData.getLanguageCodeAndName(oldValue) + " to "
+                        + ConvertLanguageData.getLanguageCodeAndName(newValue);
+                    newContent.remove(oldValue);
+                    newContent.put(parent, newValue);
+                }
             }
             changes.add(title + message);
         }

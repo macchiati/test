@@ -10,11 +10,11 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.unicode.cldr.draft.FileUtilities;
 import org.unicode.cldr.util.CLDRFile;
-import org.unicode.cldr.util.CldrUtility;
+import org.unicode.cldr.util.CLDRPaths;
 import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.SimpleFactory;
+import org.unicode.cldr.util.StringIterables;
 import org.unicode.cldr.util.SupplementalDataInfo;
 
 import com.ibm.icu.dev.util.BagFormatter;
@@ -36,8 +36,8 @@ public class FixDelimiters {
         for (Entry<String, R2<Quotes, Quotes>> entry : Data.locales2delimiters.entrySet()) {
             System.out.println(entry);
         }
-        Factory factory = SimpleFactory.make(CldrUtility.MAIN_DIRECTORY, ".*");
-        Set<String> remainder = new LinkedHashSet(Data.locales2delimiters.keySet());
+        Factory factory = SimpleFactory.make(CLDRPaths.MAIN_DIRECTORY, ".*");
+        Set<String> remainder = new LinkedHashSet<String>(Data.locales2delimiters.keySet());
 
         String[] paths = {
             "//ldml/delimiters/quotationStart",
@@ -78,7 +78,7 @@ public class FixDelimiters {
                 String revalue = cldrFile.getStringValue(paths[i]);
                 System.out.println(locale + "\t" + paths[i] + "\t" + oldValue[i] + "\t=>\t" + revalue);
             }
-            PrintWriter pw = BagFormatter.openUTF8Writer(CldrUtility.GEN_DIRECTORY + "temp/", locale + ".xml");
+            PrintWriter pw = BagFormatter.openUTF8Writer(CLDRPaths.GEN_DIRECTORY + "temp/", locale + ".xml");
             cldrFile.write(pw);
             pw.close();
         }
@@ -104,12 +104,12 @@ public class FixDelimiters {
     }
 
     static class Data {
-        static Map<String, Row.R2<Quotes, Quotes>> locales2delimiters = new LinkedHashMap();
+        static Map<String, Row.R2<Quotes, Quotes>> locales2delimiters = new LinkedHashMap<String, Row.R2<Quotes, Quotes>>();
         static Matcher localeString = Pattern.compile(".*\\((.*)\\)").matcher("");
         static {
             final String instructionFile = "delimiterFixes.txt";
             System.out.println("Instruction file: " + instructionFile);
-            for (String line : FileUtilities.in(FixDelimiters.class, instructionFile)) {
+            for (String line : StringIterables.in(FixDelimiters.class, instructionFile)) {
                 int first = line.indexOf(' ');
                 int second = line.indexOf(' ', first + 1);
                 Quotes qmain = new Quotes(line.substring(0, first));
