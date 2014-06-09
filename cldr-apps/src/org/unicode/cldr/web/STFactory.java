@@ -20,12 +20,14 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.json.JSONObject;
 import org.unicode.cldr.icu.LDMLConstants;
 import org.unicode.cldr.test.CheckCLDR;
 import org.unicode.cldr.test.ExampleGenerator;
@@ -49,10 +51,13 @@ import org.unicode.cldr.util.XMLFileReader;
 import org.unicode.cldr.util.XMLSource;
 import org.unicode.cldr.util.XPathParts;
 import org.unicode.cldr.util.XPathParts.Comments;
+import org.unicode.cldr.web.CLDRProgressIndicator.CLDRProgressTask;
+import org.unicode.cldr.web.SurveyException.ErrorCode;
 import org.unicode.cldr.web.UserRegistry.ModifyDenial;
 import org.unicode.cldr.web.UserRegistry.User;
 
 import com.ibm.icu.dev.util.ElapsedTimer;
+import com.ibm.icu.text.NumberFormat;
 import com.ibm.icu.util.VersionInfo;
 
 /**
@@ -60,6 +65,74 @@ import com.ibm.icu.util.VersionInfo;
  * 
  */
 public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.User>, UserRegistry.UserChangedListener {
+    /**
+     * This class tracks the expected maximum size of strings in the locale.
+     * @author srl
+     *
+     */
+    public static class LocaleMaxSizer {
+        public static final int EXEMPLAR_CHARACTERS_MAX = 8192;
+
+        public static final String EXEMPLAR_CHARACTERS = "//ldml/characters/exemplarCharacters";
+
+        Map<CLDRLocale, Map<String,Integer>> sizeExceptions;
+        
+        TreeMap<String, Integer> exemplars_prefix = new TreeMap<String,Integer>();
+        Set<CLDRLocale> exemplars_set = new TreeSet<CLDRLocale>();
+        
+        /**
+         * Construct a new sizer.
+         */
+        public LocaleMaxSizer() {
+            // set up the map
+            sizeExceptions = new TreeMap<CLDRLocale, Map<String,Integer>>();
+            exemplars_prefix.put(EXEMPLAR_CHARACTERS, EXEMPLAR_CHARACTERS_MAX);
+            String locs[] = { "ja", "ko", "zh", "zh_Hant" /*because of cross-script inheritance*/ };
+            for(String loc : locs) {
+                exemplars_set.add(CLDRLocale.getInstance(loc));
+            }
+        }
+
+        /**
+         * It's expected that this is called with EVERY locale, so we do not recurse into parents.
+         * @param l
+         */
+        public void add(CLDRLocale l) {
+            if(l==null) return; // attempt to add null
+            CLDRLocale hnr = l.getHighestNonrootParent();
+            if(hnr==null) return; // Exit if l is root
+            if(exemplars_set.contains(hnr)) {  // are we a child of ja, ko, zh?
+                sizeExceptions.put(l, exemplars_prefix);
+            }
+        }
+        
+        
+        /**
+         * For the specified locale, what is the expected string size?
+         * @param locale
+         * @param xpath
+         * @return
+         */
+        public int getSize(CLDRLocale locale, String xpath) {
+            Map<String,Integer> prefixes = sizeExceptions.get(locale);
+            if(prefixes!=null) {
+                for(Map.Entry<String, Integer> e : prefixes.entrySet()) {
+                    if(xpath.startsWith(e.getKey())) {
+                        return e.getValue();
+                    }
+                }
+            }
+            return MAX_VAL_LEN;
+        }
+
+        /**
+         * The max string length accepted of any value.
+         */
+        public static final int MAX_VAL_LEN = 4096;
+
+
+    }
+
     private static final String VOTE_OVERRIDE = "vote_override";
 
     /**
@@ -284,11 +357,6 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
         // }
 
     }
-
-    /**
-     * The max string length accepted of any value.
-     */
-    private static final int MAX_VAL_LEN = 4096;
 
     /**
      * the STFactory maintains exactly one instance of this class per locale it
@@ -944,22 +1012,23 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
         }
 
         @Override
-        public void unvoteFor(User user, String distinguishingXpath) throws BallotBox.InvalidXPathException {
+        public void unvoteFor(User user, String distinguishingXpath) throws BallotBox.InvalidXPathException, VoteNotAcceptedException {
             voteForValue(user, distinguishingXpath, null);
         }
 
         @Override
-        public void revoteFor(User user, String distinguishingXpath) throws BallotBox.InvalidXPathException {
+        public void revoteFor(User user, String distinguishingXpath) throws BallotBox.InvalidXPathException, VoteNotAcceptedException {
             String oldValue = getVoteValue(user, distinguishingXpath);
             voteForValue(user, distinguishingXpath, oldValue);
         }
 
-        public void voteForValue(User user, String distinguishingXpath, String value) throws InvalidXPathException {
+        @Override
+        public void voteForValue(User user, String distinguishingXpath, String value) throws InvalidXPathException, VoteNotAcceptedException {
             voteForValue(user, distinguishingXpath, value, null);
         }
 
         @Override
-        public synchronized void voteForValue(User user, String distinguishingXpath, String value, Integer withVote) throws BallotBox.InvalidXPathException {
+        public synchronized void voteForValue(User user, String distinguishingXpath, String value, Integer withVote) throws BallotBox.InvalidXPathException, BallotBox.VoteNotAcceptedException {
             if (!getPathsForFile().contains(distinguishingXpath)) {
                 throw new BallotBox.InvalidXPathException(distinguishingXpath);
             }
@@ -977,19 +1046,26 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                                                                                      // counting
                                                                                      // it.
             if (denial != null) {
-                throw new IllegalArgumentException("User " + user + " cannot modify " + locale + " " + denial);
+                throw new VoteNotAcceptedException(ErrorCode.E_NO_PERMISSION,"User " + user + " cannot modify " + locale + " " + denial);
             }
 
             if (withVote != null) {
                 if (withVote == user.getLevel().getVotes()) {
                     withVote = null; // not an override
                 } else if (withVote != user.getLevel().canVoteAtReducedLevel()) {
-                    throw new IllegalArgumentException("User " + user + " cannot vote at " + withVote + " level ");
+                    throw new VoteNotAcceptedException(ErrorCode.E_NO_PERMISSION,"User " + user + " cannot vote at " + withVote + " level ");
                 }
             }
-
-            if (value != null && value.length() > MAX_VAL_LEN) {
-                throw new IllegalArgumentException("Value exceeds limit of " + MAX_VAL_LEN);
+            
+            // check for too-long
+            if(value!=null) {
+                final int valueLimit = SurveyMain.localeSizer.getSize(locale, distinguishingXpath);
+                final int valueLength = value.length();
+                if (valueLength > valueLimit) {
+                    NumberFormat nf = NumberFormat.getInstance();
+                    throw new VoteNotAcceptedException(ErrorCode.E_BAD_VALUE, "Length "+nf.format(valueLength)+" exceeds limit of " 
+                        + nf.format(valueLimit) +" - please file a bug if you need a longer value.");
+                }
             }
 
             if (!readonly) {
@@ -1147,10 +1223,10 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             if (denial != null) {
                 throw new IllegalArgumentException("User " + user + " cannot modify " + locale + " " + denial);
             }
-
-            if (value != null && value.length() > MAX_VAL_LEN) {
-                throw new IllegalArgumentException("Value exceeds limit of " + MAX_VAL_LEN);
-            }
+//
+//            if (value != null && value.length() > MAX_VAL_LEN) {
+//                throw new IllegalArgumentException("Value exceeds limit of " + MAX_VAL_LEN);
+//            }
 
             if (!readonly) {
                 makeSource(false);
@@ -1472,14 +1548,20 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
     public STFactory(SurveyMain sm) {
         super();
         this.sm = sm;
-        setSupplementalDirectory(sm.getDiskFactory().getSupplementalDirectory());
-
-        gTestCache.setFactory(this, "(?!.*(CheckCoverage).*).*", sm.getBaselineFile());
-        gDiskTestCache.setFactory(sm.getDiskFactory(), "(?!.*(CheckCoverage).*).*", sm.getBaselineFile());
-        sm.reg.addListener(this);
-        handleUserChanged(null);
-        phf = PathHeader.getFactory(sm.getBaselineFile());
-        surveyMenus = new SurveyMenus(this, phf);
+        try (CLDRProgressTask progress = sm.openProgress("STFactory")) {
+            progress.update("setup supplemental data");
+            setSupplementalDirectory(sm.getDiskFactory().getSupplementalDirectory());
+    
+            progress.update("setup test cache");
+            gTestCache.setFactory(this, "(?!.*(CheckCoverage).*).*", sm.getBaselineFile());
+            progress.update("setup disk test cache");
+            gDiskTestCache.setFactory(sm.getDiskFactory(), "(?!.*(CheckCoverage).*).*", sm.getBaselineFile());
+            sm.reg.addListener(this);
+            progress.update("reload all users");
+            handleUserChanged(null);
+            progress.update("setup pathheader factory");
+            phf = PathHeader.getFactory(sm.getBaselineFile());
+        }
     }
 
     /**
@@ -1908,9 +1990,15 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
         }
     }
 
-    private SurveyMenus surveyMenus;
+    private SurveyMenus surveyMenus = null;
 
-    public final SurveyMenus getSurveyMenus() {
+    public final synchronized SurveyMenus getSurveyMenus() {
+        if(surveyMenus == null) {
+            try (CLDRProgressTask progress = sm.openProgress("STFactory: setup surveymenus")) {
+                progress.update("setup surveymenus");
+                surveyMenus = new SurveyMenus(this, phf);
+            }
+        }
         return surveyMenus;
     }
 

@@ -77,6 +77,7 @@ import org.unicode.cldr.util.CLDRLocale.CLDRFormatter;
 import org.unicode.cldr.util.CLDRLocale.FormatBehavior;
 import org.unicode.cldr.util.CachingEntityResolver;
 import org.unicode.cldr.util.CldrUtility;
+import org.unicode.cldr.util.CoverageInfo;
 import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.Factory.DirectoryType;
 import org.unicode.cldr.util.Factory.SourceTreeType;
@@ -687,8 +688,14 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
                     ctx.println(ctx.iconHtml("stop", "fail")
                         + "<b>Please go <a href='javascript:window.history.back();'>Back</a> and fill in your real name.</b>");
                 } else {
+                    final boolean autoProceed = ctx.hasField("new_and_login_autoProceed");
+                    final boolean stayLoggedIn = ctx.hasField("new_and_login_stayLoggedIn");
                     ctx.println("<div style='margin: 2em;'>");
-                    ctx.println("<img src='loader.gif' align='right'>");
+                    if(autoProceed) {
+                        ctx.println("<img src='loader.gif' align='right'>");
+                    } else {
+                        ctx.println("<img src='STLogo.png' align='right'>");
+                    }
                     UserRegistry.User u = reg.getEmptyUser();
                     StringBuffer myRealName = new StringBuffer(real.trim());
                     StringBuilder newRealName = new StringBuilder();
@@ -716,14 +723,26 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
                     }
                     UserRegistry.User registeredUser = reg.newUser(ctx, u);
                     ctx.println("<i>" + ctx.iconHtml("okay", "added") + "'" + u.name
-                        + "'. You should be logged in shortly, otherwise click this link:</i>");
+                        + "'. <br>Email: " + u.email + "  <br>Password: " + u.password +" <br>userlevel: " + u.getLevel()+"<br>");
+                    if(autoProceed) {
+                        ctx.print("You should be logged in shortly, otherwise click this link:");
+                    } else {
+                        ctx.print("You will be logged in when you click this link:");
+                    }
+                    ctx.print("</i>");
                     ctx.println("<br>");
                     registeredUser.printPasswordLink(ctx);
                     ctx.println("<br><br><br><br><i>Note: this is a test account, and may be removed at any time.</i>");
-                    ctx.addCookie(QUERY_EMAIL, u.email, TWELVE_WEEKS);
-                    ctx.addCookie(QUERY_PASSWORD, u.password, TWELVE_WEEKS);
-                    ctx.println("<script>document.location = '" + ctx.base() + "/survey?email=" + u.email + "&pw=" + u.password
-                       + "';</script>");
+                    if(stayLoggedIn) {
+                        ctx.addCookie(QUERY_EMAIL, u.email, TWELVE_WEEKS);
+                        ctx.addCookie(QUERY_PASSWORD, u.password, TWELVE_WEEKS);
+                    } else {
+                        ctx.removeLoginCookies(request, response);
+                    }
+                    if(autoProceed) {
+                        ctx.println("<script>window.setTimeout(function(){document.location = '" + ctx.base() + "/v?email=" + u.email + "&pw=" + u.password
+                           + "';},3000);</script>");
+                    }
                     ctx.println("</div>");
                 }
             } else if (ctx.hasAdminPassword()) {
@@ -2526,8 +2545,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
         printMenu(ctx, doWhat, "coverage", "Show Vetting Participation", QUERY_DO);
 
         if (UserRegistry.userIsTC(ctx.session.user)) {
-            ctx.println("| <a class='notselected' href='" + ctx.jspUrl("tc-emaillist.jsp")
-                + "'>Email Address of Users Who Participated</a>");
+            ctx.println("| <a class='notselected' href='v#tc-emaillist'>Email Address of Users Who Participated</a>");
             ctx.print(" | ");
         }
 
@@ -5049,11 +5067,13 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
 
             Set<CLDRLocale> failedSuppTest = new TreeSet<CLDRLocale>();
 
+            // Initialize CoverageInfo outside the loop.
+            CoverageInfo covInfo=CLDRConfig.getInstance().getCoverageInfo();
             for (File f : getInFiles()) {
                 CLDRLocale loc = fileNameToLocale(f.getName());
 
                 try {
-                    getSupplementalDataInfo().getCoverageValue("//ldml", loc.getBaseName());
+                    covInfo.getCoverageValue("//ldml", loc.getBaseName());
                 } catch (Throwable t) {
                     SurveyLog.logException(t, "checking SDI for " + loc);
                     failedSuppTest.add(loc);
@@ -6337,6 +6357,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
     private static Set<CLDRLocale> openLocales = null;
     private static Set<CLDRLocale> roLocales = null;
     private static Set<CLDRLocale> topLocalesSet = null;
+    static STFactory.LocaleMaxSizer localeSizer;
 
     /**
      * Get the list of locales 'open' for submission. Should be all locales that
@@ -6403,6 +6424,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
         Set<CLDRLocale> s = new TreeSet<CLDRLocale>();
         Set<CLDRLocale> ro = new TreeSet<CLDRLocale>();
         Set<CLDRLocale> w = new TreeSet<CLDRLocale>();
+        STFactory.LocaleMaxSizer lms = new STFactory.LocaleMaxSizer();
 
         String onlyLocales = CLDRConfig.getInstance().getProperty("CLDR_ONLY_LOCALES", null);
         Set<String> onlySet = null;
@@ -6420,20 +6442,22 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
             if (dot != -1) {
                 String locale = fileName.substring(0, dot);
                 CLDRLocale l = CLDRLocale.getInstance(locale);
-                s.add(l);
+                s.add(l); // all
                 SpecialLocales.Type t = (SpecialLocales.getType(l));
                 if (t == Type.scratch) {
                     w.add(l); // always added
                 } else if (t == Type.readonly || (onlySet != null && !onlySet.contains(locale))) {
-                    ro.add(l);
+                    ro.add(l); // readonly
                 } else {
-                    w.add(l);
+                    w.add(l); // writeable
                 }
+                lms.add(l);
             }
         }
         localeListSet = Collections.unmodifiableSet(s);
         roLocales = Collections.unmodifiableSet(ro);
         openLocales = Collections.unmodifiableSet(w);
+        localeSizer = lms;
     }
 
     /**
