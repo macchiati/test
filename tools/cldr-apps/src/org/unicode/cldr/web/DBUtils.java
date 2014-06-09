@@ -34,6 +34,7 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
+import org.apache.derby.jdbc.EmbeddedDataSource;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -137,6 +138,13 @@ public class DBUtils {
                 tracker.remove(conn);
             }
             try {
+                if(db_Derby && 
+                    datasource instanceof EmbeddedDataSource &&
+                    !conn.isClosed() && 
+                    !conn.getAutoCommit()) { 
+                	// commit on close if we are using Derby directly
+                    conn.commit();
+                }
                 conn.close();
             } catch (SQLException e) {
                 System.err.println(DBUtils.unchainSqlException(e));
@@ -328,23 +336,26 @@ public class DBUtils {
     public static boolean hasTable(Connection conn, String table) {
         String canonName = canonTableName(table);
         try {
-            ResultSet rs;
-
-            if (db_Derby) {
-                DatabaseMetaData dbmd = conn.getMetaData();
-                rs = dbmd.getTables(null, null, canonName, null);
-            } else {
-                Statement s = conn.createStatement();
-                rs = s.executeQuery("show tables like '" + canonName + "'");
-            }
-
-            if (rs.next() == true) {
-                rs.close();
-                System.out.println("table " + canonName + " did exist.");
-                return true;
-            } else {
-                SurveyLog.debug("table " + canonName + " did not exist.");
-                return false;
+            ResultSet rs = null;
+            Statement s = null;
+            try {
+                if (db_Derby) {
+                    DatabaseMetaData dbmd = conn.getMetaData();
+                    rs = dbmd.getTables(null, null, canonName, null);
+                } else {
+                    s = conn.createStatement();
+                    rs = s.executeQuery("show tables like '" + canonName + "'");
+                }
+    
+                if (rs.next() == true) {
+                    SurveyLog.warnOnce("table " + canonName + " did exist.");
+                    return true;
+                } else {
+                    SurveyLog.warnOnce("table " + canonName + " did not exist.");
+                    return false;
+                }
+            } finally {
+                DBUtils.close(s,rs);
             }
         } catch (SQLException se) {
             SurveyMain.busted("While looking for table '" + table + "': ", se);
@@ -1377,6 +1388,9 @@ public class DBUtils {
             return null;
         }
 
+        /**
+         * Debug the cachedJSON
+         */
         final boolean CDEBUG = false && SurveyMain.isUnofficial();
         DBUtils instance = getInstance(); // don't want the cache to be static
         Reference<JSONObject> ref = instance.cachedJsonQuery.get(id);
@@ -1397,6 +1411,9 @@ public class DBUtils {
         }
 
         if (result == null) { // have to fetch it
+            if(CDEBUG) {
+                System.out.println("cachedjson: id " + id + " fetching: " + query);
+            }
             result = queryToJSON(query, args);
             long queryms = System.currentTimeMillis() - now;
             result.put("birth", (Long) now);

@@ -16,7 +16,7 @@ $(function() {
 	dynamic.on('click', '.hide-review', toggleReviewLine);
 	dynamic.on('click', '.show-items', toggleItems);
 	dynamic.on('click', '.post-review', openPost);
-	dynamic.on('click', '.hide-review', toggleReview);
+	dynamic.on('click', '.hide-review.done', toggleReview);
 	
 	$(window).scroll(function() {
 		var left = $(this).scrollLeft();
@@ -28,6 +28,7 @@ $(function() {
 	});
 	$(window).resize(function() {
 		$('#itemInfo').css('left',"");
+		resizeSidebar()
 	});
 	
 	
@@ -160,6 +161,7 @@ function showReviewPage(json, showFn) {
 				$('div[data-type="'+cat+'"] tr[data-path="'+element+'"] .hide-review').click();
 			});
 	});
+	$('.hide-review').addClass('done');
 	refreshCounter();
 	$('.menu-review li:visible').first().addClass('active');
 	bindReviewEvents();
@@ -402,11 +404,12 @@ function checkLineFix() {
 	
 	
 	$.each(issues, function(index, element) {
-		var otherLine = $('div[data-type='+element+'] tr[data-path='+path+']');
+		var elementRaw = element.replace(' ', '_');
+		var otherLine = $('div[data-type='+elementRaw+'] tr[data-path='+path+']');
 		if(otherLine.length == 0) { //if line not present
 			var newLine = line.clone();
 			var found = false;
-			$('div[data-type='+element+'] .info').each(function() {
+			$('div[data-type='+elementRaw+'] .info').each(function() {
 				if(info.html() == $(this).html()) {
 					$(this).after(newLine);
 					found = true;
@@ -416,7 +419,7 @@ function checkLineFix() {
 			
 			if(!found) {
 				var html = '<tr class="info">'+info.html()+'</tr>'+newLine.wrap('<div>').parent().html()+'<tr class="empty"><td colspan="7"></td></tr>';
-				var toInsert = $('div[data-type='+element+'] > table > tbody');
+				var toInsert = $('div[data-type='+elementRaw+'] > table > tbody');
 				toInsert.prepend(html);
 			}
 		}
@@ -502,7 +505,7 @@ function openPost() {
 		content += '<form role="form" id="post-form">';
 		content += '<div class="form-group"><textarea name="text" class="form-control" placeholder="Write your post here"></textarea></div><button data-path="'+path+'" data-choice="'+choice+'" class="btn btn-success submit-post btn-block">Submit</button>';
 		
-		content += '<input type="hidden" name="forum" value="'+surveyCurrentLocale.substring(0,2)+'">';
+		content += '<input type="hidden" name="forum" value="true">';
 		content += '<input type="hidden" name="_" value="'+surveyCurrentLocale+'">';
 		content += '<input type="hidden" name="replyto" value="x'+path+'">';
 		content += '<input name="subj" type="hidden" value="Review">';
@@ -546,23 +549,23 @@ function submitPost(event) {
 	var url = contextPath + "/survey";
 	var form = $('#post-form');
 	if($('#post-form textarea[name=text]').val()) {
-		
+		$('#post-form button').fadeOut();
 		$.ajax({
-	        data: form.serialize(),
-	        type: "POST",
-	        url: url,
-	        contentType: "application/x-www-form-urlencoded;",
-	        dataType: 'json',
-	        success: function(data) {
-	        	var post = $('.post').first();
-				post.before(generateHTMLPost(data));
-				
-				//reset
-				post = $('.post').first();
-				post.hide();
-				post.show('highlight', {color : "#d9edf7"});
-				$('#post-form textarea').val('');
-	        }
+				                data: form.serialize(),
+				                type: "POST",
+				                url: url,
+				                contentType: "application/x-www-form-urlencoded;",
+				                dataType: 'json',
+				                success: function(data) {
+				                        var post = $('.post').first();
+				                                post.before(generateHTMLPost(data));
+				                               
+				                                //reset
+				                                post = $('.post').first();
+				                                post.hide();
+				                                post.show('highlight', {color : "#d9edf7"});
+				                                $('#post-form textarea').val('');
+				                }
 	});
 
 	}
@@ -638,19 +641,26 @@ function insertFixInfo(theDiv,xpath,session,json) {
 		if(!theRow) {
 			console.log("Missing row " + k);
 		}
+		
+		
 		updateRow(tr,theRow);
-				
+		
+		if(!tr.forumDiv) {
+			tr.forumDiv = document.createElement("div");
+			tr.forumDiv.className = "forumDiv";
+		}	
+		appendForumStuff(tr,theRow, tr.forumDiv);
 		tbody.appendChild(tr);	
 		theDiv.appendChild(doInsertTable);
 }
 
 //redesign the fix row
 function designFixPanel() {
-	wrapRadios();
+	//wrapRadios();
 
 	var nocell = $('.fix-parent #popover-vote .data-vertical #nocell');
 	var idnocell = nocell.find('input').attr('id');
-	nocell.children('div').append('<span class="subSpan">Abstain</span>');	
+	nocell.append('<span class="subSpan">Abstain</span>');	
 	
 	var statuscell = $('.fix-parent #popover-vote .data-vertical #statuscell');
 	var statusClass = statuscell.get(0).className;
@@ -716,8 +726,26 @@ function fixPopoverVotePos() {
 }
 
 //add to the radio button, a more button style
-function wrapRadios() {
-	var radios = $('.ichoice-o, .ichoice-x');
+
+function wrapRadio(button) {
+	//var parent = document.createElement('div');
+	var label = document.createElement('label');
+	label.title = 'Vote';
+	label.className = 'btn btn-default';
+	
+	label.appendChild(button);
+	//parent.appendChild(label);
+	$(label).tooltip();
+	return label;
+}
+
+function wrapRadios(line) {
+	var radios;
+	if(line) 
+		radios = $(line).find('.ichoice-o, .ichoice-x');
+	else
+		radios = $('.ichoice-o, .ichoice-x');
+	
 	radios = radios.filter(function() {return $(this).parent('.btn').length === 0;});
 	radios.wrap('<label class="btn btn-default" title="Vote"></label>');
 	radios.parent().parent().wrapInner('<div></div>');
