@@ -218,13 +218,13 @@ public class PathHeader implements Comparable<PathHeader> {
         Unknown(SectionId.Special),
         C_NAmerica(SectionId.Currencies, "North America (C)"), //need to add (C) to differentiate from Timezone territories
         C_SAmerica(SectionId.Currencies, "South America (C)"),
-        C_Europe(SectionId.Currencies, "Europe (Current)"),
-        C_Europe_Old(SectionId.Currencies, "Europe (Old)"),
-        C_NAfrica(SectionId.Currencies, "Northern Africa (C)"),
-        C_WAfrica(SectionId.Currencies, "Western Africa (C)"),
-        C_MAfrica(SectionId.Currencies, "Middle Africa (C)"),
-        C_EAfrica(SectionId.Currencies, "Eastern Africa (C)"),
-        C_SAfrica(SectionId.Currencies, "Southern Africa (C)"),
+        C_NWEurope(SectionId.Currencies, "Northern/Western Europe"),
+        C_SEEurope(SectionId.Currencies, "Southern/Eastern Europe"),
+        C_NAfrica(SectionId.Currencies, "Northern Africa"),
+        C_WAfrica(SectionId.Currencies, "Western Africa"),
+        C_MAfrica(SectionId.Currencies, "Middle Africa"),
+        C_EAfrica(SectionId.Currencies, "Eastern Africa"),
+        C_SAfrica(SectionId.Currencies, "Southern Africa"),
         C_WAsia(SectionId.Currencies, "Western Asia (C)"),
         C_CAsia(SectionId.Currencies, "Central Asia (C)"),
         C_EAsia(SectionId.Currencies, "Eastern Asia (C)"),
@@ -1321,16 +1321,16 @@ public class PathHeader implements Comparable<PathHeader> {
                 { "Central America", "North America (C)" },
                 { "Caribbean", "North America (C)" },
                 { "South America", "South America (C)" },
-                { "Northern Africa", "Northern Africa (C)" },
-                { "Western Africa", "Western Africa (C)" },
-                { "Middle Africa", "Middle Africa (C)" },
-                { "Eastern Africa", "Eastern Africa (C)" },
-                { "Southern Africa", "Southern Africa (C)" },
-                { "Europe", "Europe (Current)" },
-                { "Northern Europe", "Europe (Current)" },
-                { "Western Europe", "Europe (Current)" },
-                { "Eastern Europe", "Europe (Current)" },
-                { "Southern Europe", "Europe (Current)" },
+                { "Northern Africa", "Northern Africa" },
+                { "Western Africa", "Western Africa" },
+                { "Middle Africa", "Middle Africa" },
+                { "Eastern Africa", "Eastern Africa" },
+                { "Southern Africa", "Southern Africa" },
+                { "Europe", "Northern/Western Europe" },
+                { "Northern Europe", "Northern/Western Europe" },
+                { "Western Europe", "Northern/Western Europe" },
+                { "Eastern Europe", "Southern/Eastern Europe" },
+                { "Southern Europe", "Southern/Eastern Europe" },
                 { "Western Asia", "Western Asia (C)" },
                 { "Central Asia", "Central Asia (C)" },
                 { "Eastern Asia", "Eastern Asia (C)" },
@@ -1394,9 +1394,6 @@ public class PathHeader implements Comparable<PathHeader> {
                     }
 
                     String result = subContinentToContinent.get(subContinent); //the continent is the last word in the territory representation
-                    if ("Europe (Current)".equals(result) && functionMap.get("categoryFromCurrency").transform(source0).endsWith(" (old)")) {
-                            result = "Europe (Old)";
-                    }
                     return result;
                 }
             });
@@ -1650,10 +1647,22 @@ public class PathHeader implements Comparable<PathHeader> {
         }
     }
 
+    /**
+     * @deprecated, use CLDRConfig.urls().forPathHeader() instead.
+     * @param baseUrl
+     * @param locale
+     * @return
+     */
     public String getUrl(BaseUrl baseUrl, String locale) {
         return getUrl(baseUrl.base, locale);
     }
 
+    /**
+     * @deprecated, use CLDRConfig.urls().forPathHeader() instead.
+     * @param baseUrl
+     * @param locale
+     * @return
+     */
     public String getUrl(String baseUrl, String locale) {
         return getUrl(baseUrl, locale, getOriginalPath());
     }
@@ -1669,15 +1678,36 @@ public class PathHeader implements Comparable<PathHeader> {
         return str.substring(0, n + 1);
     }
 
+    /**
+     * @deprecated use CLDRConfig.urls()
+     * @param baseUrl
+     * @param locale
+     * @param path
+     * @return
+     */
     public static String getUrl(String baseUrl, String locale, String path) {
         return trimLast(baseUrl) + "v#/" + locale + "//" + StringId.getHexId(path);
     }
 
     // eg http://st.unicode.org/cldr-apps/survey?_=fr&x=Locale%20Name%20Patterns
+    /**
+     * @deprecated use CLDRConfig.urls()
+     * @param baseUrl
+     * @param locale
+     * @param subsection
+     * @return
+     */
     public static String getPageUrl(String baseUrl, String locale, PageId subsection) {
         return trimLast(baseUrl) + "v#/" + locale + "/" + subsection + "/";
     }
 
+    /**
+     * @deprecated use CLDRConfig.urls()
+     * @param baseUrl
+     * @param file
+     * @param path
+     * @return
+     */
     public static String getLinkedView(String baseUrl, CLDRFile file, String path) {
         String value = file.getStringValue(path);
         if (value == null) {
