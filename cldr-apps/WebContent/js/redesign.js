@@ -55,6 +55,7 @@ $(function() {
     resizeSidebar();
     
     $('body').on('click', '#toggle-right', toggleRightPanel);
+    $('.tip-log').tooltip({placement:'bottom'});
     //initFeedBack();
 });
 
@@ -173,10 +174,12 @@ function unpackMenuSideBar(json) {
 		if(!cachedJson)
 			return;
 		json = cachedJson;
-		json.covlev_org = lName;
+		json.covlev_user = lName;
 	}
 	var menus = json.menus.sections;
-	var levelName = json.covlev_org;
+	var levelName = json.covlev_user;
+	if(!levelName)
+		levelName = json.covlev_org;
 	var menuRoot = $('#locale-menu');
 	var level = 0;
 	var levels = json.menus.levels;
@@ -275,7 +278,10 @@ function unpackMenuSideBar(json) {
 	
 	//forum link 
 	$('#forum-link').click(function() {
-		window.open(contextPath + '/survey?forum='+locmap.getLanguage(surveyCurrentLocale));
+		window.surveyCurrentSpecial = 'forum';
+		surveyCurrentId = '';
+		surveyCurrentPage = '';
+		reloadV();
 	});
 	
 	
@@ -339,7 +345,7 @@ var oldTypePopup = '';
 function popupAlert(type, content, head, aj, dur) {
 	var ajax = (typeof aj === "undefined") ? "" : aj;
 	var header = (typeof aj === "undefined") ? "" : head; 
-	var duration = (typeof dur === "undefined") ? 3000 :dur; 
+	var duration = (typeof dur === "undefined") ? 4000 :dur; 
 	var alert = $('#progress').closest('.alert');
 	alert.removeClass('alert-warning').removeClass('alert-info').removeClass('alert-danger').removeClass('alert-success');
 	alert.addClass('alert-'+type);
