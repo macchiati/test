@@ -12,6 +12,7 @@
 dojo.require("dojo.i18n");
 dojo.require("dojo.string");
 dojo.requireLocalization("surveyTool", "stui");
+window.haveDialog = false;
 
 /**
  * @class Object
@@ -51,6 +52,21 @@ if(!String.prototype.trim && !String.trim) {
 	};
 }
 
+function haveIntl() {
+	return (window.Intl && typeof window.Intl === "object");
+}
+
+/**
+ * Format a date and time.
+ */
+function fmtDateTime(x) {
+	var d = new Date(x);
+//	if(haveIntl()) {
+//		return d.toLocaleDateString()
+//	}
+	return d.toLocaleString();
+};
+
 /**
  * @class GLOBAL
  */
@@ -66,9 +82,11 @@ function isReport(str) {
  * @param {String} className
  */
 function removeClass(obj, className) {
+	if(!obj) return obj;
 	if(obj.className.indexOf(className)>-1) {
 		obj.className = obj.className.substring(className.length+1);
 	}
+	return obj;
 }
 
 /**
@@ -78,9 +96,28 @@ function removeClass(obj, className) {
  * @param {String} className
  */
 function addClass(obj, className) {
+	if(!obj) return obj;
 	if(obj.className.indexOf(className)==-1) {
 		obj.className = className+" "+obj.className;
 	}
+	return obj;
+}
+
+/**
+ * @method post2text 
+ */
+function post2text(text) {
+	if(text===undefined || text===null) {
+		text = "(empty)";
+	}
+	var out=text;
+	out = out.replace(/<p>/g, '\n');
+	out = out.replace(/&quot;/g, '"');
+	out = out.replace(/&lt;/g, '<');
+	out = out.replace(/&gt;/g, '>');
+	out = out.replace(/&amp;/g, '&');
+
+	return out;
 }
 
 /**
@@ -248,6 +285,39 @@ LocaleMap.prototype.canonicalizeLocaleId = function canonicalizeLocaleId(locid) 
 	return locid;
 };
 
+window.linkToLocale = function linkToLocale(subLoc) {
+	return "#/"+subLoc+"/"+surveyCurrentPage+"/"+surveyCurrentId;
+};
+
+/**
+ * Linkify text like '@de' into some link to German.
+ * @function linkify
+ * @param str (html)
+ * @return linkified str (html)
+ */
+LocaleMap.prototype.linkify = function linkify(str) {
+	var out = "";
+	var re = /@([a-zA-Z0-9_]+)/g;	
+	var match;
+	var fromLast = 0;
+	while((match = re.exec(str)) != null) {
+		var bund = this.getLocaleInfo(match[1]);
+		if(bund) {
+			out = out + str.substring(fromLast,match.index); // pre match	
+			if ( match[1] == surveyCurrentLocale ) {
+				out = out + this.getLocaleName(match[1]);
+			} else {
+				out = out + "<a href='"+linkToLocale(match[1])+"' title='"+match[1]+"'>" + this.getLocaleName(match[1]) + "</a>";
+			}
+		} else {
+			out = out + match[0]; // no link.
+		}
+		fromLast = re.lastIndex;
+	}
+	out = out + str.substring(fromLast, str.length);
+	return out;
+};
+
 /**
  * Return the locale info entry
  * @method getLocaleInfo
@@ -319,6 +389,145 @@ LocaleMap.prototype.getLanguage = function getLanguage(locid) {
 };
 
 /**
+ * @class XpathMap
+ * This manages xpid / strid / PathHeader etc mappings.
+ * It is a cache, and gets populated with data 'volunteered' by page loads, so that 
+ * hopefully it doesn't need to do any network operations on its own.
+ * However, it MAY BE capable of filling in any missing data via AJAX. This is why its operations are async.
+ */
+function XpathMap() {
+	/**
+	 * Maps strid (hash) to info struct.
+	 * The info struct is the basic unit here, it looks like the following:
+	 *   { 
+	 *       hex: '20fca8231d41',
+	 *       path: '//ldml/shoeSize',
+	 *       id:  1337,
+	 *       ph: ['foo','bar','baz']  **TBD**
+	 *   }
+	 *   
+	 *  All other hashes here are just alternate indices into this data.
+	 *  
+	 * @property XpathMap.stridToInfo
+	 */
+	this.stridToInfo = {};
+	/**
+	 * Map xpid (such as 1337) to info
+	 * @property XpathMap.xpidToInfo
+	 */
+	this.xpidToInfo = {};
+	/**
+	 * Map xpath (//ldml/...) to info.
+	 * @property XpathMap.xpathToInfo
+	 */
+	this.xpathToInfo = {};
+};
+
+/**
+ * This function will do a search and then call the onResult function. 
+ * Priority order for search:  hex, id, then path.
+ * @function get
+ * @param search {Object} the object to search for
+ * @param search.hex {String} optional - search by hex id
+ * @param search.path {String} optional - search by xpath
+ * @param search.id {Number} optional - search by number (String will be converted to Number)
+ * @param onResult - will be called with one parameter that looks like this: 
+ *  { search, err, result } -  'search' is the input param, 
+ * 'err' if non-null is any error, and 'result' if non-null is the result info struct.
+ * If there is an error, 'result' will be null. Please do not modify 'result'!
+ */
+XpathMap.prototype.get = function get(search, onResult) {
+	// see if we have anything immediately
+	result = null;
+	if(!result && search.hex) {
+		result = this.stridToInfo[search.hex];
+	}
+	if(!result && search.id) {
+		if(typeof search.id !== Number) {
+			search.id = new Number(search.id);
+		}
+		result = this.xpidToInfo[search.id];
+	}
+	if(!result && search.path) {
+		result = this.xpathToInfo[search.path];
+	}
+	if(result) {
+		onResult({search:search, result:result});
+	} else {
+		stdebug("XpathMap search failed for " + JSON.stringify(search) +  " - doing rpc");
+		var querystr = null;
+		if(search.hex) {
+			querystr = search.hex;
+		} else if(search.path) {
+			querystr = search.path;
+		} else if(search.id) {
+			querystr = "#"+search.id;
+		} else {
+			querystr = ''; // error
+		}
+		require(["dojo/request"], function(request) {
+			request
+			.get('SurveyAjax', {handleAs: 'json',
+								query: {
+									what: 'getxpath',
+									xpath: querystr
+								}})
+			.then(function(json) {
+				if(json.getxpath) {
+					xpathMap.put(json.getxpath); // store back first, then
+					onResult({search: search, result:json.getxpath}); // call
+				} else {
+					onResult({search: search, err:'no results from server'});
+				}
+			})
+			.otherwise(function(err) {
+				onResult({search: search, err:err});
+			});
+		});
+	}
+};
+
+/**
+ * Contribute some data to the map.
+ * @function contribute
+ */
+XpathMap.prototype.put = function put(info) {
+	if(!info || !info.id || !info.path || !info.hex || !info.ph) {
+		stdebug("XpathMap: rejecting incomplete contribution " + JSON.stringify(info));
+	} else if(this.stridToInfo[info.hex]) {
+		stdebug("XpathMap: rejecting duplicate contribution " + JSON.stringify(info));
+	} else {
+		this.stridToInfo[info.hex] = 
+			this.xpidToInfo[info.id] = 
+				this.xpathToInfo[info.path] =
+					info;
+		stdebug("XpathMap: adding contribution " + JSON.stringify(info));
+	}
+};
+
+/**
+ * Format a pathheader array.
+ * @function formatPathHeader
+ * @param ph {Object} pathheaer struct (Section/Page/Header/Code)
+ * @return {String}
+ */
+XpathMap.prototype.formatPathHeader = function formatPathHeader(ph) {
+	if(!ph) {
+		return '';
+	} else {
+		var phArray = [ph.section, ph.page, ph.header, ph.code];
+		return phArray.join(' | '); // type error - valid?
+	}
+};
+
+/**
+ * @class GLOBAL
+ */
+var xpathMap = new XpathMap();
+
+
+
+/**
  * Global items 
  * @class GLOBAL
  */
@@ -385,13 +594,21 @@ function createChunk(text, tag, className) {
 	var chunk = document.createElement(tag);
 	if(className) {
 		chunk.className = className;
-		chunk.title=stui_str(firstword(className)+"_desc");
+		//chunk.title=stui_str(firstword(className)+"_desc");
 	}
 	if(text) {
 		chunk.appendChild(document.createTextNode(text));
 	}
 	return chunk;
 }
+
+/**
+ * Uppercase the first letter of a sentence
+ * @return {String} string with first letter uppercase
+ */
+String.prototype.ucFirst = function() {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+};
 
 /**
  * Create a 'link' that goes to a function. By default it's an 'a', but could be a button, etc.
@@ -418,6 +635,17 @@ function createLinkToFn(strid, fn, tag) {
 	return obj;
 }
 
+function createGravitar(user) {
+	if(user.emailHash) {
+		var gravatar = document.createElement("img");
+		gravatar.src = 'http://www.gravatar.com/avatar/'+user.emailHash+'?d=identicon&r=g&s=32';
+		gravatar.title = 'gravatar - http://www.gravatar.com';
+		return gravatar;
+	} else {
+		return document.createTextNode('');
+	}
+}
+
 /**
  * Create a DOM object referring to a user.
  * @method createUser
@@ -426,18 +654,220 @@ function createLinkToFn(strid, fn, tag) {
  */
 function createUser(user) {
 	var div = createChunk(null,"div","adminUserUser");
-	if(user.emailHash) {
-		var gravatar = document.createElement("img");
-		gravatar.src = 'http://www.gravatar.com/avatar/'+user.emailHash+'?d=identicon&r=g&s=32';
-		gravatar.title = 'gravatar - http://www.gravatar.com';
-		gravatar.align='laft';		
-		div.appendChild(gravatar);
+	div.appendChild(createGravitar(user));
+	div.appendChild(div.userLevel = createChunk(stui_str("userlevel_"+user.userlevelName.toLowerCase(0)),"i","userlevel_"+user.userlevelName.toLowerCase()));
+	div.appendChild(div.userName = createChunk(user.name,"span","adminUserName"));
+	if(!user.orgName) {
+	   user.orgName = user.org;
 	}
-	div.appendChild(createChunk(stui_str("userlevel_"+user.userlevelName.toLowerCase(0)),"i","userlevel_"+user.userlevelName.toLowerCase()));
-	div.appendChild(createChunk(user.name,"span","adminUserName"));
-	div.appendChild(createChunk(user.orgName + ' #'+user.id,"span","adminOrgName"));
-	div.appendChild(createChunk(user.email,"address","adminUserAddress"));
+	div.appendChild(div.userOrg = createChunk(user.orgName + ' #'+user.id,"span","adminOrgName"));
+    div.appendChild(div.userEmail = createChunk(user.email,"address","adminUserAddress"));
 	return div;
+}
+
+/**
+ * Create a DOM object referring to this forum post
+ * @param {Object} json - options
+ * @param {Array} j.ret - forum post data
+ * @return {Object} new DOM object
+ */
+function parseForumContent(json) {
+	var forumDiv = document.createDocumentFragment();
+
+	// json.ret has posts in reverse order (newest first).
+	var postDivs={}; //  postid -> div
+	var topicDivs={}; // xpath -> div or "#123" -> div
+	var postHash={}; // postid -> item
+
+	// first, collect the posts.
+	for (num in json.ret) {
+		postHash[json.ret[num].id]=json.ret[num];
+	}
+	
+	// now, collect the threads
+	function threadId(post) {
+		if(post.parent >= 0 && postHash[post.parent]) {
+			// if  the parent exists.
+			return threadId(postHash[post.parent]);
+		}
+		if(post.xpath) {
+			return post.locale + "|" + post.xpath; // item post
+		} else {
+			return post.locale + "|#"+post.id; // non-item post
+		}
+	}
+
+	// next, add threadIds and create the topic divs
+	for ( num in json.ret) {
+		var post = json.ret[num];
+		post.threadId = threadId(post);
+		
+		if(!topicDivs[post.threadId]) {
+			// add the topic div
+			var topicDiv = document.createElement('div');
+			topicDiv.className = 'well well-sm postTopic';
+			var topicInfo = createChunk("", "h4", "postTopicInfo");
+			if(!json.noItemLink) {
+				topicDiv.appendChild(topicInfo);
+				if(post.locale) {
+					var localeLink = createChunk(locmap.getLocaleName(post.locale), "a", "localeName");
+					if(post.locale != surveyCurrentLocale) {
+						localeLink.href = linkToLocale(post.locale);
+						//localeLink.className = localeLink.className + " label label-warning";
+					}
+					topicInfo.appendChild(localeLink);
+				}
+			}
+			if(!post.xpath) {
+				topicInfo.appendChild(createChunk(post2text(post.subject), "span", "topicSubject"));
+			} else {
+				if(!json.noItemLink) {
+					var itemLink = createChunk(stui.str("forum_item"), "a", "pull-right postItem glyphicon glyphicon-zoom-in");
+					itemLink.href = "#/"+post.locale+"//"+post.xpath;
+					topicInfo.appendChild(itemLink);
+					(function(topicInfo){
+						var loadingMsg = createChunk(stui.str("loading"), "i", "loadingMsg");
+						topicInfo.appendChild(loadingMsg);
+						xpathMap.get({hex: post.xpath}, function(o){
+						if(o.result) {
+							topicInfo.removeChild(loadingMsg);
+							var itemPh = createChunk(xpathMap.formatPathHeader(o.result.ph), "span", "topicSubject");
+							itemPh.title = o.result.path;
+							topicInfo.appendChild(itemPh);
+						}
+					});})(topicInfo);
+				}
+			}
+			topicDivs[post.threadId] = topicDiv;
+			topicDiv.id = "fthr_"+post.threadId;
+			
+			// add to the div
+			forumDiv.appendChild(topicDiv);
+		}
+	}
+	// Now, top to bottom, just create the post divs
+	for(num in json.ret) {
+		var post = json.ret[num];
+		
+		var subpost = createChunk("","div","post"); // was: subpost
+		// Don't add to the DIV yet - will reparent into the topic Divs
+		///  --forumDiv.appendChild(subpost);
+		
+		postDivs[post.id] = subpost;
+		
+		subpost.id = "fp"+post.id;
+		
+//		var userChunk = createUser(post.posterInfo);
+		//subpost.appendChild(userChunk);
+		
+		var gravitar = createGravitar(post.posterInfo);
+		gravitar.className = "gravitar pull-left";
+		subpost.appendChild(gravitar);
+		var headingLine = createChunk("", "h4", "selected");
+		if(post.posterInfo.id == surveyUser.id) {
+			headingLine.appendChild(createChunk(stui.str("user_me"),"span", "forum-me"));
+		} else {
+			var usera = createChunk(post.posterInfo.name+' ', "a", "");
+			if(post.posterInfo.email) {
+				usera.appendChild(createChunk("","span","glyphicon glyphicon-envelope"));
+				usera.href = "mailto:"+post.posterInfo.email;
+			}
+			headingLine.appendChild(usera);
+			headingLine.appendChild(document.createTextNode(' ('+post.posterInfo.org+') '));
+		}
+		var userLevelChunk;
+		headingLine.appendChild(userLevelChunk=
+			createChunk(stui.str("userlevel_"+post.posterInfo.userlevelName), "span", "userLevelName label-info label"));
+		userLevelChunk.title = stui.str("userlevel_"+post.posterInfo.userlevelName+"_desc");
+		var dateChunk = createChunk(fmtDateTime(post.date_long),"span","label label-primary pull-right forumLink");
+		(function(post) {
+			listenFor(dateChunk, "click", function(e) {
+				if(locmap.getLanguage(surveyCurrentLocale) != locmap.getLanguage(post.locale)) {
+					surveyCurrentLocale = locmap.getLanguage(post.locale);
+				}
+				surveyCurrentPage = '';
+				surveyCurrentId = post.id;
+				replaceHash(false);
+				if(surveyCurrentSpecial != 'forum') {
+					surveyCurrentSpecial = 'forum';
+					reloadV();
+				}
+				return stStopPropagation(e);
+			});
+		})(post);
+		headingLine.appendChild(dateChunk);
+		
+		subpost.appendChild(headingLine);
+		
+		var subSubChunk = createChunk("","div","postHeaderInfoGroup");
+		subpost.appendChild(subSubChunk);
+		{
+			var subChunk = createChunk("","div","postHeaderItem");
+			subSubChunk.appendChild(subChunk);
+			subChunk.appendChild(createChunk(post2text(post.subject),"b","postSubject"));
+		}
+				
+		// actual text
+		var postText = post2text(post.text);
+		var postContent;
+		subpost.appendChild(postContent = createChunk(postText, "div","postContent"));
+		if(json.replyButton) {
+			var replyButton = createChunk(stui.str("forum_reply"), "button", "btn btn-default btn-sm");
+			(function(post){ listenFor(replyButton, "click", function(e) {
+				openReply({
+					locale: surveyCurrentLocale,
+					//xpath: '',
+					replyTo: post.id,
+					replyData: post,
+					onReplyClose: json.onReplyClose
+				});
+				stStopPropagation(e);
+				return false;
+			});})(post);
+			subpost.appendChild(replyButton);
+		}
+
+		// reply link
+		if(json.replyStub) {
+			var replyChunk = createChunk("Reply (leaves this page)","a","postReply");
+			replyChunk.href = json.replyStub + post.id;
+			subpost.appendChild(replyChunk);
+		}
+	}
+	// reparent any nodes that we can
+	for(num in json.ret) {
+		var post = json.ret[num];
+		if(post.parent != -1) {
+			stdebug("reparenting " + post.id + " to " + post.parent);
+			if(postDivs[post.parent]) {
+				if(!postDivs[post.parent].replies) {
+					// add the "replies" area
+					stdebug("ADding replies area to " + post.parent );
+					postDivs[post.parent].replies = createChunk("","div","postReplies");
+					postDivs[post.parent].appendChild(postDivs[post.parent].replies);
+				}
+				// add to new location
+				postDivs[post.parent].replies.appendChild(postDivs[post.id]);
+			} else {
+				// The parent of this post was deleted.
+				stdebug("The parent of post #" + post.id + " is " + post.parent + " but it was deleted or not visible");
+				// link it in somewhere
+				topicDivs[post.threadId].appendChild(postDivs[post.id]);
+			}
+		} else {
+			// 'top level' post, put it into the forumdiv.
+			topicDivs[post.threadId].appendChild(postDivs[post.id]);
+		}
+	}
+	
+	// Now, bubble up recent posts to the top
+	for(var num=json.ret.length-1;num>=0;num--) {
+		var post = json.ret[num];
+		var topicDiv = topicDivs[post.threadId];
+		forumDiv.removeChild(topicDiv);
+		forumDiv.insertBefore(topicDiv, forumDiv.firstChild);
+	}
+	return forumDiv;
 }
 
 /**
@@ -502,7 +932,7 @@ var processXhrQueue = function() {
 		top.load=function(){return myLoad0(top,arguments); };
 		top.err=function(){return myErr0(top,arguments); };
 		top.startTime = new Date().getTime();
-		if(top.postData) {
+		if(top.postData || top.content) {
 			stdebug("PXQ("+queueOfXhr.length+"): dispatch POST " + top.url);
 			dojo.xhrPost(top);
 		} else {
@@ -534,7 +964,10 @@ myErr0 = function(top,args) {
 	return r;
 };
 
-
+/**
+ * Queue the XHR request.  It will be a GET *unless* either postData or content are set.
+ * @param xhr
+ */
 function queueXhr(xhr) {
 	queueOfXhr.push(xhr);
 	stdebug("pushed:  PXQ="+queueOfXhr.length + ", postData: " + xhr.postData);
@@ -798,23 +1231,22 @@ function showWord() {
 			|| (progressWord&&progressWord=="disconnected")
 			|| (progressWord&&progressWord=="error")
 			) { // top priority
-		oneword.innerHTML = stopIcon +  stui_str(progressWord);
-		p.className = "progress-disconnected";
+		popupAlert('danger',stopIcon +  stui_str(progressWord));
 		busted(); // no further processing.
 	} else if(ajaxWord) {
 		p.className = "progress-ok";
-		oneword.innerHTML = ajaxWord;
+		//popupAlert('warning',ajaxWord);
 	} else if(!progressWord || progressWord == "ok") {
 		if(specialHeader) {
 			p.className = "progress-special";
-			oneword.innerHTML = specialHeader; // only show if set
+			//popupAlert('success',specialHeader);
 		} else {
 			p.className = "progress-ok";
-			oneword.innerHTML = stui_str('online');
+			//popupAlert('warning',stui_str('online'));
 		}
 	} else if(progressWord=="startup") {
 		p.className = "progress-ok";
-		oneword.innerHTML = stui_str('startup');
+		popupAlert('warning',stui_str('online'));
 	}
 }
 
@@ -963,7 +1395,7 @@ function updateSpecialHeader(newSpecialHeader) {
 
 function trySurveyLoad() {
 	try {
-		var url = contextPath + "/survey"+cacheKill();
+		var url = contextPath + "/survey?"+cacheKill();
 		console.log("Attempting to restart ST at " + url);
 	    dojo.xhrGet({
 	        url: url,
@@ -987,12 +1419,16 @@ function formatErrMsg(json, subkey) {
 	if(json && json.err_code) {
 		msg_str = theCode = json.err_code;
 		if(stui.str(json.err_code) == json.err_code) {
+			console.log("** Unknown error code: " + json.err_code);
 			msg_str = "E_UNKNOWN";
 		}
 	}
+	if(json === null) {
+		json = {}; // handle cases with no input data
+	}
 	return stui.sub(msg_str,
 			{
-				json: json, what: stui.str('err_what_'+subkey), code: theCode,
+				json: json, what: stui.str('err_what_'+subkey), code: theCode, err_data: json.err_data,
 				surveyCurrentLocale: surveyCurrentLocale,
 				surveyCurrentId: surveyCurrentId,
 				surveyCurrentSection: surveyCurrentSection,
@@ -1007,6 +1443,7 @@ function formatErrMsg(json, subkey) {
  */
 function updateStatusBox(json) {
 	if(json.disconnected) {
+		json.err_code = 'E_DISCONNECTED';
 		handleDisconnect("Misc Disconnect", json,"disconnected"); // unknown 
 	} else if(json.err_code) {
 		console.log('json.err_code == ' + json.err_code);
@@ -1224,8 +1661,7 @@ function updateStatus() {
  */
 function setTimerOn() {
     updateStatus();
-//    timerID = setInterval(updateStatus, timerSpeed);
-    
+    // an interval is not used - each status update does its own timeout.
 }
 
 /**
@@ -1235,8 +1671,6 @@ function setTimerOn() {
  */
 function resetTimerSpeed(speed) {
 	timerSpeed = speed;
-//	clearInterval(timerID);
-//	timerID = setInterval(updateStatus, timerSpeed);
 }
 
 // set up window. Let Dojo call us, otherwise dojo won't load.
@@ -1550,6 +1984,9 @@ function incrPopToken(x) {
 // timeout for showing sideways view
 var sidewaysShowTimeout = -1;
 
+// array storing all only-1 sublocale
+var oneLocales = [];
+
 /**
  * @method showForumStuff
  * called when showing the popup each time
@@ -1559,6 +1996,11 @@ var sidewaysShowTimeout = -1;
  */
 function showForumStuff(frag, forumDiv, tr) {
 	{
+		var isOneLocale = false;
+		if(oneLocales[surveyCurrentLocale]){
+			isOneLocale = true;
+		}
+		if(!isOneLocale){
 		var sidewaysControl = createChunk(stui.str("sideways_loading0"), "div", "sidewaysArea");
 		frag.appendChild(sidewaysControl);		
 		
@@ -1575,98 +2017,193 @@ function showForumStuff(frag, forumDiv, tr) {
 			
 			var url = contextPath + "/SurveyAjax?what=getsideways&_="+surveyCurrentLocale+"&s="+surveySessionId+"&xpath="+tr.theRow.xpstrid +  cacheKill();
 			myLoad(url, "sidewaysView", function(json) {
-				//updateIf(sidewaysControl, JSON.stringify(json));
-				if(!json.others) {
-					updateIf(sidewaysControl, ""); // no sibling locales (or all null?)
-				} else {
-					var theMsg = null;
-					if(Object.keys(json.others).length == 1) {
-						theMsg = stui.str("sideways_same");
-						addClass(sidewaysControl, "sideways_same");
+				// if there is 1 sublocale(+ 1 default), we do nothing
+				var locale_count = Object.keys(json.others).length + json.novalue.length;
+				if(locale_count <= 2){
+					oneLocales[surveyCurrentLocale] = true;
+					updateIf(sidewaysControl, "");
+				}else{
+//					updateIf(sidewaysControl, JSON.stringify(json));
+					if(!json.others) {
+						updateIf(sidewaysControl, ""); // no sibling locales (or all null?)
 					} else {
-						theMsg = stui.str("sideways_diff");
-						addClass(sidewaysControl, "sideways_diff");
-					}
-					updateIf(sidewaysControl, ""); // remove string
-					
-					//var popupArea = document.createElement("div");
-					//addClass(popupArea, "sideways_popup");
-					//sidewaysControl.appendChild(popupArea); // will be initially hidden
-					var appendLocaleList = function appendLocaleList(list, name, title) {
-						var group = document.createElement("optGroup");
-						group.setAttribute("label", name +  " (" + list.length + ")");
-						group.setAttribute("title", title);
-						list.sort(); // at least sort the locale ids
-						for(var l=0;l<list.length;l++) {
-							var loc = list[l];
-							var item = document.createElement("option");
-							item.setAttribute("value",loc);
-							var str = locmap.getRegionAndOrVariantName(loc);
-							if(loc === surveyCurrentLocale) {
-								str = str + ": " + theMsg;
-								item.setAttribute("selected", "selected");
-								item.setAttribute("title",'"'+s+'"');
-							} else {
-				        		var bund = locmap.getLocaleInfo(loc);
+						updateIf(sidewaysControl, ""); // remove string
+	
+						var topLocale = json.topLocale;
+						var curLocale = locmap.getRegionAndOrVariantName(topLocale);
+						var readLocale = null;
+						
+						// merge the read-only sublocale to base locale
+						var mergeReadBase = function mergeReadBase(list){
+							var baseValue = null;
+							// find the base locale, remove it and store its value
+							for(var l=0; l<list.length; l++){
+								var loc = list[l][0];
+								if(loc === topLocale) {
+									baseValue = list[l][1];
+									list.splice(l,1);
+									break;
+								}
+							}
+							
+							// replace the default locale(read-only) with base locale, store its name for label
+							for(var l=0; l<list.length; l++){
+								var loc = list[l][0];
+								var bund = locmap.getLocaleInfo(loc);
 				        		if(bund && bund.readonly) {
-			        				addClass(item, "locked");
-			        				item.setAttribute("disabled","disabled");
-			        				item.setAttribute("title",stui.str("readonlyGuidance"));
-				        		} else {
-				        			item.setAttribute("title",'"'+s+'"');
-				        		}
-							}							
-							item.appendChild(document.createTextNode(str));
-							group.appendChild(item);
+				        			readLocale = locmap.getRegionAndOrVariantName(loc);
+				        			list[l][0] = topLocale;
+				        			list[l][1] = baseValue;
+				        			break;
+								}
+							}
 						}
+						// compare all sublocale values 
+						var appendLocaleList = function appendLocaleList(list) {
+							var group = document.createElement("optGroup");
+							var br = document.createElement("optGroup");
+							group.appendChild(br);
+							
+							group.setAttribute("label", "Regional Variants for " + curLocale);
+							group.setAttribute("title", "Regional Variants for " + curLocale);
+							
+							var curValue = null;
+							var escape = "\u00A0\u00A0\u00A0";
+							var unequalSign = "\u2260\u00A0";
+							
+							// find the currenct locale name
+							for(var l=0;l<list.length;l++){
+								var loc = list[l][0];
+								if(loc === surveyCurrentLocale) {
+									curValue = list[l][1];
+									break;
+								}
+							};
+							
+							for(var l=0;l<list.length;l++) {
+								var loc = list[l][0];
+								var title = list[l][1];
+								var item = document.createElement("option");
+								item.setAttribute("value", loc);
+								if(title == null){
+									item.setAttribute("title", "undefined");
+								}else{
+									item.setAttribute("title", title);
+								}
+								
+								var str = locmap.getRegionAndOrVariantName(loc);
+								if(loc === topLocale){
+									str = str + " (= " + readLocale + ")";
+								}
+								
+								if(loc === surveyCurrentLocale) {
+									str = escape + str;
+									item.setAttribute("selected", "selected");
+				        			item.setAttribute("disabled","disabled");
+								}else if(title != curValue){
+									str = unequalSign + str;
+								}else{
+									str = escape + str;
+								}
+								item.appendChild(document.createTextNode(str));
+								group.appendChild(item);
+							}
+							popupSelect.appendChild(group);
+						};
+						
+						var dataList = [];
+						
+						var popupSelect = document.createElement("select");
+						var inheritValue = null; // inherit value for no-value object
+						for(var s in json.others) {
+							for(var t in json.others[s]){
+								if(json.others[s][t] === topLocale){
+									inheritValue = s;
+								}
+								dataList.push([json.others[s][t], s]);
+							}
+						}
+						if(json.novalue) {
+							for(s in json.novalue){
+								dataList.push([json.novalue[s], inheritValue]);
+							}
+						}	
+						mergeReadBase(dataList);
+						
+						// then sort by sublocale name
+						dataList = dataList.sort(function(a,b) {
+							return locmap.getRegionAndOrVariantName(a[0]) > locmap.getRegionAndOrVariantName(b[0]);
+					    });
+						appendLocaleList(dataList);
+
+						var group = document.createElement("optGroup");
 						popupSelect.appendChild(group);
+						
+						listenFor(popupSelect, "change", function(e) {
+							var newLoc = popupSelect.value;
+							if(newLoc !== surveyCurrentLocale) {
+								surveyCurrentLocale = newLoc;
+								reloadV();
+							}
+							return stStopPropagation(e);
+						});
+						
+						sidewaysControl.appendChild(popupSelect);
 					}
-					
-					var popupSelect = document.createElement("select");
-					for(var s in json.others) {
-						appendLocaleList(json.others[s], s, s);
-						//console.log("k:" + s + " in " + JSON.stringify(json.others));
-					}
-					if(json.novalue) {
-						appendLocaleList(json.novalue,  stui.str("sideways_noValue"),  stui.str("sideways_noValue"));
-					}					
-					
-					listenFor(popupSelect, "change", function(e) {
-						var newLoc = popupSelect.value;
-						if(newLoc !== surveyCurrentLocale) {
-							surveyCurrentLocale = newLoc;
-							reloadV();
-						}
-						return stStopPropagation(e);
-					});
-					
-					sidewaysControl.appendChild(popupSelect);
 				}
 			});
 		}, 2000); // wait 2 seconds before loading this.
+		}
 	}
 	
 	// prepend something
 	var buttonTitle = "forumNewPostButton";
-	var buttonClass = "forumNewButton";
+	var buttonClass = "forumNewButton btn btn-default btn-sm";
+	var couldFlag = false;
 	if(tr.theRow) {
 		if(tr.theRow.voteVhash !== tr.theRow.winningVhash 
+				&& tr.theRow.voteVhash !== ''
 				&& tr.theRow.canFlagOnLosing && 
 				!tr.theRow.rowFlagged) {
 			buttonTitle = "forumNewPostFlagButton";
-			buttonClass = "forumNewPostFlagButton";
+			buttonClass = "forumNewPostFlagButton btn btn-default btn-sm";
+			couldFlag=true;
 		}
 	}
 	var newButton = createChunk(stui.str(buttonTitle), "button", buttonClass);
-	frag.appendChild(newButton);
+	if(!isDashboard()) {
+		frag.appendChild(newButton);
 	
-	listenFor(newButton, "click", function(e) {
-		//window.blur(); // submit anything unsubmitted
-		window.open(tr.forumDiv.postUrl);
-		stStopPropagation(e);
-		return true;
-	});
-	
+		(function(theRow,couldFlag){listenFor(newButton, "click", function(e) {
+				xpathMap.get({hex: theRow.xpstrid}, 
+						function(o) {
+							var subj = theRow.code + ' ' + theRow.xpstrid;
+							if(o.result && o.result.ph) {
+								subj = xpathMap.formatPathHeader(o.result.ph);
+							}
+							if(couldFlag) {
+								subj = subj + " (Flag for review)";
+							}
+							openReply({
+								locale: surveyCurrentLocale,
+								//onReplyClose: function(postModal, form, formDidChange) {if(formDidChange){console.log('Reload- changed.');reloadV();}},
+								//xpath: '',
+								xpath: theRow.xpstrid,
+								subject: subj,
+								//replyTo: post.id,
+								//replyData: post
+							});
+				});
+				stStopPropagation(e);
+				return false;
+		});})(tr.theRow, couldFlag);
+		//	listenFor(newButton, "click", function(e) {
+		//		//window.blur(); // submit anything unsubmitted
+		//		window.open(tr.forumDiv.postUrl);
+		//		stStopPropagation(e);
+		//		return true;
+		//	});
+	}	
 	var loader2 = createChunk(stui.str("loading"),"i");
 	frag.appendChild(loader2);
 
@@ -1703,47 +2240,10 @@ function showForumStuff(frag, forumDiv, tr) {
 				try {
 					if (json) {
 						if(json.ret) {
-							for(num in json.ret) {
-								var post = json.ret[num];
-//								userChunk.style.float = "right";
-//								forumDiv.appendChild(createChunk("Id:","b"));
-//								forumDiv.appendChild(document.createElement("br"));
-								
-								var subpost = createChunk("","div","subpost");
-								forumDiv.appendChild(subpost);
-								
-								var headerLine = createChunk("","div","postHeaderLine");
-								subpost.appendChild(headerLine);
-								
-								var userChunk = createUser(post.posterInfo);
-								headerLine.appendChild(userChunk);
-								
-								var subSubChunk = createChunk("","div","postHeaderInfoGroup");
-								headerLine.appendChild(subSubChunk);
-								{
-									var subChunk = createChunk("","div","postHeaderItem");
-									subSubChunk.appendChild(subChunk);
-									subChunk.appendChild(createChunk("Date:","b"));
-									subChunk.appendChild(createChunk(post.date,"span","postHeader"));
-									subChunk.appendChild(document.createElement("br"));
-								}
-								{
-									var subChunk = createChunk("","div","postHeaderItem");
-									subSubChunk.appendChild(subChunk);
-									subChunk.appendChild(createChunk("Subject:","b"));
-									subChunk.appendChild(createChunk(post.subject,"span","postHeader"));
-									subChunk.appendChild(document.createElement("br"));
-								}
-																
-								// actual text
-								subpost.appendChild(createChunk(post.text, "div","postContent"));
-								
-								// reply link
-								var replyChunk = createChunk("Reply (leaves this page)","a","postReply");
-								replyChunk.href = tr.forumDiv.replyStub + post.id;
-								subpost.appendChild(replyChunk);
-								
-							}
+							forumDiv.appendChild(parseForumContent({ret: json.ret, 
+											//replyStub: tr.forumDiv.replyStub,
+											replyButton: true,
+											noItemLink: true}));
 						}
 					}
 				} catch (e) {
@@ -1774,18 +2274,21 @@ function showForumStuff(frag, forumDiv, tr) {
 	{
 		// load async
 		var ourUrl = tr.forumDiv.url + "&what=forum_count" + cacheKill() ;
-		var xhrArgs = {
-				url: ourUrl,
-				handleAs:"json",
-				load: function(json) {
-					if(json && json.forum_count !== undefined) {
-						havePosts(parseInt(json.forum_count));
-					} else {
-						console.log("Some error loading post count??");
-					}
-				},
-		};
-		queueXhr(xhrArgs);
+		window.setTimeout(function() {
+			var xhrArgs = {
+					url: ourUrl,
+					handleAs:"json",
+					load: function(json) {
+						if(json && json.forum_count !== undefined) {
+							havePosts(parseInt(json.forum_count));
+						} else {
+							console.log("Some error loading post count??");
+						}
+					},
+			};
+			queueXhr(xhrArgs);	
+		}, 1900);
+
 	}
 	
 	
@@ -1802,7 +2305,7 @@ function appendForumStuff(tr, theRow, forumDiv) {
 	removeAllChildNodes(forumDiv); // we may be updating.
 	var theForum = 	locmap.getLanguage(surveyCurrentLocale);
 	forumDiv.replyStub = contextPath + "/survey?forum=" + theForum + "&_=" + surveyCurrentLocale + "&replyto=";
-	forumDiv.postUrl = forumDiv.replyStub + "x"+theRow.xpid;
+	forumDiv.postUrl = forumDiv.replyStub + "x"+theRow;
 	forumDiv.url = contextPath + "/SurveyAjax?xpath=" + theRow.xpid + "&_=" + surveyCurrentLocale + "&fhash="
 		+ theRow.rowHash + "&vhash=" + "&s=" + tr.theTable.session
 		+ "&voteinfo=t";
@@ -1883,10 +2386,11 @@ dojo.ready(function() {
 	 * @param {Function} fn 
 	 * @param {Boolean} immediate
 	 */
-	window.showInPop2 = function(str, tr, hideIfLast, fn, immediate) {
+	window.showInPop2 = function(str, tr, hideIfLast, fn, immediate, hide) {
 //		if(hideIfLast&&lastShown==hideIfLast) {
 //			return; // keep up
 //		}
+		
 		if(unShow) {
 			unShow();
 			unShow=null;
@@ -1896,27 +2400,7 @@ dojo.ready(function() {
 			clearTimeout(hideInterval);
 			hideInterval=null;
 		}
-//		if(hideIfLast && lastShown==hideIfLast) {
-//			lastShown=null;
-//			
-//			pucontent.style.display="none";
-//			
-//			return;
-//		}
-		
-		if(tr && tr.theRow) {
-//			console.log('Hey, selecting this row..');
-			
-			if(tr.theRow.coverageValue > effectiveCoverage()) {
-//				addClass(tr,'selectShow');
-//				console.log("Hey!! I'm a " + tr.theRow.coverageValue + " but e-cov is " + effectiveCoverage());
-				// add something to popinfo?
-			} else {
-//				console.log("A-OK  - I'm a " + tr.theRow.coverageValue + " but e-cov is " + effectiveCoverage());
-			}
-		}
-		
-		
+
 		if(tr && tr.sethash) {
 			window.updateCurrentId(tr.sethash);
 		}
@@ -1929,7 +2413,7 @@ dojo.ready(function() {
 		if(tr) {
 			var theRow = tr.theRow;
 			// this also marks this row as a 'help parent'
-			theHelp = createChunk("","div","helpHtml");
+			theHelp = createChunk("","div","alert alert-info fix-popover-help vote-help");
 				
 			if(theRow.xpstrid /*&& theRow.displayHelp*/) {
 				var deferHelpSpan = document.createElement('span');
@@ -1947,8 +2431,10 @@ dojo.ready(function() {
 							handleAs:"text",
 							load: function(html) {
 								deferHelp[theRow.xpstrid] = html;
-//								console.log("Got>> " + html);
 								deferHelpSpan.innerHTML = html;
+								if(isDashboard()) {
+									fixPopoverVotePos();
+								}
 							},
 					};
 					queueXhr(xhrArgs);
@@ -1980,6 +2466,7 @@ dojo.ready(function() {
 		// If a generator fn (common case), call it.
 		if(fn!=null) {
 			unShow=fn(td);
+			
 		}
 
 		var theVoteinfo = null;
@@ -2006,14 +2493,38 @@ dojo.ready(function() {
 
 		
 		// SRL suspicious
-		removeAllChildNodes(pucontent);
-		pucontent.appendChild(td);
+		if(tr) {
+			if(isDashboard()) {
+				showHelpFixPanel(td);
+			}
+			else {
+				removeAllChildNodes(pucontent);
+				pucontent.appendChild(td);
+			}
+		}
+		else {
+			var clone = td.cloneNode(true);
+			setHelpContent(td);
+			if(!isDashboard()) {
+				removeAllChildNodes(pucontent);
+				pucontent.appendChild(clone);
+			}
+				
+		}
 		td=null;
 		
+		//for the voter
+		 $('.voteInfo_voterInfo').hover(function() {
+			 	var email = $(this).data('email').replace(' (at) ', '@');
+		    	$(this).html('<a href="mailto:'+email+'" title="'+email+'" style="color:black"><span class="glyphicon glyphicon-envelope"></span></a>');
+		    	$(this).closest('td').css('text-align','center');
+		    	$(this).children('a').tooltip().tooltip('show');
+		    }, function() {
+		    	$(this).html($(this).data('name'));
+		    	$(this).closest('td').css('text-align','left');
+		 });
+		
 	};
-	if(false) {
-		window.showInPop = window.showInPop2;
-	} else {
 		// delay before show
 		window.showInPop = function(str,tr,hideIfLast,fn,immediate) {
 			if(hideInterval) {
@@ -2028,7 +2539,7 @@ dojo.ready(function() {
 //				}, 2500);
 			}
 		};
-	}
+	
 //	window.hidePop = function() {
 //		if(hideInterval) {
 //			clearTimeout(hideInterval);
@@ -2049,6 +2560,25 @@ dojo.ready(function() {
 		lastShown = null;
 	};
 });
+
+/**
+ * Check if we need LRM/RLM marker to display
+ * @param field choice field to append if needed
+ * @param dir direction of current locale (control float direction0
+ * @param value the value of votes (check &lrm; &rlm)
+ */
+function checkLRmarker(field, dir, value){
+	if (value) {
+		if ( value.indexOf("\u200E") > -1 ||  value.indexOf("\u200F") > -1 ) {
+			value = value.replace(/\u200E/g, "<span class=\"visible-mark\">&lt;LRM&gt;</span>")
+			 			 .replace(/\u200F/g, "<span class=\"visible-mark\">&lt;RLM&gt;</span>");
+			var lrm = document.createElement("div");
+			lrm.className = "lrmarker-container";
+			lrm.innerHTML = value;
+			field.appendChild(lrm);
+		}
+	}
+}
 
 /**
  * Append just an editable span representing a candidate voting item
@@ -2078,8 +2608,14 @@ function testsToHtml(tests) {
 	if(!tests) return newHtml;
 	for ( var i = 0; i < tests.length; i++) {
 		var testItem = tests[i];
-		newHtml += "<p class='tr_" + testItem.type + "' title='" + testItem.type
-				+ "'>";
+		newHtml += "<p class='trInfo tr_" + testItem.type;
+		if(testItem.type == 'Warning') {
+			newHtml += ' alert alert-warning fix-popover-help';
+		}
+		else if (testItem.type == 'Error') {
+			newHtml += ' alert alert-danger fix-popover-help';
+		}
+		newHtml += "' title='" + testItem.type+"'>";
 		if (testItem.type == 'Warning') {
 			newHtml += warnIcon;
 			// what='warn';
@@ -2133,9 +2669,9 @@ function showProposedItem(inTd,tr,theRow,value,tests, json) {
 //	stdebug("Searching for our value " + value );
 	// Find where our value went.
 	var ourItem = findItemByValue(theRow.items,value);
-	
 	var testKind = getTestKind(tests);
 	var ourDiv = null;
+	var wrap;
 	if(!ourItem) {
 		ourDiv = document.createElement("div");
 		var newButton = cloneAnon(dojo.byId('proto-button'));
@@ -2152,24 +2688,39 @@ function showProposedItem(inTd,tr,theRow,value,tests, json) {
 				tr.lastOn.className = "ichoice-o";
 			}
 			wireUpButton(newButton,tr,theRow,"[retry]", {"value":value});
-			ourDiv.appendChild(newButton);
+			wrap = wrapRadio(newButton);
+			ourDiv.appendChild(wrap);
 		}
 		var h3 = document.createElement("span");
 		var span=appendItem(h3, value, "value",tr);
 		setLang(span);
 		ourDiv.appendChild(h3);
-		
 		children[config.othercell].appendChild(tr.myProposal);
+
 	} else {
 		ourDiv = ourItem.div;
 	}
 	if(json&&!parseStatusAction(json.statusAction).vote) {
 		ourDiv.className = "d-item-err";
+		var input = $(inTd).closest('tr').find('.input-add');
+		if(input) {
+			input.closest('.form-group').addClass('has-error');
+			input.popover('destroy').popover({placement:'bottom',html:true, content:testsToHtml(tests),trigger:'hover'}).popover('show');
+			if(tr.myProposal)
+				tr.myProposal.style.display = "none";
+		}
 		if(ourItem) {
 			str = stui.sub("StatusAction_msg",
 					[ stui_str("StatusAction_"+json.statusAction) ],"p", "");
-			showInPop(str, tr, null, null, true);
+			var str2 = stui.sub("StatusAction_popupmsg",
+					[ stui_str("StatusAction_"+json.statusAction), theRow.code  ],"p", "");
+			// show in modal popup (ouch!)
+			alert(str2);
+			
+			// show this message in a sidebar also
+			showInPop(stopIcon + str, tr, null, null, true);
 		}
+		return;
 	} else if(json&&json.didNotSubmit) {
 		ourDiv.className = "d-item-err";
 		showInPop("(ERROR: Unknown error - did not submit this value.)", tr, null, null, true);
@@ -2229,7 +2780,7 @@ function showItemInfoFn(theRow, item, vHash, newButton, div) {
 	return function(td) {
 		//div.className = 'd-item-selected';
 
-		var h3 = document.createElement("h3");
+		var h3 = document.createElement("div");
 		var span = appendItem(h3, item.value, item.pClass); /* no need to pass in 'tr' - clicking this span would have no effect. */
 		setLang(span);
 		h3.className="span";
@@ -2250,6 +2801,7 @@ function showItemInfoFn(theRow, item, vHash, newButton, div) {
         
 		var newDiv = document.createElement("div");
 		td.appendChild(newDiv);
+		
 		var newHtml = "";
 		
 		if (item.tests) {
@@ -2271,7 +2823,7 @@ function showItemInfoFn(theRow, item, vHash, newButton, div) {
 
 function appendExample(parent, text, loc) {
 	var div = document.createElement("div");
-	div.className="d-example";
+	div.className="d-example well well-sm";
 	div.innerHTML=text;
 	setLang(div, loc);
 	parent.appendChild(div);
@@ -2300,28 +2852,31 @@ function addVitem(td, tr, theRow, item, vHash, newButton, cancelButton) {
 //		div.innerHTML = "<i>null: "+theRow.winningVhash+" </i>";
 		return;
 	}
-	
+	var choiceField = document.createElement("div");
+	var wrap;
+	choiceField.className = "choice-field";
 	if(newButton) {
 		newButton.value=item.value;
 		wireUpButton(newButton,tr,theRow,vHash);
-		div.appendChild(newButton);
+		wrap = wrapRadio(newButton);
+		choiceField.appendChild(wrap);
 	}
-	
     var subSpan = document.createElement("span");
     subSpan.className = "subSpan";
 	var span = appendItem(subSpan,item.value,item.pClass,tr);
-	div.appendChild(subSpan);
+	choiceField.appendChild(subSpan);
 	
 	setLang(span);
+	checkLRmarker(choiceField, span.dir, item.value);
 	
 	if(item.isOldValue==true && !isWinner) {
-		addIcon(div,"i-star");
+		addIcon(choiceField,"i-star");
 	}
 	if(item.votes && !isWinner) {
-		addIcon(div,"i-vote");
+		addIcon(choiceField,"i-vote");
 
 		if(vHash == theRow.voteVhash && theRow.canFlagOnLosing && !theRow.rowFlagged){
-			var newIcon = addIcon(div,"i-stop"); // DEBUG
+			var newIcon = addIcon(choiceField,"i-stop"); // DEBUG
 			/*
 			listenFor(newIcon, "click", function(e) {
 				//window.blur(); // submit anything unsubmitted
@@ -2338,9 +2893,11 @@ function addVitem(td, tr, theRow, item, vHash, newButton, cancelButton) {
 			vHash !== '' &&  // not 'no opinion'
 			theRow.items[theRow.voteVhash].votes[surveyUser.id].overridedVotes) {
 		var overrideTag = createChunk(theRow.items[theRow.voteVhash].votes[surveyUser.id].overridedVotes,"span","i-override");		
-		div.appendChild(overrideTag);
+		choiceField.appendChild(overrideTag);
 	}
 	
+	div.appendChild(choiceField);
+
 	var inheritedClassName = "fallback";
 	var defaultClassName = "fallback_code";
 	
@@ -2349,7 +2906,8 @@ function addVitem(td, tr, theRow, item, vHash, newButton, cancelButton) {
 	   item.pClass.substring(0, defaultClassName.length)!=defaultClassName) {
 		cancelButton.value=item.value;
 		wireUpCancelButton(cancelButton,tr,theRow,vHash);
-		div.appendChild(cancelButton);
+		choiceField.appendChild(cancelButton);
+		$(cancelButton).tooltip();
 	}
 
     // wire up the onclick
@@ -2364,7 +2922,7 @@ function addVitem(td, tr, theRow, item, vHash, newButton, cancelButton) {
 //		listenToPop(null,tr,example,td.showFn);
 	}
 	
-	if(tr.canChange) {
+	/*if(tr.canChange) {
 	    var oldClassName = span.className = span.className + " editableHere";
 	    ///span.title = span.title  + " " + stui_str("clickToChange");
 	    var ieb = null;
@@ -2411,7 +2969,7 @@ function addVitem(td, tr, theRow, item, vHash, newButton, cancelButton) {
 	    };
 	    
 	    listenFor(span, "mouseover", editInPlace);
-	}
+	}*/
 }
 
 function calcPClass(value, winner) {
@@ -2448,7 +3006,7 @@ function updateRow(tr, theRow) {
 		var div = tr.voteDiv = document.createElement("div");
 		tr.voteDiv.className = "voteDiv";
 		
-		tr.voteDiv.appendChild(document.createElement("hr"));
+		//tr.voteDiv.appendChild(document.createElement("hr"));
 		
 		
 		if(theRow.voteVhash && 
@@ -2482,10 +3040,7 @@ function updateRow(tr, theRow) {
 			// next, the org votes
 			var perValueContainer = div; // IF NEEDED: >>  = document.createElement("div");  perValueContainer.className = "perValueContainer";  
 			
-			if(vr.requiredVotes) {
-				var msg = stui.sub("explainRequiredVotes", {requiredVotes: vr.requiredVotes  /* , votecount: surveyUser.votecount */ });
-				perValueContainer.appendChild(createChunk(msg,"p", "helpContent"));
-			}
+			
 			
 			var n = 0;
 			while(n < vr.value_vote.length) {
@@ -2494,34 +3049,47 @@ function updateRow(tr, theRow) {
 				var vote = vr.value_vote[n++];
 				var item = tr.rawValueToItem[value]; // backlink to specific item in hash
 				if(item==null) continue;
-				var vdiv = createChunk(null, "div", "voteInfo_perValue");
-				
+				var vdiv = createChunk(null, "table", "voteInfo_perValue table table-vote");
+				if(n > 2)
+					var valdiv = createChunk(null, "div", "value-div");
+				else
+					var valdiv = createChunk(null, "div", "value-div first")
 				// heading row
+					
 				{
 					//var valueExtra = (value==vr.winningValue)?(" voteInfo_iconValue voteInfo_winningItem d-dr-"+theRow.voteResolver.winningStatus):"";
 					//var voteExtra = (value==vr.lastReleaseValue)?(" voteInfo_lastRelease"):"";
-					var vrow = createChunk(null, "div", "voteInfo_tr voteInfo_tr_heading");
+					var vrow = createChunk(null, "tr", "voteInfo_tr voteInfo_tr_heading");
 					if(!item.votes || Object.keys(item.votes).length==0) {
 						//vrow.appendChild(createChunk("","div","voteInfo_orgColumn voteInfo_td"));
 					} else {
-						vrow.appendChild(createChunk(stui.str("voteInfo_orgColumn"),"div","voteInfo_orgColumn voteInfo_td"));
+						vrow.appendChild(createChunk(stui.str("voteInfo_orgColumn"),"td","voteInfo_orgColumn voteInfo_td"));
 					}
 					var isection = createChunk(null, "div", "voteInfo_iconBar");
-					vrow.appendChild(isection);
+					//vrow.appendChild(isection);
 					
-					var vvalue = createChunk(null, "div", "voteInfo_valueTitle voteInfo_td"+"");
-					
+					var vvalue = createChunk("User", "td", "voteInfo_valueTitle voteInfo_td");
+					var vbadge = createChunk(vote, "span", "badge");
 					if(value==vr.winningValue) {
 						appendIcon(isection,"voteInfo_winningItem d-dr-"+theRow.voteResolver.winningStatus);
 					}
+					
 					if(value==vr.lastReleaseValue) {
 						appendIcon(isection,"voteInfo_lastRelease i-star");
 					}
 					
-					setLang(vvalue);
-					appendItem(vvalue, value, calcPClass(value, vr.winningValue), tr);
+					if(value != vr.winningValue) {
+							appendIcon(isection,"i-vote");
+					}
+					
+					setLang(valdiv);
+					appendItem(valdiv, value, calcPClass(value, vr.winningValue), tr);
+					valdiv.appendChild(isection);
 					vrow.appendChild(vvalue);
-					vrow.appendChild(createChunk(vote,"div","voteInfo_voteTitle voteInfo_td"+""));
+					
+					var cell = createChunk(null,"td","voteInfo_voteTitle voteInfo_voteCount voteInfo_td"+"");
+					cell.appendChild(vbadge);
+					vrow.appendChild(cell);
 					vdiv.appendChild(vrow);
 				}
 				
@@ -2529,16 +3097,21 @@ function updateRow(tr, theRow) {
 					if(v==null) {
 						return createChunk("(NULL)!","i","stopText");
 					}
-					var div = createChunk(v.email,"div","voteInfo_voterInfo voteInfo_td");
-					div.title = v.name + " ("+v.org+")";
+					var div = createChunk(v.name,"td","voteInfo_voterInfo voteInfo_td");
+					div.setAttribute('data-name',v.name);
+					div.setAttribute('data-email',v.email);
 					return div;
 				};
 				
 				if(!item.votes || Object.keys(item.votes).length==0) {
-					var vrow = createChunk(null, "div", "voteInfo_tr voteInfo_orgHeading");
+					var vrow = createChunk(null, "tr", "voteInfo_tr voteInfo_orgHeading");
 					//vrow.appendChild(createChunk("","div","voteInfo_orgColumn voteInfo_td"));
-					vrow.appendChild(createChunk(stui.str("voteInfo_noVotes"),"div","voteInfo_noVotes voteInfo_td"));
+					vrow.appendChild(createChunk(stui.str("voteInfo_noVotes"),"td","voteInfo_noVotes voteInfo_td"));
+					
+					//vrow.appendChild(createChunk("","div","voteInfo_orgColumn voteInfo_td"));
+					vrow.appendChild(createChunk(null, "td","voteInfo_noVotes voteInfo_td"));
 					vdiv.appendChild(vrow);
+					
 				} else {
 					for(org in theRow.voteResolver.orgs) {
 						var theOrg = vr.orgs[org];
@@ -2567,12 +3140,17 @@ function updateRow(tr, theRow) {
 							
 							// ORG SUBHEADING row
 							{
-								var vrow = createChunk(null, "div", "voteInfo_tr voteInfo_orgHeading");
-								vrow.appendChild(createChunk(org,"div","voteInfo_orgColumn voteInfo_td"));
-								var isection = createChunk(null, "div", "voteInfo_iconBar");
-								vrow.appendChild(isection);
+								var vrow = createChunk(null, "tr", "voteInfo_tr voteInfo_orgHeading");
+								vrow.appendChild(createChunk(org,"td","voteInfo_orgColumn voteInfo_td"));
+								//var isection = createChunk(null, "td", "voteInfo_iconBar");
+								//vrow.appendChild(isection);
 								vrow.appendChild(createVoter(item.votes[topVoter])); // voteInfo_td
-								vrow.appendChild(createChunk(orgVoteValue,"div",(orgsVote?"voteInfo_orgsVote ":"voteInfo_orgsNonVote ")+"voteInfo_voteCount voteInfo_td"));
+								if(orgsVote) {
+									var cell = createChunk(null,"td","voteInfo_orgsVote voteInfo_voteCount voteInfo_td");
+									cell.appendChild(createChunk(orgVoteValue, "span", "badge"));
+									vrow.appendChild(cell);
+								}else
+									vrow.appendChild(createChunk(orgVoteValue,"td","voteInfo_orgsNonVote voteInfo_voteCount voteInfo_td"));
 								vdiv.appendChild(vrow);
 							}
 							
@@ -2584,12 +3162,12 @@ function updateRow(tr, theRow) {
 								}
 								// OTHER VOTER row
 								{
-									var vrow = createChunk(null, "div", "voteInfo_tr");
-									vrow.appendChild(createChunk("","div","voteInfo_orgColumn voteInfo_td")); // spacer
-									var isection = createChunk(null, "div", "voteInfo_iconBar");
-									vrow.appendChild(isection);
+									var vrow = createChunk(null, "tr", "voteInfo_tr");
+									vrow.appendChild(createChunk("","td","voteInfo_orgColumn voteInfo_td")); // spacer
+									//var isection = createChunk(null, "td", "voteInfo_iconBar");
+									//vrow.appendChild(isection);
 									vrow.appendChild(createVoter(item.votes[voter])); // voteInfo_td
-									vrow.appendChild(createChunk(item.votes[voter].votes,"div","voteInfo_orgsNonVote voteInfo_voteCount voteInfo_td"));
+									vrow.appendChild(createChunk(item.votes[voter].votes,"td","voteInfo_orgsNonVote voteInfo_voteCount voteInfo_td"));
 									vdiv.appendChild(vrow);
 								}
 							}
@@ -2598,8 +3176,16 @@ function updateRow(tr, theRow) {
 						}
 					}
 				}
+				
+				perValueContainer.appendChild(valdiv);
 				perValueContainer.appendChild(vdiv);
 			}
+			
+			if(vr.requiredVotes) {
+				var msg = stui.sub("explainRequiredVotes", {requiredVotes: vr.requiredVotes  /* , votecount: surveyUser.votecount */ });
+				perValueContainer.appendChild(createChunk(msg,"p", "alert alert-warning fix-popover-help"));
+			}
+			
 		} else {
 			// ? indicate approved, last release value?
 		}
@@ -2607,7 +3193,7 @@ function updateRow(tr, theRow) {
 		// KEY
 		// approved and last release status
 		{
-			var kdiv = createChunk(null,"div","voteInfo_key");
+			/*var kdiv = createChunk(null,"div","voteInfo_key");
 			tr.voteDiv.appendChild(createChunk(stui.str("voteInfo_key"),"h3","voteInfo_key_title"));
 			var disputedText = (theRow.voteResolver.isDisputed)?stui.str("winningStatus_disputed"):"";
 			kdiv.appendChild(createChunk(
@@ -2618,15 +3204,19 @@ function updateRow(tr, theRow) {
 			kdiv.appendChild(createChunk(
 					stui.sub("lastReleaseStatus_msg",
 							[ stui.str(theRow.voteResolver.lastReleaseStatus) ])
-					, "div",  /* "d-dr-"+theRow.voteResolver.lastReleaseStatus+ */ "voteInfo_lastReleaseKey voteInfo_iconValue"));
+					, "div", "i-star voteInfo_iconValue"));
 
 			
 			tr.voteDiv.appendChild(kdiv);
-
+			
+			var surlink = document.createElement("div");
+			surlink.className = "alert alert-info fix-popover-help";
+			
 			var link = createChunk(stui.str("voteInfo_moreInfo"),"a", null);
 			var theUrl = "http://cldr.unicode.org/index/survey-tool/guide#TOC-Key";
 			link.href = theUrl;
-			tr.voteDiv.appendChild(link);
+			surlink.appendChild(link);
+			tr.voteDiv.appendChild(surlink);*/
 
 		}
 
@@ -2655,7 +3245,9 @@ function updateRow(tr, theRow) {
 			tr.sethash = tr.xpstrid;
 		}
 	}
+	
 	var children = getTagChildren(tr);
+	
 	var config = surveyConfig;
 	var protoButton = dojo.byId('proto-button');
 	var cancelButton = dojo.byId('cancel-button');
@@ -2664,12 +3256,15 @@ function updateRow(tr, theRow) {
 		cancelButton = null;
 	}
 	
+	
 	children[config.statuscell].className = "d-dr-"+theRow.confirmStatus + " d-dr-status";
+
 	if(!children[config.statuscell].isSetup) {
 		listenToPop("", tr, children[config.statuscell]);
 
 		children[config.statuscell].isSetup=true;
 	}
+
 	children[config.statuscell].title = stui.sub('draftStatus',[stui.str(theRow.confirmStatus)]);
 
 	if(theRow.hasVoted) {
@@ -2679,16 +3274,18 @@ function updateRow(tr, theRow) {
 		children[config.nocell].title=stui.voFalse;
 		children[config.nocell].className= "d-no-vo-false";
 	}
+	
+	if(config.codecell) {
 
-	children[config.codecell].appendChild(createChunk('|>'));
-			removeAllChildNodes(children[config.codecell]);
-			children[config.codecell].appendChild(createChunk('<|'));
-					removeAllChildNodes(children[config.codecell]);
-	var codeStr = theRow.code;
-	if(theRow.coverageValue==101 && !stdebug_enabled) {
-		codeStr = codeStr + " (optional)";
-	}
-	children[config.codecell].appendChild(createChunk(codeStr));
+		children[config.codecell].appendChild(createChunk('|>'));
+				removeAllChildNodes(children[config.codecell]);
+				children[config.codecell].appendChild(createChunk('<|'));
+						removeAllChildNodes(children[config.codecell]);
+		var codeStr = theRow.code;
+		if(theRow.coverageValue==101 && !stdebug_enabled) {
+			codeStr = codeStr + " (optional)";
+		}
+		children[config.codecell].appendChild(createChunk(codeStr));
 		if(tr.theTable.json.canModify) { // pointless if can't modify.
 	
 			children[config.codecell].className = "d-code";			
@@ -2706,6 +3303,8 @@ function updateRow(tr, theRow) {
 		if(theRow.extraAttributes && Object.keys(theRow.extraAttributes).length>0) {
 			appendExtraAttributes(children[config.codecell], theRow);
 		}
+		
+
 		if(stdebug_enabled) {
 			var anch = document.createElement("i");
 			anch.className="anch";
@@ -2743,7 +3342,7 @@ function updateRow(tr, theRow) {
 			children[config.codecell].isSetup = true;
 		}
 	//	tr.anch = anch;
-	
+	}
 	if(tr.iebs) {
 		for(var qq in tr.iebs) {
 			stdebug("Destroying " + tr.iebs[qq]);
@@ -2755,16 +3354,53 @@ function updateRow(tr, theRow) {
 	
 	if(!children[config.comparisoncell].isSetup) {
 		if(theRow.displayName) {
-			children[config.comparisoncell].appendChild(document.createTextNode(theRow.displayName));
+			var hintPos = theRow.displayName.indexOf('[translation hint');
+			var hasExample = false;
+			
+			if(theRow.displayExample) {
+				hasExample = true;
+			}
+			
+			if(hintPos != -1) {
+				theRow.displayExample = theRow.displayName.substr(hintPos, theRow.displayName.length) + (theRow.displayExample ? theRow.displayExample.replace(/\[translation hint.*?\]/g,"") : '');
+				theRow.displayName = theRow.displayName.substr(0, hintPos);
+			}
+			
+			children[config.comparisoncell].appendChild(createChunk(theRow.displayName, 'span', 'subSpan'));
 			setLang(children[config.comparisoncell], surveyBaselineLocale);
 			if(theRow.displayExample) {
 				var theExample = appendExample(children[config.comparisoncell], theRow.displayExample, surveyBaselineLocale);
-				listenToPop(null,tr,theExample);
+				//listenToPop(null,tr,theExample);
 			}
+			
+			if(hintPos != -1 || hasExample) {
+				var infos = document.createElement("div");
+				infos.className = 'infos-code';
+				
+				if(hintPos != -1) {
+					var img = document.createElement("img");
+					img.src = 'hint.png';
+					img.alt = 'Translation hint';
+					infos.appendChild(img);
+				}
+				
+				if(hasExample) {
+					var img = document.createElement("img");
+					img.src = 'example.png';
+					img.alt = 'Example';
+					infos.appendChild(img);
+				}
+				
+				children[config.comparisoncell].appendChild(infos);
+			}
+			
+			
 		} else {
 			children[config.comparisoncell].appendChild(document.createTextNode(""));
 		}
-		listenToPop(null,tr,children[config.comparisoncell]);
+		
+		
+		//listenToPop(null,tr,children[config.comparisoncell]);
 		children[config.comparisoncell].isSetup=true;
 	}
 	removeAllChildNodes(children[config.proposedcell]); // win
@@ -2795,20 +3431,102 @@ function updateRow(tr, theRow) {
 	} else {
 		children[config.proposedcell].showFn = function(){};  // nothing else to show
 	}
+	
 	listenToPop(null,tr,children[config.proposedcell], children[config.proposedcell].showFn);
-	listenToPop(null,tr,children[config.errcell], children[config.proposedcell].showFn);
+	if(config.errcell)
+		listenToPop(null,tr,children[config.errcell], children[config.proposedcell].showFn);
 	//listenFor(children[config.errcell],"mouseover",function(e){return children[config.errcell]._onmove(e);});
 	
 	var hadOtherItems  = false;
 	removeAllChildNodes(children[config.othercell]); // other
 	setLang(children[config.othercell]);
+	
+	//add button
+	var formAdd = document.createElement("form");
+	if(tr.canModify) {
+		formAdd.role = "form";
+		formAdd.className = "form-inline";
+		var buttonAdd = document.createElement("div");
+		var btn = document.createElement("button");
+		buttonAdd.className = "button-add form-group";
+		
+		toAddVoteButton(btn);
+		
+		buttonAdd.appendChild(btn);
+		formAdd.appendChild(buttonAdd);
+		
+		var input = document.createElement("input");
+		var popup;
+		input.className = "form-control input-add";
+		input.placeholder = 'Add a translation';
+		btn.onclick = function(e) {
+			//if no input, add one
+			if($(buttonAdd).parent().find('input').length == 0) {
+				
+				//hide other
+				$.each($('button.vote-submit'), function() {
+					toAddVoteButton(this);
+				});
+				
+				//transform the button
+				toSubmitVoteButton(btn);
+				$(buttonAdd).popover({content:' '}).popover('show');
+				popup = $(buttonAdd).parent().find('.popover-content');
+				popup.append(input);
+				popup.closest('.popover').css('top', popup.closest('.popover').position().top - 19);
+				input.focus();
+				
+				
+				//enter pressed
+				$(input).keydown(function (e) {
+					var newValue = $(this).val();
+					if(e.keyCode == 13) { //enter pressed
+						if(newValue) {
+							addValueVote(children[config.othercell], tr, theRow, newValue, cloneAnon(protoButton));			
+						}
+						else {
+							toAddVoteButton(btn);
+						}
+					}
+				});
+				
+			}
+			else {
+				var newValue = input.value;
+				
+				if(newValue) {
+					addValueVote(children[config.othercell], tr, theRow, newValue, cloneAnon(protoButton));					
+				}
+				else {
+					toAddVoteButton(btn);
+				}
+				stStopPropagation(event);
+				return false;
+			}
+			stStopPropagation(e);
+			return false;
+		};
+	}
+	
+	
+	
+	
+	//add the other vote info
 	for(k in theRow.items) {
 		if(k == theRow.winningVhash) {
 			continue; // skip the winner
 		}
 		hadOtherItems=true;
-		addVitem(children[config.othercell],tr,theRow,theRow.items[k],k,cloneAnon(protoButton), cloneAnon(cancelButton));
+		if(theRow.items[k].pClass == 'fallback' || theRow.items[k].pClass == 'fallback_code' || theRow.items[k].pClass == 'alias')
+			addVitem(children[config.othercell],tr,theRow,theRow.items[k],k,cloneAnon(protoButton), cloneAnon(null));
+		else
+			addVitem(children[config.othercell],tr,theRow,theRow.items[k],k,cloneAnon(protoButton), cloneAnon(cancelButton));
+		children[config.othercell].appendChild(document.createElement("hr"));
 	}
+	
+	
+	
+	
 	if(!hadOtherItems /*!onIE*/) {
 		listenToPop(null, tr, children[config.othercell]);
 	}
@@ -2818,19 +3536,37 @@ function updateRow(tr, theRow) {
 	} else {
 		tr.myProposal=null; // not needed
 	}
-	
+
+	if(tr.canChange) {
+		if(isDashboard()) {
+			children[config.othercell].appendChild(document.createElement('hr'));
+			children[config.othercell].appendChild(formAdd);//add button	
+		}
+		else {
+			removeAllChildNodes(children[config.addcell]);
+			children[config.addcell].appendChild(formAdd);//add button	
+		}
+	}
+
 	if(canModify) {
 		removeAllChildNodes(children[config.nocell]); // no opinion
 		var noOpinion = cloneAnon(protoButton);
+		var wrap;
 		wireUpButton(noOpinion,tr, theRow, null);
 		noOpinion.value=null;
-		children[config.nocell].appendChild(noOpinion);
+		wrap = wrapRadio(noOpinion);
+		children[config.nocell].appendChild(wrap);
 		listenToPop(null, tr, children[config.nocell]);
 	}  else if(ticketOnly) { // ticket link
     	if(!tr.theTable.json.canModify) { // only if hidden in the header
     		setDisplayed(children[config.nocell], false);
     	}
 		children[config.proposedcell].className="d-change-confirmonly";
+		
+		var surlink = document.createElement("div");
+		surlink.innerHTML = '<span class="glyphicon glyphicon-list-alt"></span>&nbsp;&nbsp;';
+		surlink.className = 'alert alert-info fix-popover-help';
+		
 		var link = createChunk(stui.str("file_a_ticket"),"a");
 		var newUrl = "http://unicode.org/cldr/trac"+"/newticket?component=data&summary="+surveyCurrentLocale+":"+theRow.xpath+"&locale="+surveyCurrentLocale+"&xpath="+theRow.xpstrid+"&version="+surveyVersion;
 		link.href = newUrl;
@@ -2842,7 +3578,8 @@ function updateRow(tr, theRow) {
 			link.href = link.href + "&description=NOT+PRODUCTION+SURVEYTOOL!";
 		}
 		children[config.proposedcell].appendChild(createChunk(stui.str("file_ticket_notice"), "i", "fnotebox"));
-		tr.ticketLink = link; 
+		surlink.appendChild(link);
+		tr.ticketLink = surlink;  
 	} else  { // no change possible
     	if(!tr.theTable.json.canModify) { // only if hidden in the header
     		setDisplayed(children[config.nocell], false);
@@ -2853,6 +3590,7 @@ function updateRow(tr, theRow) {
 	if(surveyCurrentId!== '' && surveyCurrentId === tr.id) {
 		window.showCurrentId(); // refresh again - to get the updated voting status.
 	}
+	
 }
 
 function findPartition(partitions,partitionList,curPartition,i) {
@@ -2877,6 +3615,7 @@ function insertRowsIntoTbody(theTable,tbody) {
 	var toAdd = theTable.toAdd;
 	var parRow = dojo.byId('proto-parrow');
 	removeAllChildNodes(tbody);
+	
 	var theSort = theTable.json.displaySets[theTable.curSortMode];
 	var partitions = theSort.partitions;
 	var rowList = theSort.rows;
@@ -2884,53 +3623,69 @@ function insertRowsIntoTbody(theTable,tbody) {
 	var partitionList = Object.keys(partitions);
 	var curPartition = null;
 	for(i in rowList ) {
-		var newPartition = findPartition(partitions,partitionList,curPartition,i);
-		
-		if(newPartition != curPartition) {
-			if(newPartition.name != "") {
-				var newPar = cloneAnon(parRow);
-				var newTd = getTagChildren(newPar);
-				var newHeading = getTagChildren(newTd[0]);
-				newHeading[0].innerHTML = newPartition.name;
-				newHeading[0].id = newPartition.name;
-				tbody.appendChild(newPar);
-				newPar.origClass = newPar.className;
-				newPartition.tr = newPar; // heading
-			}
-			curPartition = newPartition;
-		}
 		
 		var k = rowList[i];
 		var theRow = theRows[k];
 		
-		var theRowCov = parseInt(theRow.coverageValue);
-		if(!newPartition.minCoverage || newPartition.minCoverage > theRowCov) {
-			newPartition.minCoverage = theRowCov;
-                        if(newPartition.tr) {
-                            // only set coverage of the header if there's a header
-			    newPartition.tr.className = newPartition.origClass+" cov"+newPartition.minCoverage;
-                        }
+		//no partition in the dashboard
+		if(!isDashboard()) {
+			var newPartition = findPartition(partitions,partitionList,curPartition,i);
+			
+			if(newPartition != curPartition) {
+				if(newPartition.name != "") {
+					var newPar = cloneAnon(parRow);
+					var newTd = getTagChildren(newPar);
+					var newHeading = getTagChildren(newTd[0]);
+					newHeading[0].innerHTML = newPartition.name;
+					newHeading[0].id = newPartition.name;
+					tbody.appendChild(newPar);
+					newPar.origClass = newPar.className;
+					newPartition.tr = newPar; // heading
+				}
+				curPartition = newPartition;
+			}
+			
+			
+			
+			var theRowCov = parseInt(theRow.coverageValue);
+			if(!newPartition.minCoverage || newPartition.minCoverage > theRowCov) {
+				newPartition.minCoverage = theRowCov;
+	                        if(newPartition.tr) {
+	                            // only set coverage of the header if there's a header
+				    newPartition.tr.className = newPartition.origClass+" cov"+newPartition.minCoverage;
+	                        }
+			}
 		}
 		
 		var tr = theTable.myTRs[k];
 		if(!tr) {
-			//console.log("new " + k);
 			tr = cloneAnon(toAdd);
 			theTable.myTRs[k]=tr; // save for later use
 		}
-//		tr.id="r_"+k;
+
 		tr.rowHash = k;
 		tr.theTable = theTable;
 		if(!theRow) {
 			console.log("Missing row " + k);
 		}
+		// update the xpath map
+		xpathMap.put({id: theRow.xpid, 
+					  hex: theRow.xpstrid,
+					  path: theRow.xpath,
+					  ph: {
+					       section: surveyCurrentSection, // Section: Timezones
+					       page: surveyCurrentPage,    // Page: SEAsia ( id, not name )
+					       header: curPartition.name,    // Header: Borneo
+					       code: theRow.code           // Code: standard-long
+					  	}
+					});
+		
+		// refresh the tr's contents
 		updateRow(tr,theRow);
 		
+		// add the tr to the table
 		tbody.appendChild(tr);
-
 	}
-	
-	
 	//console.log("POST rows: " + Object.keys(theTable.myTRs)  + ", hitcount: " + theTable.hitCount);
 }
 
@@ -2962,7 +3717,7 @@ function setupSortmode(theTable) {
 	var itemCount = Object.keys(theTable.json.section.rows).length;
 	var size = document.createElement("span");
 	size.className="d-sort-size";
-	theSortmode.appendChild(size);
+	//theSortmode.appendChild(size);
 	var ul = document.createElement("ul");
 	if(itemCount>0) {
 		for(i in listOfLists) {
@@ -2985,7 +3740,7 @@ function setupSortmode(theTable) {
 			}
 			ul.appendChild(a);
 		}
-		theSortmode.appendChild(ul);
+		//theSortmode.appendChild(ul);
 	}
         
         theTable.json.section.itemCount = itemCount;
@@ -3111,13 +3866,16 @@ function updateCoverage(theDiv) {
  */
 function insertRows(theDiv,xpath,session,json) {
 	var theTable = theDiv.theTable;
-
 	var doInsertTable = null;
 	
 	removeAllChildNodes(theDiv);
 	window.insertLocaleSpecialNote(theDiv);
-	if(!theTable) {
+	//recreated table in every case
 		theTable = cloneLocalizeAnon(dojo.byId('proto-datatable'));
+		if(isDashboard())
+			theTable.className += ' dashboard';
+		else
+			theTable.className += ' vetting-page';
 		updateCoverage(theDiv);
 		localizeFlyover(theTable);
 		theTable.theadChildren = getTagChildren(theTable.getElementsByTagName("tr")[0]);
@@ -3126,7 +3884,7 @@ function insertRows(theDiv,xpath,session,json) {
 			var rowChildren = getTagChildren(toAdd);
 			theTable.config = surveyConfig ={};
 			for(var c in rowChildren) {
-				rowChildren[c].title = theTable.theadChildren[c].title;
+				rowChildren[c].title = theTable.theadChildren[c].title;//console.log(theTable.theadChildren[c].title);
 				if(rowChildren[c].id) {
 					surveyConfig[rowChildren[c].id] = c;
 					stdebug("  config."+rowChildren[c].id+" = children["+c+"]");
@@ -3134,7 +3892,7 @@ function insertRows(theDiv,xpath,session,json) {
 						removeAllChildNodes(rowChildren[c]);
 						rowChildren[c].appendChild(createChunk("config."+rowChildren[c].id+"="+c));
 					}
-					rowChildren[c].id=null;
+					//rowChildren[c].id=null;
 				} else {
 					stdebug("(proto-datarow #"+c+" has no id");
 				}
@@ -3142,7 +3900,6 @@ function insertRows(theDiv,xpath,session,json) {
 			if(stdebug_enabled) stdebug("Table Config: " + JSON.stringify(theTable.config));
 		}
 		theTable.toAdd = toAdd;
-
 		if(!json.canModify) {
 			setDisplayed(theTable.theadChildren[theTable.config.nocell], false);
 		}
@@ -3152,9 +3909,7 @@ function insertRows(theDiv,xpath,session,json) {
 		theDiv.theTable = theTable;
 		theTable.theDiv = theDiv;
 		doInsertTable=theTable;
-	} else {
-		theDiv.appendChild(theDiv.theTable);
-	}
+
 	// append header row
 	
 	theTable.json = json;
@@ -3193,6 +3948,8 @@ function insertRows(theDiv,xpath,session,json) {
 
 	
 	hideLoader(theDiv.loader);
+
+	//wrapRadios();
 }
 
 function loadStui(loc) {
@@ -3372,6 +4129,7 @@ function showV() {
 	         "dijit/form/Select",
 	         "dojox/form/BusyButton",
 	         "dijit/layout/StackContainer",
+	         "dijit/TitlePane",
 	         "dojo/hash",
 	         "dojo/topic",
 	         "dojo/dom-construct",
@@ -3396,6 +4154,7 @@ function showV() {
 	        		 Select,
 	        		 BusyButton,
 	        		 StackContainer,
+	        		 TitlePane,
 	        		 dojoHash,
 	        		 dojoTopic,
 	        		 domConstruct,
@@ -3409,8 +4168,11 @@ function showV() {
 				name = locmap.getLocaleName(subLoc);
 			}
 			var clickyLink = createChunk(name, "a", "locName");
-			clickyLink.href = "#/"+subLoc+"/"+surveyCurrentPage+"/"+surveyCurrentId;
+			clickyLink.href = linkToLocale(subLoc);
 			subLocDiv.appendChild(clickyLink);
+			if(subInfo == null) {
+				console.log("* internal: subInfo is null for " + name + " / " + subLoc);
+			}
 			if(subInfo.name_var) {
 				addClass(clickyLink, "name_var");
 			}
@@ -3418,6 +4180,8 @@ function showV() {
 			
 			if(subInfo.readonly) {
 				addClass(clickyLink, "locked");
+				addClass(subLocDiv, "hide");
+
 				if(subInfo.readonly_why) {
 					clickyLink.title = subInfo.readonly_why;
 				} else if(subInfo.dcChild) {
@@ -3428,18 +4192,20 @@ function showV() {
 			} else if(window.canmodify && subLoc in window.canmodify) {
 				addClass(clickyLink, "canmodify");
 			}
+			else
+				addClass(subLocDiv, "hide");
 			return clickyLink;
 		};
 
-		/* trace for dijit leak */
-		if(!surveyOfficial) window.TRL=function() {
-			var sec = 5;
-			console.log("Tracing dijit registry leaks every "+sec+"s");
-			window.setInterval(function() {
-				document.title = "[dijit:"+registry.length+"] | ";
-			}, 1000 * sec);
-		};
-		
+//		/* trace for dijit leak */
+//		if(!surveyOfficial) window.TRL=function() {
+//			var sec = 5;
+//			console.log("Tracing dijit registry leaks every "+sec+"s");
+//			window.setInterval(function() {
+//				document.title = "[dijit:"+registry.length+"] | ";
+//			}, 1000 * sec);
+//		};
+//		
 		/**
 		 * list of pages to use with the flipper
 		 * @property pages
@@ -3508,11 +4274,135 @@ function showV() {
 		window.__FLIPPER = flipper;
 		
 		/**
+		 * Manage additional special pages
+		 * @class OtherSpecial
+		 */
+		function OtherSpecial() {
+			// cached page list
+			this.pages = {};
+		}
+		
+		/**
+		 * @function getSpecial
+		 */
+		OtherSpecial.prototype.getSpecial = function getSpecial(name) {
+			return this.pages[name];
+		};
+		
+		/**
+		 * @function loadSpecial
+		 */
+		OtherSpecial.prototype.loadSpecial = function loadSpecial(name, onSuccess, onFailure) {
+			var special = this.getSpecial(name);
+			var otherThis = this;
+			if(special) {
+				stdebug("OS: Using cached special: "+ name);
+				onSuccess(special);
+			} else if (special === null) {
+				stdebug("OS: cached NULL: " + name);
+				onFailure("Special page failed to load: " + name);
+			} else {
+				stdebug("OS: Attempting load.." + name);
+				try {
+					require(["js/special/"+name+".js"], function(specialFn) {
+						stdebug("OS: Loaded, instantiatin':" + name);
+						var special = new specialFn();
+						special.name = name;
+						otherThis.pages[name] = special; // cache for next time
+						
+						stdebug("OS: SUCCESS! " + name);
+						onSuccess(special);
+					});
+				} catch(e) {
+					stdebug("OS: Load FAIL!:" + name + " - " + e.message + " - " + e);
+					if(!otherThis.pages[name]) { // if the load didn't complete:
+						otherThis.pages[name]=null; // mark as don't retry load.
+					}
+					onFailure(e);
+				}
+			}
+		};
+		
+		/**
+		 * @function parseHash
+		 */
+		OtherSpecial.prototype.parseHash = function parseHash(name, hash, pieces) {
+			this.loadSpecial(name, function onSuccess(special) {
+				special.parseHash(hash, pieces);
+			}, function onFailure(e) {
+				console.log("OtherSpecial.parseHash: Failed to load " + name + " - " + e);
+				//SpecialPage.prototype.parseHash(hash, pieces); // fallback for not-exist
+			});
+		};
+
+		/**
+		 * @function handleIdChanged
+		 */
+		OtherSpecial.prototype.handleIdChanged = function handleIdChanged(name, id) {
+			this.loadSpecial(name, function onSuccess(special) {
+				special.handleIdChanged(id);
+			}, function onFailure(e) {
+				console.log("OtherSpecial.handleIdChanged: Failed to load " + name + " - " + e);
+			});
+		};
+
+		/**
+		 * @function showPage
+		 */
+		OtherSpecial.prototype.show = function show(name, params) {
+			this.loadSpecial(name, function onSuccess(special) {
+				// populate the params a little more
+				params.otherSpecial = this;
+				params.name = name;
+				params.special = special;
+				
+				// add anything from scope..
+				
+				params.exports = {
+						// All things that should be separate AMD modules..
+						appendLocaleLink: appendLocaleLink,
+						handleDisconnect: handleDisconnect,
+						clickToSelect: clickToSelect
+				};
+				
+				special.show(params);
+			}, function onFailure(err) {
+				
+				// extended error
+				var loadingChunk;
+				var msg_fmt = stui.sub("v_bad_special_msg",
+						{special: name });
+				params.flipper.flipTo(params.pages.loading, loadingChunk = createChunk(msg_fmt,"p","errCodeMsg"));
+				isLoading=false;
+			});
+		};
+		
+		/**
+		 * instance of otherSpecial manager
+		 * @property otherSpecial
+		 */
+		var otherSpecial = new OtherSpecial();
+		
+		/**
 		 * parse the hash string into surveyCurrent___ variables. 
+		 * Expected to update document.title also.
 		 * @method parseHash
 		 * @param {String} id
 		 */
 		window.parseHash = function parseHash(hash) {
+			function updateWindowTitle() {
+				var t=stui.str('survey_title');
+				if(surveyCurrentLocale && surveyCurrentLocale != '') {
+					t = t + ': '+locmap.getLocaleName(surveyCurrentLocale);
+				}
+				if(surveyCurrentSpecial && surveyCurrentSpecial!='') {
+					t = t + ': ' + stui.str('special_'+surveyCurrentSpecial);
+				}
+				if(surveyCurrentPage && surveyCurrentPage !='') {
+					t = t + ': ' + surveyCurrentPage;
+				}
+				document.title = t;
+			};
 			if(hash) {
 				var pieces = hash.substr(0).split("/");
 				if(pieces.length > 1) {
@@ -3570,12 +4460,8 @@ function showV() {
 							surveyCurrentPage='';
 							surveyCurrentId='';
 						}
-					} else if(surveyCurrentSpecial=='search') {
-						surveyCurrentPage='';
-						surveyCurrentId=''; // for now
 					} else {
-						surveyCurrentPage = '';
-						surveyCurrentId = '';
+						otherSpecial.parseHash(surveyCurrentSpecial, hash, pieces);
 					}
 				}
 			} else {
@@ -3584,6 +4470,12 @@ function showV() {
 				surveyCurrentId='';
 				surveyCurrentPage='';
 				surveyCurrentSection='';
+			}
+			updateWindowTitle();
+
+			 // if there is no locale id, refresh the search.
+			if(!surveyCurrentLocale) {  
+				searchRefresh();
 			}
 		};
 
@@ -3620,7 +4512,7 @@ function showV() {
 //    			    //itemBox.set('value', theLocale+'//'+theId);
 //			    }
 //			}
-			document.title = document.title.split('|')[0] + " | " + theSpecial + '/' + theLocale + '/' + thePage + '/' + theId;
+			//document.title = document.title.split('|')[0] + " | " + '/' + theLocale + '/' + thePage;
 		};
 		
 		window.updateCurrentId = function updateCurrentId(id) {
@@ -3652,6 +4544,8 @@ function showV() {
 				console.log("        "+url+" loaded in "+(new Date().getTime()-otime)+"ms");
 				try {
 					handler(json);
+					//resize height
+					$('#main-row').css({height:$('#main-row>div').height()});
 				}catch(e) {
 					console.log("Error in ajax post ["+message+"]  " + e.message + " / " + e.name );
 					handleDisconnect("Exception while  loading: " + message + " - "  + e.message + ", n="+e.name, null); // in case the 2nd line doesn't work
@@ -3682,7 +4576,6 @@ function showV() {
 				return false;
 			} else if(json.err_code) {
 				var msg_fmt = formatErrMsg(json, subkey);
-				console.log(msg_fmt);
 				var loadingChunk;
 				flipper.flipTo(pages.loading, loadingChunk = createChunk(msg_fmt, "p", "errCodeMsg"));
 				var retryButton = createChunk(stui.str("loading_reload"),"button");
@@ -3704,19 +4597,24 @@ function showV() {
 		}
 
 		window.showCurrentId = function() {
-			if(surveyCurrentId != '') {
-			    var xtr = dojo.byId('r@' + surveyCurrentId);
-			    if(!xtr) {
-			        console.log("Warning could not load id " + surveyCurrentId + " does not exist");
-			        window.updateCurrentId(null);
-			    } else if(xtr.proposedcell && xtr.proposedcell.showFn) {
-			        // TODO: visible? coverage?
-			        window.showInPop("",xtr,xtr.proposedcell, xtr.proposedcell.showFn, true);
-			        console.log("Changed to " + surveyCurrentId);
-			        scrollToItem();
-			    } else {
-			        console.log("Warning could not load id " + surveyCurrentId + " - not setup - " + xtr.toString() + " pc=" + xtr.proposedcell + " sf = " + xtr.proposedcell.showFn);
-			    }
+			if(surveyCurrentSpecial && surveyCurrentSpecial != '' && !isDashboard()) {
+				otherSpecial.handleIdChanged(surveyCurrentSpecial, showCurrentId);
+			} else {
+				if(surveyCurrentId != '') {
+				    var xtr = dojo.byId('r@' + surveyCurrentId);
+				    if(!xtr) {
+				        console.log("Warning could not load id " + surveyCurrentId + " does not exist");
+				        window.updateCurrentId(null);
+				    } else if(xtr.proposedcell && xtr.proposedcell.showFn) {
+				        // TODO: visible? coverage?
+				        window.showInPop("",xtr,xtr.proposedcell, xtr.proposedcell.showFn, true);
+				        console.log("Changed to " + surveyCurrentId);			        
+				        if(!isDashboard())
+				        	scrollToItem();
+				    } else {
+				        console.log("Warning could not load id " + surveyCurrentId + " - not setup - " + xtr.toString() + " pc=" + xtr.proposedcell + " sf = " + xtr.proposedcell.showFn);
+				    }
+				}
 			}
 		};
 		
@@ -3724,7 +4622,7 @@ function showV() {
 		window.ariRetry = function() {
 //			if(didUnbust) {
 				ariDialog.hide();
-				flipper.flipTo(pages.loading, loadingChunk = createChunk(stui_str("loading_reloading"), "i", "loadingMsg"));
+				//flipper.flipTo(pages.loading, loadingChunk = createChunk(stui_str("loading_reloading"), "i", "loadingMsg"));
 				window.location.reload(true);
 //			} else {
 //				flipper.flipTo(pages.loading, loadingChunk = createChunk(stui_str("loading_retrying"), "i", "loadingMsg"));
@@ -3757,6 +4655,7 @@ function showV() {
 			updateIf('ariSubMessage', ari_submessage.replace(/\n/g,"<br>"));
 			updateIf('ariScroller',window.location + '<br>' + why.replace(/\n/g,"<br>"));
 			// TODO: update  ariMain and ariRetryBtn
+			hideOverlayAndSidebar();
 			
 			ariDialog.show();
 			var oneword = dojo.byId("progress_oneword");
@@ -3768,12 +4667,17 @@ function showV() {
 		};
 		
 		function updateCoverageMenuTitle() {
-			var menuSelect = registry.byId('menu-select');
-			menuSelect.getOptions()[0].label = stui.sub('coverage_auto_msg', {surveyOrgCov: stui.str('coverage_' + surveyOrgCov)});
+			var cov = '';
+			if(surveyUserCov) {
+				$('#coverage-info').text(stui.str('coverage_' + surveyUserCov));
+			}
+			else {
+				$('#coverage-info').text(stui.sub('coverage_auto_msg', {surveyOrgCov: stui.str('coverage_' + surveyOrgCov)}));
+			}
 		}
 		function updateCoverageMenuValue() 	
 		{
-			var menuSelect = registry.byId('menu-select');
+			/*var menuSelect = registry.byId('menu-select');
 			if(surveyUserCov !== null) {
 				console.log('Setting menu to value ' + surveyUserCov  );
 				menuSelect.setValue(surveyUserCov); // user cov
@@ -3781,7 +4685,7 @@ function showV() {
 				console.log('Setting menu to value auto');
 				menuSelect.setValue('auto'); // org cov
 			}
-			console.log("Menu value is now: "   + menuSelect.getValue());
+			console.log("Menu value is now: "   + menuSelect.getValue());*/
 		}
 		
 		function updateLocaleMenu() {
@@ -3817,14 +4721,65 @@ function showV() {
 		 * @param doPush {Boolean} if false, do not add to history
 		 */
 		function updateHashAndMenus(doPush) {
+			/**
+			 * 'name' - the js/special/___.js name
+			 * 'hidden' - true to hide the item
+			 * 'title' - override of menu name
+			 * @property specialItems
+			 */
+			var specialItems = new Array();
+			if(surveyUser != null){
+				specialItems = [
+//				    {divider: true}, // li class=nav-divider
+//				    {title: 'Manage', url:'survey?do=options' }, 
+				    
+				    {divider: true},
+				    {title: 'My Account'}, // My Account section 
+				  
+				    {title: 'Settings', level: 2, url: surveyUserURL.myAccountSetting, display: surveyUserPerms.userExist },
+				    {title: 'Lock (Disable) My Account', level: 2, url: surveyUserURL.disableMyAccount, display: surveyUserPerms.userExist },
+	
+				    {divider: true},
+				    {title: 'My Votes'}, // My Votes section 
+				  
+				    {special: 'oldvotes', level: 2, display: surveyUserPerms.userCanImportOldVotes },
+				    {title: 'See My Recent Activity', level: 2, url: surveyUserURL.recentActivity },
+				    {title: 'Upload XML', level: 2, url: surveyUserURL.xmlUpload },
+	
+				    {divider: true},
+				    {title: 'My Organization('+organizationName+')'}, // My Organization section
+				  
+				    {special: 'vsummary', level: 2, display: surveyUserPerms.userCanUseVettingSummary },
+				    {title: 'List ' + org + ' Users', level: 2, url: surveyUserURL.manageUser, display: (surveyUserPerms.userIsTC || surveyUserPerms.userIsVetter) },
+				    {title: 'LOCKED: Note: your account is currently locked.', level: 2,  display: surveyUserPerms.userIsLocked, bold: true},
+				    
+				    {divider: true},
+				    {title: 'Forum'}, // Forum section
+				  
+				    {title: 'View Flagged Entries', level: 2, url: surveyUserURL.flag, display: surveyUserPerms.hasFlag, img: surveyImgInfo.flag},
+				    {title: '(no flagged items)', level: 2, display: !surveyUserPerms.hasFlag, italic: true },
+				    {title: 'RSS 2.0', level: 2, url: surveyUserURL.RSS, img: surveyImgInfo.RSS},
+				    {special: 'mail', level: 2, display: !surveyOfficial },
+				    
+				    {divider: true},
+				    {title: 'Informational'}, // Informational section
+				  
+				    {special: 'statistics', level: 2 },
+				    {title: 'About', level: 2, url: surveyUserURL.about },
+				    {title: 'Lookup a code or xpath', level: 2, url: surveyUserURL.browse, display: surveyUserPerms.hasDataSource },
+				    
+				    {divider: true}, 
+				];
+			}
 			if(!doPush) {doPush = false;}
 			replaceHash(doPush); // update the hash
 			updateLocaleMenu();
-
-			if(surveyCurrentLocale==null) {
+			
+			if(surveyCurrentLocale==null) { // deadcode?
 				menubuttons.set(menubuttons.section);
 				if(surveyCurrentSpecial!=null) {
-					menubuttons.set(menubuttons.page, stui_str("special_"+surveyCurrentSpecial));
+					var specialId = "special_"+surveyCurrentSpecial;
+					menubuttons.set(menubuttons.page, stui_str(specialId));
 				} else {
 					menubuttons.set(menubuttons.page);
 				}
@@ -3838,38 +4793,126 @@ function showV() {
 			 * @method updateMenuTitles
 			 */
 			function updateMenuTitles(menuMap) {
-			    updateLocaleMenu(menuMap);
+				if(menubuttons.lastspecial === undefined) {
+					menubuttons.lastspecial = null;
+					
+					// Set up the menu here?
+					var parMenu = dojo.byId("manage-list");
+					for(var k =0; k< specialItems.length; k++) {
+						var item = specialItems[k];
+						(function(item){
+							if(item.display != false) {
+								var subLi = document.createElement("li");
+								if(item.special){ // special items so look up in stui.js
+									item.title = stui.str('special_' + item.special);
+									item.url = '#' + item.special;
+									item.blank = false;
+								}
+								if(item.url){	
+									var subA = document.createElement("a");
+									
+									if(item.img){ // forum may need images attached to it
+										var Img=document.createElement("img");
+										Img.setAttribute('src', item.img.src);
+										Img.setAttribute('alt', item.img.alt);
+										Img.setAttribute('title', item.img.src);
+										Img.setAttribute('border', item.img.border);
+										
+										subA.appendChild(Img);
+									}
+									subA.appendChild(document.createTextNode(item.title+' '));
+									subA.href = item.url;
+									
+									if(item.blank != false){
+										subA.target = '_blank';
+										subA.appendChild(createChunk('','span','glyphicon glyphicon-share manage-list-icon'));
+									}
+								
+									if(item.level){ // append it to appropriate levels
+										var level = item.level;
+										for(var i=0; i< level-1; i++){
+											var sublevel = document.createElement("ul");
+											sublevel.appendChild(subA);
+											subA = sublevel;
+										}
+									}
+									subLi.appendChild(subA);
+								}
+								if(!item.url && !item.divider){ // if it is pure text/html & not a divider
+									if(!item.level){
+										subLi.appendChild(document.createTextNode(item.title+' '));
+									}else{
+										var subA = null;
+										if(item.bold){
+											subA = document.createElement("b");
+										}else if(item.italic){
+											subA = document.createElement("i");
+										}else{
+											subA = document.createElement("span");
+										}
+										subA.appendChild(document.createTextNode(item.title+' '));
+										
+										var level = item.level;
+										for(var i=0; i< level-1; i++){
+											var sublevel = document.createElement("ul");
+											sublevel.appendChild(subA);
+											subA = sublevel;
+										}
+										subLi.appendChild(subA);
+									}
+								}
+								if(item.divider) {
+									subLi.className = 'nav-divider';
+								}
+								parMenu.appendChild(subLi);
+							}
+						})(item);
+					}
+				}
+				
+				if(menubuttons.lastspecial) {
+					removeClass(menubuttons.lastspecial, "selected");
+				}
+
+				updateLocaleMenu(menuMap);
 				if(surveyCurrentSpecial!= null && surveyCurrentSpecial != '') {
 //					menubuttons.set(menubuttons.section /*,stui_str("section_special") */);
-					menubuttons.set(menubuttons.section,stui_str("special_"+surveyCurrentSpecial));
+					//menubuttons.set(menubuttons.section,stui_str("special_"+surveyCurrentSpecial));
+					var specialId = "special_"+surveyCurrentSpecial;
+					$('#section-current').html(stui_str(specialId));
+//					menubuttons.lastspecial = dojo.byId('menu_'+specialId);
+//					addClass(menubuttons.lastspecial, 'selected');
 					setDisplayed(titlePageContainer, false);
 				} else if(!menuMap) {
-					menubuttons.set(menubuttons.section);
+					//menubuttons.set(menubuttons.section);
 					setDisplayed(titlePageContainer, false);
 //					menubuttons.set(menubuttons.page, surveyCurrentPage); 
 				} else {
 					if(menuMap.sectionMap[window.surveyCurrentPage]) {
 						surveyCurrentSection = surveyCurrentPage; // section = page
-						menubuttons.set(menubuttons.section, menuMap.sectionMap[surveyCurrentSection].name);
+						//menubuttons.set(menubuttons.section, menuMap.sectionMap[surveyCurrentSection].name);
+						$('#section-current').html(menuMap.sectionMap[surveyCurrentSection].name);
 						setDisplayed(titlePageContainer, false); // will fix title later
 					} else if(menuMap.pageToSection[window.surveyCurrentPage]) {
 						var mySection = menuMap.pageToSection[window.surveyCurrentPage];
 						//var myPage = mySection.pageMap[window.surveyCurrentPage];
 						surveyCurrentSection = mySection.id;
-						menubuttons.set(menubuttons.section, mySection.name);
+						//menubuttons.set(menubuttons.section, mySection.name);
+						$('#section-current').html(mySection.name);
 						setDisplayed(titlePageContainer, false); // will fix title later
 //						menubuttons.set(menubuttons.page, myPage.name);
 					} else {
-						menubuttons.set(menubuttons.section, stui_str("section_general"));
+						//menubuttons.set(menubuttons.section, stui_str("section_general"));
+						$('#section-current').html(stui_str("section_general"));
 						setDisplayed(titlePageContainer, false);
 //						menubuttons.set(menubuttons.page);
 					}
 				}
-				if(surveyCurrentSpecial=='' || surveyCurrentSpecial===null) {
+				/*if(surveyCurrentSpecial=='' || surveyCurrentSpecial===null) {
 					dojo.byId('st-link').href = dojo.byId('title-locale').href = '#locales//'+surveyCurrentPage+'/'+surveyCurrentId;
 				} else {
 					dojo.byId('st-link').href = dojo.byId('title-locale').href = '#locales///';
-				}
+				}*/
 			}
 
 			/**
@@ -3914,7 +4957,7 @@ function showV() {
 										surveyCurrentPage = aSection.id;
 										surveyCurrentSpecial = '';
 										updateMenus(menuMap);
-										//updateMenuTitles(menuMap);
+										updateMenuTitles(menuMap);
 										reloadV();
 								},
 								disabled: true
@@ -3931,12 +4974,15 @@ function showV() {
 						iconClass: "dijitMenuItemIcon", // menu-chat
 						disabled: true,
 						onClick: function(){ 
-							// TODO:  make this a real section
-							window.open(survURL + '?forum=' + locmap.getLanguage(surveyCurrentLocale));
-						}
+							surveyCurrentId = '!'; // no id if jumping pages
+							surveyCurrentPage = '';
+							surveyCurrentSpecial = 'forum';
+							updateMenus(menuMap);
+							updateMenuTitles(menuMap);
+							reloadV();						}
 					});
 					menuSection.addChild(menuMap.forumMenu);
-										
+					
 				}
 				
 				
@@ -3964,7 +5010,7 @@ function showV() {
 						for(var zz in titlePageContainer.menus) {
 							var aMenu = titlePageContainer.menus[zz];
 							aMenu.set('label','-');
-							setDisplayed(aMenu, false);
+							//setDisplayed(aMenu, false);
 						}
 						
 
@@ -3977,8 +5023,10 @@ function showV() {
 							
 							for(var k in mySection.pages) { // use given order
 								(function(aPage) {
+		
 									var pageMenu = aPage.menuItem =  new MenuItem({
 										label: aPage.name,
+										
 										iconClass:  (aPage.id == surveyCurrentPage)?"dijitMenuItemIcon menu-x":"dijitMenuItemIcon menu-o",
 //										checked:   (aPage.id == surveyCurrentPage),
 										//    iconClass:"dijitEditorIcon dijitEditorIconSave",
@@ -3990,24 +5038,28 @@ function showV() {
 										},
 										disabled: (effectiveCoverage()<parseInt(aPage.levs[surveyCurrentLocale]))
 									});
-									menuPage.addChild(pageMenu);
+									//menuPage.addChild(pageMenu);
 								})(mySection.pages[k]);
 							}
 
 							var theButton = new DropDownButton({label: '-', dropDown: menuPage});
 
 							
-							theButton.placeAt(titlePageContainer);
-							
+							//theButton.placeAt(titlePageContainer);
+							//console.log(myPage.name);
+							//console.log(theButton);
+
 							showMenu = theButton;
 							
 							titlePageContainer.menus[mySection.id] = mySection.pagesMenu = showMenu;
 						}
 						
 						if(myPage !== null) {
-							showMenu.set('label', myPage.name);
+							//showMenu.set('label', myPage.name);
+							$('#title-page-container').html('<h1>'+myPage.name+'</h1>').show();
 						} else {
-							showMenu.set('label', stui.str('section_subpages')); // no page selected
+							//showMenu.set('label', stui.str('section_subpages')); // no page selected
+							$('#title-page-container').html('').hide();
 						}
 						setDisplayed(showMenu, true);
 						setDisplayed(titlePageContainer, true); // will fix title later
@@ -4039,7 +5091,8 @@ function showV() {
 					}
 				}
 				
-				menuMap.setCheck(menuMap.forumMenu,  (surveyCurrentSpecial == 'forum'),(surveyUser	===null));				
+				menuMap.setCheck(menuMap.forumMenu,  (surveyCurrentSpecial == 'forum'),(surveyUser	===null));	
+				resizeSidebar();
 			}
 
 			if(_thePages == null || _thePages.loc != surveyCurrentLocale ) {
@@ -4071,7 +5124,6 @@ function showV() {
 							}
 							
 							updateCovFromJson(json);
-							
 							
 							updateCoverageMenuTitle();
 							updateCoverageMenuValue();
@@ -4128,7 +5180,7 @@ function showV() {
 						}
 
 						unpackMenus(json);
-
+						unpackMenuSideBar(json);
 						updateMenus(_thePages);
 					});
 				}
@@ -4139,17 +5191,27 @@ function showV() {
 		}
 
 		window.insertLocaleSpecialNote = function insertLocaleSpecialNote(theDiv) {
+			if(surveyBeta) {
+				var theChunk = domConstruct.toDom(stui.sub("beta_msg", { info: bund, locale: surveyCurrentLocale, msg: msg}));
+				var subDiv = document.createElement("div");
+				subDiv.appendChild(theChunk);
+				subDiv.className = 'warnText';
+				theDiv.appendChild(subDiv);
+			}
+			
 			var bund = locmap.getLocaleInfo(surveyCurrentLocale);
 			
 			if(bund) {
 				if(bund.readonly) {
 					var msg = null;
 					if(bund.readonly_why) {
-						msg = bund.readonly_why;
+						msg = bund.readonly_why_raw;
 					} else {
 						msg = stui.str("readonly_unknown");
 					}
-					var theChunk = domConstruct.toDom(stui.sub("readonly_msg", { info: bund, locale: surveyCurrentLocale, msg: msg}));
+					var asHtml = stui.sub("readonly_msg", { info: bund, locale: surveyCurrentLocale, msg: msg});
+					asHtml = locmap.linkify(asHtml);
+					var theChunk = domConstruct.toDom(asHtml);
 					var subDiv = document.createElement("div");
 					subDiv.appendChild(theChunk);
 					subDiv.className = 'warnText';
@@ -4218,11 +5280,12 @@ function showV() {
 		 * @method reloadV
 		 */
 		window.reloadV = function reloadV() {
-			
 			if(disconnected) {
 				unbust();
 			}
 			
+			document.getElementById('DynamicDataSection').innerHTML = '';//reset the data
+			$('#nav-page').hide();
 			isLoading = false;
 			showers[flipper.get(pages.data).id]=function(){ console.log("reloadV()'s shower - ignoring reload request, we are in the middle of a load!"); };
 			
@@ -4247,56 +5310,35 @@ function showV() {
 			// todo dont even flip if it's quick.
 			var loadingChunk;
 			flipper.flipTo(pages.loading, loadingChunk = createChunk(stui_str("loading"), "i", "loadingMsg"));
-			var loadingPane = flipper.get(pages.loading);
+//			var loadingPane = flipper.get(pages.loading);
 
 			var itemLoadInfo = createChunk("","div","itemLoadInfo");			
-			loadingPane.appendChild(itemLoadInfo);
+			//loadingPane.appendChild(itemLoadInfo);
 			
-			var serverLoadInfo = createChunk("","div","serverLoadInfo");			
-			loadingPane.appendChild(serverLoadInfo);
-
-			var lastServerLoadTxt  = '';
-			var startTime = new Date().getTime();
-			
+//			var serverLoadInfo = createChunk("","div","serverLoadInfo");			
+//			//loadingPane.appendChild(serverLoadInfo);
 			{
-				window.setTimeout(function(){
-						 updateStatus(); // will restart regular status updates
-				}, 5000); // get a status update about 5s in.
-				
-				var timerToKill = null;
+				// Create a little spinner to spin "..." so the user knows we are doing something..
+				var spinChunk = createChunk("...","i","loadingMsgSpin");
+				var spin = 0;
+				var timerToKill = window.setInterval(function() {
+					 var spinTxt = '';
+					 spin++;
+					 switch(spin%3) {
+						 case 0: spinTxt = '.  '; break;
+						 case 1: spinTxt = ' . '; break;
+						 case 2: spinTxt = '  .'; break;
+					 }
+					 removeAllChildNodes(spinChunk);
+					 spinChunk.appendChild(document.createTextNode(spinTxt));						
+				}, 1000);
+
+				// Add the "..." until the Flipper flips
 				flipper.addUntilFlipped(function() {
-//					console.log("Starting throbber");
 					var frag = document.createDocumentFragment();
-					var k = 0;
-					timerToKill = window.setInterval(function() {
-						k++;
-						loadingChunk.style.opacity =   0.5 + ((k%10) * 0.05);
-//						console.log("Throb to " + loadingChunk.style.opacity);
-						
-						// update server load txt?
-						if(lastJsonStatus) {
-							lastJsonStatus.sysloadpct =  dojoNumber.format(parseFloat( lastJsonStatus.sysload), {places: 0, type: "percent"});
-							
-							var now = new Date().getTime();
-							var waitms = now - startTime;
-							var waits = waitms / 1000.0;
-							
-							lastJsonStatus.waitTime = dojoNumber.format(waits, { round: 0, fractional: false});
-							
-							var newLoadTxt = stui.sub("jsonStatus_msg",lastJsonStatus);
-							
-							if(waits > 5 && newLoadTxt != lastServerLoadTxt) {
-								removeAllChildNodes(serverLoadInfo);
-								serverLoadInfo.appendChild(document.createTextNode(newLoadTxt));
-								lastServerLoadTxt = newLoadTxt;
-							}
-						}
-						
-					}, 100);
-					
+					frag.appendChild(spinChunk);
 					return frag;
 				}, function() {
-//					console.log("Kill throbber");
 					window.clearInterval(timerToKill);
 				});
 			}
@@ -4345,7 +5387,7 @@ function showV() {
 						// (common case) this is an actual locale data page.
 						itemLoadInfo.appendChild(document.createTextNode(locmap.getLocaleName(surveyCurrentLocale) + '/' + surveyCurrentPage + '/' + surveyCurrentId));
 						var url = contextPath + "/RefreshRow.jsp?json=t&_="+surveyCurrentLocale+"&s="+surveySessionId+"&x="+surveyCurrentPage+"&strid="+surveyCurrentId+cacheKill();
-							
+						$('#nav-page').show();
 						myLoad(url, "section", function(json) {
 							isLoading=false;
 							showLoader(theDiv.loader,stui.loading2);
@@ -4359,7 +5401,7 @@ function showV() {
 									surveyCurrentPage= '';
 								}
 								showLoader(null);
-								flipper.flipTo(pages.other, createChunk(stui_str("loading_nocontent"),"i","loadingMsg"));
+								//flipper.flipTo(pages.other, createChunk(stui_str("loading_nocontent"),"i","loadingMsg"));
 								updateHashAndMenus(); // find out why there's no content. (locmap)
 							} else if(!json.section.rows) {
 								console.log("!json.section.rows");
@@ -4388,6 +5430,9 @@ function showV() {
 									updateCoverage(flipper.get(pages.data)); // make sure cov is set right before we show.
 									flipper.flipTo(pages.data); // TODO now? or later?
 									window.showCurrentId(); // already calls scroll
+									//refresh counter and add navigation at bottom
+									refreshCounterVetting();
+									$('.vetting-page').after($('#nav-page .nav-button').clone());
 								});
 							}
 						});
@@ -4481,20 +5526,6 @@ function showV() {
 											tr.appendChild(createChunk(stui.str("v_oldvotes_mine"),"th","v-mine"));
 											var accept;
 											tr.appendChild(accept=createChunk(stui.str("v_oldvotes_accept"),"th","v-accept"));
-/*
-											accept.appendChild(createLinkToFn("v_oldvotes_all", function() {
-												for(var k in json.oldvotes.contested) {
-													var row = json.oldvotes.contested[k];
-													row.box.checked = true;
-												}
-											}));
-											accept.appendChild(createLinkToFn("v_oldvotes_none", function() {
-												for(var k in json.oldvotes.contested) {
-													var row = json.oldvotes.contested[k];
-													row.box.checked = false;
-												}
-											}));
-*/
 											th.appendChild(tr);
 										}
 										t.appendChild(th);
@@ -4588,6 +5619,18 @@ function showV() {
 											tb.appendChild(tr);
 										}
 										t.appendChild(tb);
+										t.appendChild(createLinkToFn("v_oldvotes_all", function() {
+											for(var k in json.oldvotes[type]) {
+												var row = json.oldvotes[type][k];
+												row.box.checked = true;
+											}
+										}, "button"));
+										t.appendChild(createLinkToFn("v_oldvotes_none", function() {
+											for(var k in json.oldvotes[type]) {
+												var row = json.oldvotes[type][k];
+												row.box.checked = false;
+											}
+										}, "button"));
 										return t;
 									}
 
@@ -4807,7 +5850,8 @@ function showV() {
 						}
 					});
 				} else if(isReport(surveyCurrentSpecial)) {
-					showInPop2(stui.str("reportGuidance"), null, null, null, true); /* show the box the first time */					
+					showLoader(theDiv.loader);
+					showInPop2(stui.str("reportGuidance"), null, null, null, true, true); /* show the box the first time */					
 					require([
 					         "dojo/ready",
 					         "dojo/dom",
@@ -4826,15 +5870,48 @@ function showV() {
 					        ) { ready(function(){
 					        	
 								var url = contextPath + "/EmbeddedReport.jsp?x="+surveyCurrentSpecial+"&_="+surveyCurrentLocale+"&s="+surveySessionId+cacheKill();
-
-								request
-				    			.get(url, {handleAs: 'html'})
-				    			.then(function(html) {
-
+								var errFunction = function errFunction(err) {
+									console.log("Error: loading " + url + " -> " + err);
 									hideLoader(null,stui.loading2);
 									isLoading=false;
-									flipper.flipTo(pages.other, domConstruct.toDom(html));
-								});
+									flipper.flipTo(pages.other, domConstruct.toDom("<div style='padding-top: 4em; font-size: x-large !important;' class='ferrorbox warning'><span class='icon i-stop'> &nbsp; &nbsp;</span>Error: could not load: " + err + "</div>"));
+								};
+								if(isDashboard()) {
+									if(!isVisitor) {
+										request
+						    			.get(url, {handleAs: 'json'})
+						    			.then(function(json) {
+											hideLoader(null,stui.loading2);
+											isLoading=false;
+											// further errors are handled in JSON
+											showReviewPage(json, function() {
+												// show function - flip to the 'other' page.
+												flipper.flipTo(pages.other, null);
+											});
+										})
+										.otherwise(errFunction);
+									}
+									else {
+										alert('Please login to access Dashboard');
+										surveyCurrentSpecial = '';
+										surveyCurrentLocale = '';
+										reloadV();
+									}
+								}
+								else {
+									hideLoader(null,stui.loading2);
+
+									request
+					    			.get(url, {handleAs: 'html'})
+					    			.then(function(html) {
+					    				// errors are handled as HTML.
+										hideLoader(null,stui.loading2);
+										isLoading=false;
+										flipper.flipTo(pages.other, domConstruct.toDom(html));
+									})
+									.otherwise(errFunction);
+								}
+								
 					        });
 					 });
 				} else if(surveyCurrentSpecial == 'none') {
@@ -4867,6 +5944,10 @@ function showV() {
 						}
 					};
 					
+				
+					
+					
+					
 					var addTopLocale = function addTopLocale(topLoc) {
 						var topLocInfo = locmap.getLocaleInfo(topLoc);
 
@@ -4895,206 +5976,26 @@ function showV() {
 						var topLoc = locmap.locmap.topLocales[n];
 						addTopLocale(topLoc);						
 					}
-					
-					//theDiv.appendChild(createChunk(locmap.locmap.topLocales.length));
-					
-					
-					flipper.flipTo(pages.other, theDiv);
-					
+					flipper.flipTo(pages.other,null);
+				    filterAllLocale();//filter for init data
+					forceSidebar();
 					surveyCurrentLocale=null;
 					surveyCurrentSpecial='locales';
 					showInPop2(stui.str("localesInitialGuidance"), null, null, null, true); /* show the box the first time */					
-				} else if(surveyCurrentSpecial=='search') {
-					// setup
-					var searchCache = window.searchCache;
-					if(!searchCache) {
-						searchCache = window.searchCache = {};
-					}
-					
-					hideLoader(null);
-					isLoading=false;					
-					var theDiv = document.createElement("div");
-					theDiv.className = 'search';
-
-					// install
-					var theInput = document.createElement("input");
-					theDiv.appendChild(theInput);
-					
-					var theSearch = createChunk(stui.str("search"), "button");
-					theDiv.appendChild(theSearch);
-					
-					var theResult = document.createElement("div");
-					theResult.className = 'results';
-					theDiv.appendChild(theResult);
-
-					
-					var newLocale = surveyCurrentLocale;
-					
-					var showResults = function showResults(searchTerm) {
-						var results=searchCache[searchTerm];
-						removeAllChildNodes(theResult);
-						if(newLocale!=surveyCurrentLocale) {
-							var newName = locmap.getLocaleName(newLocale);
-							theResult.appendChild(createChunk(newName, "h4"));
-						}
-						theResult.appendChild(createChunk(searchTerm, "h3"));
-						
-						if(results.length == 0) {
-							theResult.appendChild(createChunk(stui.str("searchNoResults", "h3", "searchNoResults")));
-						} else {
-							for(var i=0;i<results.length;i++) {
-								var result = results[i];
-								
-								var theLi = document.createElement("li");
-								
-								var appendLink = function appendLink(title, url, theClass) {
-									var theA = createChunk(title, "a");
-									if(url && newLocale!='' && newLocale!=null) {
-										theA.href = url;
-									}
-									if(theClass!=null) {
-										theA.className = theClass;
-									}
-									theLi.appendChild(theA);
-								};
-								
-								if(result.xpath) {
-									if(result.strid) {
-										codeUrl = "#/"+newLocale+"//"+result.strid;
-									}
-									appendLink(result.xpath, codeUrl, "xpath");
-								}
-								
-								if(result.ph) {
-									result.ph.strid = result.strid;
-									result = result.ph; // pick up as section
-								}
-								
-								var codeUrl = null;
-								
-								if(result.section) {
-									codeUrl =  "#/"+newLocale+"/"+result.section+"/!";
-									if(result.page) {
-										codeUrl = "#/"+newLocale+"/"+result.page+"/";
-										if(result.strid) {
-											codeUrl = "#/"+newLocale+"/"+result.page+"/"+result.strid;
-										}
-									}
-								}
-								
-								if(result.section) {
-									appendLink(result.section, codeUrl);
-									if(result.page) {
-										theLi.appendChild(createChunk("»"));
-										appendLink(result.page, codeUrl);
-										if(result.code) {
-											theLi.appendChild(createChunk("»"));
-											appendLink(result.code, codeUrl, "codebox");
-										}
-									}
-								}
-								
-								if(result.loc) {
-									appendLocaleLink(theLi, result.loc, locmap.getLocaleInfo(result.loc), true);
-								}
-								
-								theResult.appendChild(theLi);
-							}
-						}
-						
-						theResult.last = searchTerm;
-						theResult.loc = newLocale;
-					};
-					
-					var showSearchTerm = function showSearchTerm(searchTerm) {
-						if((searchTerm != theResult.last || theResult.loc != newLocale) && searchTerm != null) {
-							theResult.last = null;
-							theResult.loc = null;
-							removeAllChildNodes(theResult);
-							theResult.appendChild(createChunk(searchTerm, "h3"));
-							
-							if(!(searchTerm in searchCache)) {
-								   var xurl = contextPath + "/SurveyAjax?&s="+surveySessionId+"&what=search"; // allow cache
-								   if(newLocale!=null&&newLocale!='') {
-									   xurl = xurl + "&_="+newLocale;
-								   }
-								   queueXhr({
-								        url:xurl, // allow cache
-							 	        handleAs:"json",
-							 	        load: function(h){
-							 	        	if(h.results) {
-							 	        		searchCache[searchTerm] = h.results;
-									 			showResults(searchTerm);
-							 	        	} else {
-							 	        		theResult.appendChild(createChunk("(search error)","i"));
-							 	        	}
-								        },
-								        error: function(err, ioArgs){
-								 			var msg ="Error: "+err.name + " - " + err.message;
-						 	        		theResult.appendChild(createChunk(msg,"i"));
-								        },
-								        postData: searchTerm
-								    });
-							} else {
-								showResults(searchTerm);
-							}
-							
-
-						} else {
-							//no change;
-						}
-					};
-					
-					var searchFn = function searchFn(e) {
-						var searchTerm = theInput.value;
-						
-						if(searchTerm.indexOf(':')>0) {
-							var segs = searchTerm.split(':');
-							if(locmap.getLocaleInfo(segs[0])!=null) {
-								newLocale = segs[0];
-								// goto
-								if(segs.length==1) {
-									surveyCurrentSpecial='';
-									surveyCurrentLocale=newLocale;
-									reloadV();
-									return;
-								}
-								searchTerm = segs[1];
-							}
-						}
-						
-						showSearchTerm(searchTerm);
-
-						return stStopPropagation(e);
-					};
-					
-					listenFor(theInput, "change", searchFn);
-					listenFor(theSearch, "click", searchFn);
-
-					flipper.flipTo(pages.other, theDiv);
-					theInput.focus();
-					surveyCurrentLocale=null;
-					surveyCurrentSpecial='search';
-					showInPop2(stui.str("searchGuidance"), null, null, null, true); /* show the box the first time */					
+					$('#itemInfo').html('');
 				} else {
-					var msg_fmt = stui.sub("v_bad_special_msg",
-							{special: surveyCurrentSpecial });
-
-					var loadingChunk;
-					flipper.flipTo(pages.loading, loadingChunk = createChunk(msg_fmt, "p", "errCodeMsg"));
-					var retryButton = createChunk(stui.str("loading_reload"),"button");
-					loadingChunk.appendChild(retryButton);
-					retryButton.onclick = function() { 	window.location.reload(true); };
-					showLoader(theDiv.loader);
-					isLoading=false;
+					otherSpecial.show(surveyCurrentSpecial, {flipper: flipper, pages: pages});
 				}
 			}; // end shower
 
 			shower(); // first load
 //			flipper.get(pages.data).shower = shower;
 			
-			// set up the "show-er" function so that if this locale gets reloaded, the page will load again
-			showers[flipper.get(pages.data).id]=shower;
+			// set up the "show-er" function so that if this locale gets reloaded, the page will load again - execept for the dashboard, where only the row get updated
+			if(!isDashboard())
+				showers[flipper.get(pages.data).id]=shower;
+			//else
+			//	showers[flipper.get(pages.data).id]= function() {popupAlert('warning','Change has been made to your locale, consider <a href="#" onclick="window.location.reload()">reloading</a> !');};
 
 		};  // end reloadV
 
@@ -5132,7 +6033,72 @@ function showV() {
 						window.canmodify = canmodify;
 					}
 					
+					//update left sidebar with locale data
+					var theDiv = document.createElement("div");
+					theDiv.className = 'localeList';
 
+					var addSubLocale;
+					
+					addSubLocale = function addSubLocale(parLocDiv, subLoc) {
+						var subLocInfo = locmap.getLocaleInfo(subLoc);
+						var subLocDiv = createChunk(null, "div", "subLocale");
+						appendLocaleLink(subLocDiv, subLoc, subLocInfo);
+						
+						parLocDiv.appendChild(subLocDiv);
+					};
+					
+					var addSubLocales = function addSubLocales(parLocDiv, subLocInfo) {
+						if(subLocInfo.sub) {
+							for(var n in subLocInfo.sub) {
+								var subLoc = subLocInfo.sub[n];
+								addSubLocale(parLocDiv, subLoc);
+							}
+						}
+					};
+					
+				
+					
+					
+					
+					var addTopLocale = function addTopLocale(topLoc) {
+						var topLocInfo = locmap.getLocaleInfo(topLoc);
+
+
+						var topLocRow = document.createElement("div");
+						topLocRow.className="topLocaleRow";
+
+						var topLocDiv = document.createElement("div");
+						topLocDiv.className="topLocale";
+						appendLocaleLink(topLocDiv, topLoc, topLocInfo);
+
+						var topLocList = document.createElement("div");
+						topLocList.className="subLocaleList";
+						
+						addSubLocales(topLocList, topLocInfo);
+						
+						topLocRow.appendChild(topLocDiv);
+						topLocRow.appendChild(topLocList);
+						theDiv.appendChild(topLocRow);
+					};
+					
+					
+					addTopLocale("root");
+					// top locales
+					for(var n in locmap.locmap.topLocales) {
+						var topLoc = locmap.locmap.topLocales[n];
+						addTopLocale(topLoc);						
+					}
+					$('#locale-list').html(theDiv.innerHTML);
+
+					if(isVisitor)
+						$('#show-read').prop('checked', true);
+					//tooltip locale
+					$('a.locName').tooltip();
+					
+					filterAllLocale();
+					//end of adding the locale data
+					
+				
 					// any special message? "oldVotesRemind":{"count":60,"pref":"oldVoteRemind24", "remind":"* | ##"}
 					if(json.oldVotesRemind && surveyCurrentSpecial!='oldvotes') {
 						var vals = { count: dojoNumber.format(json.oldVotesRemind.count) };
@@ -5154,6 +6120,7 @@ function showV() {
 							label: stui.str("v_oldvote_remind_yes"),
 							onClick: function() {
 								updPrefTo(new Date().getTime() + (1000 * 3600));// hide for 1 hr
+								window.haveDialog = false;
 								oldVoteRemindDialog.hide();
 								surveyCurrentSpecial="oldvotes";
 								surveyCurrentLocale='';
@@ -5168,6 +6135,7 @@ function showV() {
 							onClick: function() {
 								updPrefTo(new Date().getTime() + (1000 * 86400)); // hide for 24 hours
 								oldVoteRemindDialog.hide();
+								window.haveDialog = false;
 							}                            	
 						}));
 						oldVoteRemindDialog.addChild(new Button({
@@ -5175,6 +6143,7 @@ function showV() {
 							onClick: function() {
 								updPrefTo('*'); // hide permanently
 								oldVoteRemindDialog.hide();
+								window.haveDialog = false;
 							}
 						}));
 
@@ -5183,7 +6152,9 @@ function showV() {
 							console.log("Have " + json.oldVotesRemind.count + " old votes, but will remind again in " + (parseInt(json.oldVotesRemind.remind)-now.getTime())/1000 + " seconds.");
 						} else {
 							oldVoteRemindDialog.show();
-							console.log("Showed oldVotesRemind 6");
+							window.haveDialog = true;
+		    				hideOverlayAndSidebar();
+		    				console.log("Showed oldVotesRemind 6");
 						}
 					} else {
 						stdebug("Did not need to showoldvotesremind : " + Object.keys(json).toString());
@@ -5205,7 +6176,7 @@ function showV() {
 						var store = [];
 
 						store.push({
-								label: '-',
+								label: 'Auto',
 								value: 'auto',
 								title: stui.str('coverage_auto_desc')
 							});
@@ -5225,38 +6196,63 @@ function showV() {
 									title: stui.str('coverage_'+ level.name + '_desc')
 							});
 						}
+						//coverage menu
+						var patternCoverage = $('#title-coverage .dropdown-menu');
+					    if(store[0].value) {
+						    $('#coverage-info').text(store[0].label);
+					    }
+						for (var index = 0; index < store.length; ++index) {
+						    var data = store[index];
+						    if(data.value) {
+							    var html = '<li><a class="coverage-list" data-value="'+data.value+'"href="#">'+data.label+'</a></li>';
+							    patternCoverage.append(html);
+						    }
+						}
+						patternCoverage.find('li a').click(function(event){
+							event.stopPropagation();
+							event.preventDefault();
+							var newValue = $(this).data('value');
+							var setUserCovTo = null;
+							if(newValue == 'auto') {
+								setUserCovTo = null; // auto
+							} else {
+								setUserCovTo = newValue;
+							}
+							if(setUserCovTo === window.surveyUserCov) {
+								console.log('No change in user cov: ' + setUserCovTo);
+							} else {
+								window.surveyUserCov = setUserCovTo;
+								var updurl  = contextPath + "/SurveyAjax?_="+theLocale+"&s="+surveySessionId+"&what=pref&pref=p_covlev&_v="+window.surveyUserCov+cacheKill(); // SurveyMain.PREF_COVLEV
+								myLoad(updurl, "updating covlev to  " + surveyUserCov, function(json) {
+									if(!verifyJson(json,'pref')) {
+										return;
+									} else {
+										unpackMenuSideBar(json);
+										if(surveyCurrentSpecial && isReport(surveyCurrentSpecial))
+											reloadV();
+										console.log('Server set  covlev successfully.');
+									}
+								});
+							}
+							// still update these.
+							updateCoverage(flipper.get(pages.data)); // update CSS and 'auto' menu title
+							updateHashAndMenus(false); // TODO: why? Maybe to show an item?
+							$('#coverage-info').text(newValue.ucFirst());
+							$(this).parents('.dropdown-menu').dropdown('toggle');
+							if(!isDashboard())
+								refreshCounterVetting();
+							return false;
+						});
 						// TODO have to move this out of the DOM..
-						var covMenu = flipper.get(pages.data).covMenu = new Select({name: "menu-select", 
+						/*var covMenu = flipper.get(pages.data).covMenu = new Select({name: "menu-select", 
 								id: 'menu-select',
 								title: stui.str('coverage_menu_desc'),
 								options: store,
 								onChange: function(newValue) {
-									var setUserCovTo = null;
-									if(newValue == 'auto') {
-										setUserCovTo = null; // auto
-									} else {
-										setUserCovTo = newValue;
-									}
 									
-									if(setUserCovTo === window.surveyUserCov) {
-										console.log('No change in user cov: ' + setUserCovTo);
-									} else {
-										window.surveyUserCov = setUserCovTo;
-										var updurl  = contextPath + "/SurveyAjax?_="+theLocale+"&s="+surveySessionId+"&what=pref&pref=p_covlev&_v="+window.surveyUserCov+cacheKill(); // SurveyMain.PREF_COVLEV
-										myLoad(updurl, "updating covlev to  " + surveyUserCov, function(json) {
-											if(!verifyJson(json,'pref')) {
-												return;
-											} else {
-												console.log('Server set  covlev successfully.');
-											}
-										});
-									}
-									// still update these.
-									updateCoverage(flipper.get(pages.data)); // update CSS and 'auto' menu title
-									updateHashAndMenus(false); // TODO: why? Maybe to show an item?
 								}
 								});
-						covMenu.placeAt(titleCoverage);
+						covMenu.placeAt(titleCoverage);*/
 					//}	
 
 						
@@ -5307,18 +6303,33 @@ function showV() {
  */
 function refreshRow2(tr,theRow,vHash,onSuccess, onFailure) {
 	showLoader(tr.theTable.theDiv.loader,stui.loadingOneRow);
-    var ourUrl = contextPath + "/RefreshRow.jsp?what="+WHAT_GETROW+"&xpath="+theRow.xpid +"&_="+surveyCurrentLocale+"&fhash="+tr.rowHash+"&vhash="+vHash+"&s="+tr.theTable.session +"&json=t&automatic=t";
+	// vHash not used.
+    var ourUrl = contextPath + "/RefreshRow.jsp?what="+WHAT_GETROW+"&xpath="+theRow.xpid +"&_="+surveyCurrentLocale+"&fhash="+tr.rowHash+/*"&vhash="+vHash+*/"&s="+tr.theTable.session +"&json=t&automatic=t";
+    
+    if(isDashboard()) {
+    	ourUrl += "&dashboard=true";
+    }
+    
     var loadHandler = function(json){
         try {
 	    		if(json&&json.dataLoadTime) {
-	    			updateIf("dynload", json.dataLoadTime);
+	    			//updateIf("dynload", json.dataLoadTime);
 	    		}
         		if(json.section.rows[tr.rowHash]) {
         			theRow = json.section.rows[tr.rowHash];
         			tr.theTable.json.section.rows[tr.rowHash] = theRow;
         			updateRow(tr, theRow);
+
+        			//style the radios
+        			//wrapRadios(tr);
         			hideLoader(tr.theTable.theDiv.loader);
         			onSuccess(theRow);
+        			if(isDashboard()) {
+        				refreshFixPanel(json);
+        			}
+        			else {
+        				refreshCounterVetting();
+        			}
         		} else {
         	        tr.className = "ferrbox";
 //        	        tr.innerHTML="No content found "+tr.rowHash+ "  while  loading"; // this just obscures the row
@@ -5387,6 +6398,7 @@ function handleWiredClick(tr,theRow,vHash,box,button,what) {
 
 	// select
 	updateCurrentId(theRow.xpstrid);
+	
 	// and scroll
 	showCurrentId();
 	
@@ -5410,12 +6422,22 @@ function handleWiredClick(tr,theRow,vHash,box,button,what) {
 
 
 	console.log("Vote for " + tr.rowHash + " v='"+vHash+"', value='"+value+"'");
-	var ourUrl = contextPath + "/SurveyAjax?what="+what+"&xpath="+tr.xpid +"&_="+surveyCurrentLocale+"&fhash="+tr.rowHash+"&vhash="+vHash+"&s="+tr.theTable.session;
+	var ourContent = {
+			what: what,
+			xpath: tr.xpid,
+			"_": surveyCurrentLocale,
+			fhash: tr.rowHash,
+			vhash: vHash,
+			s: tr.theTable.session
+	};
+
+	var ourUrl = contextPath + "/SurveyAjax"; // ?what="+what+"&xpath="+tr.xpid +"&_="+surveyCurrentLocale+"&fhash="+tr.rowHash+"&vhash="+vHash+"&s="+tr.theTable.session;
 	
 	// vote reduced
-	var voteReduced =	dijit.registry.byId('voteReduced');
+	var voteReduced = document.getElementById("voteReduced");
 	if(voteReduced) {
-		ourUrl = ourUrl + "&voteReduced="+voteReduced.value;
+		ourContent.voteReduced = voteReduced.value;
+//		ourUrl = ourUrl + "&voteReduced="+voteReduced.value;
 	}
 	
 //	tr.className='tr_checking';
@@ -5423,15 +6445,26 @@ function handleWiredClick(tr,theRow,vHash,box,button,what) {
 		try {
 			// var newHtml = "";
 			if(json.err && json.err.length >0) {
-				tr.className='tr_err';
-				// v_tr.className="tr_err";
-				// v_tr2.className="tr_err";
-//				showLoader(tr.theTable.theDiv.loader,"Error!");
-				handleDisconnect('Error submitting a vote', json);
-				tr.innerHTML = "<td colspan='4'>"+stopIcon + " Could not check value. Try reloading the page.<br>"+json.err+"</td>";
-				// e_div.innerHTML = newHtml;
-				myUnDefer();
-				handleDisconnect('Error submitting a vote', json);
+				/*if(json.err_code != null) {
+					var errMsg = formatErrMsg(json, "vote");
+					console.log("Error voting: " + errMsg);
+					popupAlert("danger", errMsg);
+					// uncheck..
+					button.className='ichoice-o';
+					button.checked=false;
+					myUnDefer();
+					return; // break out, but no need to disconnect.
+				} else*/ {
+					tr.className='tr_err';
+					// v_tr.className="tr_err";
+					// v_tr2.className="tr_err";
+	//				showLoader(tr.theTable.theDiv.loader,"Error!");
+					handleDisconnect('Error submitting a vote', json);
+					tr.innerHTML = "<td colspan='4'>"+stopIcon + " Could not check value. Try reloading the page.<br>"+json.err+"</td>";
+					// e_div.innerHTML = newHtml;
+					myUnDefer();
+					handleDisconnect('Error submitting a vote', json);
+				}
 			} else {
 				if(json.submitResultRaw) { // if submitted..
 					tr.className='tr_checking2';
@@ -5495,19 +6528,20 @@ function handleWiredClick(tr,theRow,vHash,box,button,what) {
 		theRow.innerHTML="Error while  loading: "+err.name + " <br> " + err.message + "<div style='border: 1px solid red;'>" + ioArgs.xhr.responseText + "</div>";
 		myUnDefer();
 	};
+	//window.xhrArgs = xhrArgs;
+	//stdebug('xhrArgs = ' + xhrArgs + ", url: " + ourUrl);
+	if(box) {
+		stdebug("this is a post: " + value);
+		ourContent.value = value;
+	}
 	var xhrArgs = {
-			url: ourUrl+cacheKill(),
+			url: ourUrl,
 			handleAs:"json",
+			content: ourContent,
 			timeout: ajaxTimeout,
 			load: loadHandler,
 			error: errorHandler
 	};
-	//window.xhrArgs = xhrArgs;
-	//stdebug('xhrArgs = ' + xhrArgs + ", url: " + ourUrl);
-	if(box) {
-		stdebug("this is a psot: " + value);
-		xhrArgs.postData = value;
-	}
 	queueXhr(xhrArgs);
 }
 
@@ -5732,7 +6766,22 @@ function loadAdminPanel() {
 						user.appendChild(createChunk("(anonymous)","div","adminUserUser"));
 					}
 					user.appendChild(createChunk("Last: " + cs.last  + "LastAction: " + cs.lastAction + ", IP: " + cs.ip + ", ttk:"+(parseInt(cs.timeTillKick)/1000).toFixed(1)+"s", "span","adminUserInfo"));
-					
+
+					var unlinkButton = createChunk(stui.str("admin_users_action_kick"), "button", "admin_users_action_kick");
+					user.appendChild(unlinkButton);
+					unlinkButton.onclick = function(e ) {
+						unlinkButton.className = 'deactivated';
+						unlinkButton.onclick = null;
+						loadOrFail("do=unlink&s="+cs.id, unlinkButton, function(json) {
+							removeAllChildNodes(unlinkButton);
+							if(json.removing==null) {
+								unlinkButton.appendChild(document.createTextNode('Already Removed'));
+							} else {
+								unlinkButton.appendChild(document.createTextNode('Removed.'));
+							}
+						});
+						return stStopPropagation(e);
+					};
 					frag2.appendChild(user);
 					
 					
@@ -6112,14 +7161,35 @@ function showstats(hname) {
 					
 					var header=json.byday.header;
 					var data=json.byday.data;
+					var header_new=json.byday_new.header;
+					var data_new=json.byday_new.data;
+					var labels_old = [];
+					var count_old = [];
 					var labels = [];
-					var count = [];
-					for(var i in data) {
-						labels.push(data[i][header.LAST_MOD]);
-						count.push(data[i][header.COUNT]);
+					var count_new = [];
+					for(var i in data_new) {
+						var newLabel = (data_new[i][header_new.LAST_MOD]).split(' ')[0];
+						var newCount = data_new[i][header_new.COUNT];
+						labels.push(newLabel); // labels come from new data
+						count_new.push(newCount);
+						var oldLabel = (data[i][header.LAST_MOD]).split(' ')[0];
+						if(newLabel == oldLabel) {
+							// have old data
+							var oldCount = data[i][header.COUNT];
+							if(oldCount < newCount) {
+								console.log("Preposterous: at " + newLabel + ": " + oldCount + " oldCount < " + newCount + "  newCount " );
+								count_old.push(-1);
+							} else {
+								count_old.push(oldCount - newCount);
+							}
+						} else {
+							console.log("Desync: " + newLabel + " / " + oldLabel);
+							count_old.push(-1);
+						}
 					}
 					var gdata = [];
-					gdata.push(count);
+					gdata.push(count_new);
+					gdata.push(count_old);
 					showLoader(null, "Drawing");
 					// this: 0,id,node,paper,attrs,transformations,_,prev,next,type,bar,value,events
 					// this.bar ["0", "id", "node", "paper", "attrs", "transformations", "_", "prev", "next", "type", "x", "y", "w", "h", "value"]
@@ -6135,12 +7205,15 @@ function showstats(hname) {
 					var offh = 10;
 					var toffh = 30;
 					var toffv=10+(hei/(2*labels.length));
-					console.log("Drawing in : " + hname + " - "  + count.toString());
-					r.g.hbarchart(100,offh,600,hei, gdata )
-						.hover(fin,fout);
-						//.label(labels2);
+					console.log("Drawing in : " + hname + " - "  + count_new.toString());
+					r.g.hbarchart(100,offh,600,hei, gdata,  {
+						stacked: true,
+						colors: ["#8aa717","#1751a7"]
+					})
+					.hover(fin,fout);
+	                //.label(labels2);
 					for(var i in labels) {
-						r.text(toffh,toffv+(i*(hei/labels.length)), (labels[i].split(" ")[0])+"\n"+count[i]  );
+						r.text(toffh,toffv+(i*(hei/labels.length)), (labels[i].split(" ")[0])+"\n"+count_new[i]  );
 					}
 					hideLoader(null);
 				} else {
@@ -6160,6 +7233,129 @@ function showstats(hname) {
 	};
 	queueXhr(xhrArgs);
 	});
+}
+/**
+ * @method refreshCounterVetting
+ * Update the counter on top of the vetting page
+ */
+function refreshCounterVetting() {
+	if(isVisitor) {
+		//if the user is a visitor, don't display the counter informations
+		$('#nav-page .counter-infos, #nav-page .nav-progress').hide();
+		return;
+	}
+	
+	var inputs = $('.vetting-page input:visible:checked');
+	var total = inputs.length;
+	var abstain = inputs.filter(function() { return this.id.substr(0,2) === 'NO';}).length;
+	var voted = total - abstain;
+	
+	document.getElementById('count-total').innerHTML = total;
+	document.getElementById('count-abstain').innerHTML = abstain;
+	document.getElementById('count-voted').innerHTML = voted;
+	if(total === 0) {
+		total = 1;
+	}
+	document.getElementById('progress-voted').style.width = voted*100/total + '%';
+	document.getElementById('progress-abstain').style.width = abstain*100/total + '%';
+}
+
+/**
+ * @method chgPage
+ * Go to the next (1) or the previous page (1) during the vetting
+ * @param {Integer} shift next page (1) or previous (-1)
+ */
+function chgPage(shift) {
+	//no page, or wrong shift
+	if(!_thePages || (shift !== -1 && shift !== 1))
+		return;
+	
+	var menus = getMenusFilteredByCov();
+	var parentIndex = 0;
+	var index = 0;
+	var parent = _thePages.pageToSection[surveyCurrentPage].id;
+	
+	//get the parent index
+	for(var m in menus) {
+		var menu = menus[m];
+		if(menu.id === parent) {
+			parentIndex = parseInt(m);
+			break;
+		}
+	}
+
+	for(var m in menus[parentIndex].pagesFiltered) {
+		var menu = menus[parentIndex].pagesFiltered[m];
+		if(menu.id === surveyCurrentPage) {
+			index = parseInt(m);
+			break;
+		}
+	}
+	//go to the next one
+	index += parseInt(shift);
+
+	if(index >= menus[parentIndex].pagesFiltered.length) {
+		parentIndex++;
+		index = 0;
+		if(parentIndex >= menus.length) {
+			parentIndex = 0;
+		}
+	}
+	
+	if(index < 0) {
+		parentIndex--;
+		if(parentIndex < 0) {
+			parentIndex = menus.length - 1;
+		}
+		index = menus[parentIndex].pagesFiltered.length - 1;
+	}
+
+
+	surveyCurrentSection = menus[parentIndex].id;
+	surveyCurrentPage = menus[parentIndex].pagesFiltered[index].id;
+
+	reloadV();
+	
+	var sidebar = $('#locale-menu #'+surveyCurrentPage);
+	sidebar.closest('.open-menu').click();
+}
+
+/**
+ * @method getMenusFilteredByCov
+ * Get all the menus under this coverage
+ * @return {Array} list of all the menus under this coverage
+ */
+function getMenusFilteredByCov() {
+	if (!_thePages)
+		return;
+	//get name of current coverage
+	var cov = surveyUserCov;
+	if(!cov) {
+		cov = surveyOrgCov;
+	}
+	
+	//get the value
+	var val = covValue(cov);
+	var sections = _thePages.sections;
+	var menus = [];
+	//add filtered pages
+	for(var s in sections) {
+		var section = sections[s];
+		var pages = section.pages;
+		var sectionContent = [];
+		for(var p in pages) {
+			var page = pages[p];
+			var key = Object.keys(page.levs).pop();
+			if(parseInt(page.levs[key]) <= val)
+				sectionContent.push(page);
+		}
+		
+		if(sectionContent.length) {
+			section.pagesFiltered = sectionContent;
+			menus.push(section);
+		}
+	}
+	return menus;
 }
 
 
@@ -6185,6 +7381,7 @@ function changeStyle(hideRegex) {
                 } else {
                     if (theStyle.display != 'table-row') {
                         theStyle.display = 'table-row';
+
                     }
                 }
             }
@@ -6307,7 +7504,13 @@ function showRecent(divName, locale, user) {
 	}
 	dojo.ready(function() {
 		loadStui();
-		var div = dojo.byId(divName);
+		var div;
+		
+		if(divName.nodeType>0 ) {
+			div = divName; 
+		} else {
+			div = dojo.byId(divName);
+		}
 		div.className = "recentList";
 		div.update = function() {
 		var ourUrl = contextPath + "/SurveyAjax?what=recent_items&_="+locale+"&user="+user+"&limit="+15;
@@ -6334,7 +7537,7 @@ function showRecent(divName, locale, user) {
 							frag.appendChild(rowDiv);
 							
 							rowDiv.appendChild(createChunk(stui_str("recentLoc"),"b"));
-							rowDiv.appendChild(createChunk(stui_str("recentXpath"),"b"));
+							rowDiv.appendChild(createChunk(stui_str("recentXpathCode"),"b"));
 							rowDiv.appendChild(createChunk(stui_str("recentValue"),"b"));
 							rowDiv.appendChild(createChunk(stui_str("recentWhen"),"b"));
 						}
@@ -6347,6 +7550,7 @@ function showRecent(divName, locale, user) {
 							var org = row[header.ORG];
 							var last_mod = row[header.LAST_MOD];
 							var xpath = row[header.XPATH];
+							var xpath_code = row[header.XPATH_CODE];
 							var xpath_hash = row[header.XPATH_STRHASH];
 							var value = row[header.VALUE];
 							
@@ -6355,7 +7559,8 @@ function showRecent(divName, locale, user) {
 							
                                                         rowDiv.appendChild(createLocLink(loc,locname, "recentLoc"));
 							var xpathItem;
-							rowDiv.appendChild(xpathItem = createChunk(xpath,"a","recentXpath"));
+							xpath_code = xpath_code.replace(/\t/g," / ");
+							rowDiv.appendChild(xpathItem = createChunk(xpath_code,"a","recentXpath"));
 							xpathItem.href = "survey?_="+loc+"&strid="+xpath_hash;
 							rowDiv.appendChild(createChunk(value,"span","value recentValue"));
 							rowDiv.appendChild(createChunk(last_mod,"span","recentWhen"));

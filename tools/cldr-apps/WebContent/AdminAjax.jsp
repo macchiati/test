@@ -3,6 +3,7 @@
 	language="java" contentType="application/json; charset=UTF-8"
 	import="com.ibm.icu.util.ULocale,org.unicode.cldr.util.*,org.json.*"%><%--  Copyright (C) 2012 IBM and Others. All Rights Reserved 
 	 --%><%@ page import="java.lang.management.*"%><%
+	 CLDRConfigImpl.setUrls(request);
 	String vap = request.getParameter("vap");
 	String action = request.getParameter("do");
 	if (vap == null || action == null
@@ -35,6 +36,26 @@
 // 		CLDRConfig cconfig = CLDRConfig.getInstance();
 		
 // 		CookieSession.sm.ensureOrCheckout(out, "CLDR_DIR", new java.io.File(cconfig.getProperty("CLDR_DIR")), SurveyMain.CLDR_DIR_REPOS);
+	} else if (action.equals("unlink")) {
+		String s= request.getParameter("s");
+		CookieSession cs = CookieSession.retrieveWithoutTouch(s);
+		if(cs != null) {
+			JSONObject sess = new JSONObject();
+			if (cs.user != null) {
+				sess.put("user", SurveyAjax.JSONWriter.wrap(cs.user));
+			}
+			sess.put("id", cs.id);
+			sess.put("ip", cs.ip);
+            sess.put("last", SurveyMain.timeDiff(cs.last));
+            sess.put("lastAction", SurveyMain.timeDiff(cs.getLastAction()));
+            sess.put("timeTillKick", cs.timeTillKick());
+
+            new JSONWriter(out).object().key("kick").value(s).key("removing").value(sess)
+			.endObject();
+			cs.remove();
+		} else {
+			new JSONWriter(out).object().key("kick").value(s).key("removing").value(null).endObject();
+		}
 	} else if (action.equals("threads")) {
 
 		JSONObject threads = new JSONObject();

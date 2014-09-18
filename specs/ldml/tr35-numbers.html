@@ -91,7 +91,7 @@ h2,h3,h4,table {
 		<table border="1" cellpadding="2" cellspacing="0" class="wide">
 			<tr>
 				<td>Version</td>
-				<td>25</td>
+				<td>26</td>
 			</tr>
 			<tr>
 				<td>Editors</td>
@@ -103,7 +103,7 @@ h2,h3,h4,table {
 
 		<p>
 			For the full header, summary, and status, see <a href="tr35.html">
-				Part 1: Core specification</a>
+				Part 1: Core</a>
 		</p>
 
 		<h3>
@@ -173,8 +173,8 @@ h2,h3,h4,table {
 		</h2>
 		<p>The LDML specification is divided into the following parts:</p>
 		<ul class="toc">
-			<li>Part 1: <a href="tr35.html#Contents">Core specification</a>
-				(languages, locales, basic structure)
+			<li>Part 1: <a href="tr35.html#Contents">Core</a> (languages,
+				locales, basic structure)
 			</li>
 			<li>Part 2: <a href="tr35-general.html#Contents">General</a>
 				(display names &amp; transforms, etc.)
@@ -188,8 +188,8 @@ h2,h3,h4,table {
 			<li>Part 5: <a href="tr35-collation.html#Contents">Collation</a>
 				(sorting, searching, grouping)
 			</li>
-			<li>Part 6: <a href="tr35-info.html#Contents">Related
-					Information</a> (supplemental data)
+			<li>Part 6: <a href="tr35-info.html#Contents">Supplemental</a>
+				(supplemental data)
 			</li>
 			<li>Part 7: <a href="tr35-keyboards.html#Contents">Keyboards</a>
 				(keyboard mappings)
@@ -228,7 +228,8 @@ h2,h3,h4,table {
 					<li>3.4 <a href="#sci">Scientific Notation</a></li>
 					<li>3.5 <a href="#sigdig">Significant Digits</a></li>
 					<li>3.6 <a href="#Padding">Padding</a></li>
-					<li>3.7 <a href="#Quoting_Rules">Quoting Rules</a></li>
+					<li>3.7 <a href="#Rounding">Rounding</a></li>
+					<li>3.8 <a href="#Quoting_Rules">Quoting Rules</a></li>
 				</ul>
 			</li>
 			<li>4 <a href="#Currencies">Currencies</a>
@@ -247,8 +248,7 @@ h2,h3,h4,table {
 							<li>5.1.4 <a href="#Using_cardinals">Using Cardinals</a></li>
 						</ul>
 					</li>
-					<li>5.2 <a href="#Plural_Ranges">Plural Ranges</a>
-					</li>
+					<li>5.2 <a href="#Plural_Ranges">Plural Ranges</a></li>
 				</ul>
 			</li>
 			<li>6 <a href="#Rule-Based_Number_Formatting">Rule-Based
@@ -330,9 +330,10 @@ h2,h3,h4,table {
 				Elements</a>
 		</h2>
 		<p class="dtd">&lt;!ELEMENT numbers (alias |
-			(defaultNumberingSystem*, otherNumberingSystems*, symbols*,
-			decimalFormats*, scientificFormats*, percentFormats*,
-			currencyFormats*, currencies?, miscPatterns*, special*)) &gt;</p>
+			(defaultNumberingSystem*, otherNumberingSystems*,
+			minimumGroupingDigits*, symbols*, decimalFormats*,
+			scientificFormats*, percentFormats*, currencyFormats*, currencies?,
+			miscPatterns*, special*)) &gt;</p>
 		<p>
 			The numbers element supplies information for formatting and parsing
 			numbers and currencies. It has the following sub-elements:
@@ -419,7 +420,8 @@ h2,h3,h4,table {
 		<p class="dtd">&lt;!ELEMENT symbols (alias | (decimal*, group*,
 			list*, percentSign*, nativeZeroDigit*, patternDigit*, plusSign*,
 			minusSign*, exponential*, superscriptingExponent*, perMille*,
-			infinity*, nan*, currencyDecimal*, currencyGroup*, special*)) &gt;</p>
+			infinity*, nan*, currencyDecimal*, currencyGroup*, timeSeparator*,
+			special*)) &gt;</p>
 		<p>
 			Number symbols define the localized symbols that are commonly used
 			when formatting numbers in a given locale. These symbols can be
@@ -512,18 +514,26 @@ h2,h3,h4,table {
 			<dt>
 				<b>currencyDecimal</b>
 			</dt>
-			<dd>This is used as the decimal separator in currency
+			<dd>- This is used as the decimal separator in currency
 				formatting/parsing, instead of the regular decimal separator. This
 				item is optional in the CLDR.</dd>
 			<dt>
 				<b>currencyGroup</b>
 			</dt>
-			<dd>This is used as the grouping separator in currency
+			<dd>- This is used as the grouping separator in currency
 				formatting/parsing, instead of the regular grouping separator. This
 				item is optional in the CLDR.</dd>
+			<dt>
+				<b>timeSeparator</b>
+			</dt>
+			<dd>- This replaces any use of &quot;:&quot; in a date-time
+				format pattern. This allows the same time format to be used for
+				multiple number systems. For example, the time format for Arabic
+				should be : when using the Latin numbering system (0, 1, 2, …), but
+				a comma when the Arabic numbering system is used (٠‎ - ١‎ - ٢‎ …)</dd>
 		</dl>
 		<p>Example:</p>
-		<pre>&lt;/symbols&gt;
+		<pre>&lt;symbols&gt;
       &lt;decimal&gt;<span style="color: blue">.</span>&lt;/decimal&gt;
       &lt;group&gt;<span style="color: blue">,</span>&lt;/group&gt;
       &lt;list&gt;<span style="color: blue">;</span>&lt;/list&gt;
@@ -536,6 +546,7 @@ h2,h3,h4,table {
       &lt;perMille&gt;<span style="color: blue">‰</span>&lt;/perMille&gt;
       &lt;infinity&gt;<span style="color: blue">∞</span>&lt;/infinity&gt;
       &lt;nan&gt;<span style="color: blue">☹</span>&lt;/nan&gt;
+      &lt;timeSeparator&gt;:&lt;/timeSeparator&gt;
 &lt;/symbols&gt;</pre>
 		<p>
 			<span class="dtd">&lt;!ATTLIST symbols numberSystem CDATA
@@ -725,7 +736,7 @@ h2,h3,h4,table {
 			<dt>
 				<strong>range</strong>
 			</dt>
-			<dd>indicates a range of numbers, such as: “99-103” to indicate
+			<dd>indicates a range of numbers, such as: “99–103” to indicate
 				that there are from 99 to 103 items.</dd>
 		</dl>
 		<p>
@@ -792,13 +803,13 @@ h2,h3,h4,table {
 					<td width="33%">01234,5670</td>
 				</tr>
 				<tr>
-					<td width="17%" rowspan="2"># ##0.00 ¤</td>
+					<td width="17%" rowspan="2">#,##0.00 ¤</td>
 					<td width="16%">EUR</td>
 					<td width="33%">1 234,57 €</td>
 				</tr>
 				<tr>
 					<td width="16%">JPY</td>
-					<td width="33%">1 235 ¥</td>
+					<td width="33%">1 235 ¥JP</td>
 				</tr>
 			</table>
 		</blockquote>
@@ -889,7 +900,8 @@ h2,h3,h4,table {
 					<td>,</td>
 					<td>Number</td>
 					<td>Yes</td>
-					<td>Grouping separator</td>
+					<td>Grouping separator. May occur in both the integer part and
+						the fractional part. The position determines the grouping.</td>
 				</tr>
 				<tr valign="top" bgcolor="#eeeeff">
 					<td>E</td>
@@ -920,14 +932,14 @@ h2,h3,h4,table {
 					<td>Multiply by 100 and show as percentage</td>
 				</tr>
 				<tr valign="top" bgcolor="#eeeeff">
-					<td>‰<br> (\u2030)
+					<td>‰<br> (U+2030)
 					</td>
 					<td>Prefix or suffix</td>
 					<td>Yes</td>
 					<td>Multiply by 1000 and show as per mille</td>
 				</tr>
 				<tr valign="top">
-					<td>¤ (\u00A4)</td>
+					<td>¤ (U+00A4)</td>
 					<td>Prefix or suffix</td>
 					<td>No</td>
 					<td>Currency sign, replaced by currency symbol. If doubled,
@@ -1005,8 +1017,15 @@ h2,h3,h4,table {
 			grouping size. All others are ignored, so &quot;#,##,###,####&quot;
 			== &quot;###,###,####&quot; == &quot;##,#,###,####&quot;.
 		</p>
-		<p>For consistency in the CLDR data, the following conventions
-			should be observed so as to have a canonical representation:</p>
+		<p>
+			The grouping separator may also occur in the fractional part, such as
+			in “#,##0.###,#”. This is most commonly done where the grouping
+			separator character is a thin, non-breaking space (U+202F), such as
+			“1.618 033 988 75”. See <a
+				href="http://physics.nist.gov/cuu/Units/checklist.html ">physics.nist.gov/cuu/Units/checklist.html</a>.
+		</p>
+
+		<p>For consistency in the CLDR data, the following conventions</p>
 		<ul>
 			<li>All number patterns should be minimal: there should be no
 				leading # marks except to specify the position of the grouping
@@ -1024,6 +1043,65 @@ h2,h3,h4,table {
 			</li>
 			<li>The only time two thousands separators needs to be used is
 				when the number of digits varies, such as for Hindi: #,##,##0.</li>
+			<li>The <strong>minimumGroupingDigits</strong> can be used to
+				suppress groupings below a certain value. This is used for languages
+				such as Polish, where one would only write the grouping separator
+				for values above 9999. The minimumGroupingDigits contains the
+				default for the locale.
+				<ul>
+					<li>The attribute value is used by adding it to the grouping
+						separator value. If the input number has fewer integer digits, the
+						grouping separator is suppressed.</li>
+					<li>Examples:
+						<table border="1" cellpadding="0" cellspacing="0">
+							<tr>
+								<th width="25%" scope="col"><div align="center">minimum&shy;GroupingDigits</div></th>
+								<th width="25%" scope="col"><div align="center">Pattern
+										Grouping</div></th>
+								<th width="25%" scope="col"><div align="center">Input
+										Number</div></th>
+								<th width="25%" scope="col"><div align="center">Formatted</div></th>
+							</tr>
+							<tr>
+								<td><div align="right">1</div></td>
+								<td><div align="right">3</div></td>
+								<td><div align="right">1000</div></td>
+								<td><div align="right">1,000</div></td>
+							</tr>
+							<tr>
+								<td><div align="right">1</div></td>
+								<td><div align="right">3</div></td>
+								<td><div align="right">10000</div></td>
+								<td><div align="right">10,000</div></td>
+							</tr>
+							<tr>
+								<td><div align="right">2</div></td>
+								<td><div align="right">3</div></td>
+								<td><div align="right">1000</div></td>
+								<td><div align="right">1000</div></td>
+							</tr>
+							<tr>
+								<td><div align="right">2</div></td>
+								<td><div align="right">3</div></td>
+								<td><div align="right">10000</div></td>
+								<td><div align="right">10,000</div></td>
+							</tr>
+							<tr>
+								<td><div align="right">1</div></td>
+								<td><div align="right">4</div></td>
+								<td><div align="right">10000</div></td>
+								<td><div align="right">1,0000</div></td>
+							</tr>
+							<tr>
+								<td><div align="right">2</div></td>
+								<td><div align="right">4</div></td>
+								<td><div align="right">10000</div></td>
+								<td><div align="right">10000</div></td>
+							</tr>
+						</table>
+					</li>
+				</ul>
+			</li>
 		</ul>
 		<h3>
 			3.3 <a name="Formatting" href="#Formatting">Formatting</a>
@@ -1070,14 +1148,14 @@ h2,h3,h4,table {
 		<p>
 			<code>NaN</code>
 			is represented as a single character, typically
-			<code>(\uFFFD)</code>
+			<code> (U+FFFD) </code>
 			. This character is determined by the localized number symbols. This
 			is the only value for which the prefixes and suffixes are not used.
 		</p>
 		<p>
 			Infinity is represented as a single character, typically <font
 				size="3">∞ </font>
-			<code>(\u221E)</code>
+			<code> (U+221E) </code>
 			, with the positive or negative prefixes and suffixes applied. The
 			infinity character is determined by the localized number symbols.
 		</p>
@@ -1137,7 +1215,7 @@ h2,h3,h4,table {
 			digits, or it may use them to the extent possible.</p>
 		<p>Examples:</p>
 		<blockquote>
-			<table cellspacing="3" cellpadding="0" border="0">
+			<table cellpadding="0" border="0">
 				<tr bgcolor="#ccccff">
 					<th align="left">Pattern</th>
 					<th align="left">Minimum significant digits</th>
@@ -1260,9 +1338,9 @@ h2,h3,h4,table {
 				character after the pad escape, then the pattern is illegal.
 			</li>
 		</ul>
-		<p>
-			<strong>Rounding</strong>
-		</p>
+		<h3>
+			3.7 <a name="Rounding" href="#Rounding">Rounding</a>
+		</h3>
 		<p>Patterns support rounding to a specific increment. For example,
 			1230 rounded to the nearest 50 is 1250. Mathematically, rounding to
 			specific increments is performed by dividing by the increment,
@@ -1313,7 +1391,7 @@ h2,h3,h4,table {
 				rounding, but otherwise behave identically to digit &#39;0&#39;.</li>
 		</ul>
 		<h3>
-			3.7 <a name="Quoting_Rules" href="#Quoting_Rules">Quoting Rules</a>
+			3.8 <a name="Quoting_Rules" href="#Quoting_Rules">Quoting Rules</a>
 		</h3>
 		<blockquote>
 			<p>
@@ -1493,7 +1571,7 @@ h2,h3,h4,table {
 			<p class="note">
 				<b>Note: </b><i>Currency values should <b>never</b> be
 					interchanged without a known currency code. You never want the
-					number 3.5 interpreted as $3.5 by one user and ¥3.5 by another.
+					number 3.5 interpreted as $3.50 by one user and €3.50 by another.
 				</i>Locale data contains localization information for currencies, not a
 				currency value for a country. A currency amount logically consists
 				of a numeric value, plus an accompanying currency code (or
@@ -1503,22 +1581,19 @@ h2,h3,h4,table {
 				interpretation.
 			</p>
 		</blockquote>
-		<p class="note">
-			Notice that the currency code is completely independent of the
-			end-user&#39;s language or locale. For example, RUR is the code for
-			Russian Rubles. A currency amount of &lt;RUR, 1.23457×10³&gt; would
-			be localized for a Russian user into &quot;1 234,57р.&quot; (using
-			U+0440 (р) <span style="FONT-VARIANT: small-caps">cyrillic
-				small letter er</span>). For an English user it would be localized into the
-			string &quot;Rub 1,234.57&quot; The end-user&#39;s language is needed
-			for doing this last localization step; but that language is
-			completely orthogonal to the currency code needed in the data. After
-			all, the same English user could be working with dozens of
-			currencies.Notice also that the currency code is also independent of
-			whether currency values are inter-converted, which requires more
-			interesting financial processing: the rate of conversion may depend
-			on a variety of factors.
-		</p>
+		<p class="note">Notice that the currency code is completely
+			independent of the end-user&#39;s language or locale. For example,
+			BGN is the code for Bulgarian Lev. A currency amount of &lt;BGN,
+			1.23456×10³&gt; would be localized for a Bulgarian user into &quot;1
+			234,56 лв.&quot; (using Cyrillic letters). For an English user it
+			would be localized into the string &quot;BGN 1,234.56&quot; The
+			end-user&#39;s language is needed for doing this last localization
+			step; but that language is completely orthogonal to the currency code
+			needed in the data. After all, the same English user could be working
+			with dozens of currencies. Notice also that the currency code is also
+			independent of whether currency values are inter-converted, which
+			requires more interesting financial processing: the rate of
+			conversion may depend on a variety of factors.</p>
 		<p class="note">Thus logically speaking, once a currency amount is
 			entered into a system, it should be logically accompanied by a
 			currency code in all processing. This currency code is independent of
@@ -1657,6 +1732,7 @@ h2,h3,h4,table {
 					The default is &quot;true&quot;. Certain ISO codes represent things
 					like financial instruments or precious metals, and do not represent
 					normally interchanged currencies.
+				</p>
 			</li>
 		</ul>
 		<p>
@@ -1785,8 +1861,8 @@ h2,h3,h4,table {
 			the various plural forms of a language; for a given language, only
 			the tags necessary for that language are defined, along with the
 			specific numeric ranges covered by each tag (for example, the plural
-			form &quot;few&quot; may be used for the numeric range 2-4 in one
-			language and 3-9 in another):</p>
+			form &quot;few&quot; may be used for the numeric range 2–4 in one
+			language and 3–9 in another):</p>
 		<ul>
 			<li>zero</li>
 			<li>one</li>
@@ -1806,9 +1882,9 @@ h2,h3,h4,table {
 	&lt;pluralRules count=&quot;few&quot;&gt;<span style="color: blue">n mod 10 in 2..4 and n mod 100 not in 12..14</span>&lt;/pluralRule&gt;
 &lt;/pluralRules&gt;</pre>
 		<p>These rules specify that Russian has a &quot;one&quot; form
-			(for 1, 21, 31, 41, 51, …), a &quot;few&quot; form (for 2-4, 22-24,
-			32-34, …), and implicitly an &quot;other&quot; form (for everything
-			else: 0, 5-20, 25-30, 35-40, …, decimals). Russian does not need
+			(for 1, 21, 31, 41, 51, …), a &quot;few&quot; form (for 2–4, 22–24,
+			32–34, …), and implicitly an &quot;other&quot; form (for everything
+			else: 0, 5–20, 25–30, 35–40, …, decimals). Russian does not need
 			additional separate forms for zero, two, or many, so these are not
 			defined.</p>
 		<p>Plural categories may also differ according to the decimals.
@@ -1868,7 +1944,7 @@ h2,h3,h4,table {
 			values in CLDR are currently limited to just what is in the DTD, but
 			clients may support other values.</p>
 		<p>The conditions themselves have the following syntax.</p>
-		<pre>condition     = <span class="changed"></span>and_condition ('or' and_condition)*
+		<pre>condition     = and_condition ('or' and_condition)*
 samples       = ('@integer' sampleList)?<br>                ('@decimal' sampleList)?                
 and_condition = relation ('and' relation)*<br>relation      = is_relation | in_relation | within_relation <br>is_relation   = expr 'is' ('not')? value<br>in_relation   = expr (('not')? 'in' | '=' | '!=') range_list<br>within_relation = expr ('not')? 'within' range_list<br>expr          = operand (('mod' | '%') value)?
 operand       = 'n' | 'i' | 'f' | 't' | 'v' | 'w'<br>range_list    = (range | value) (',' range_list)*<br>range         = value'..'value
@@ -2190,10 +2266,10 @@ decimalValue  = value ('.' value)?<br>digit         = 0|1|2|3|4|5|6|7|8|
 		</p>
 
 		<p>Often ranges of numbers are presented to users, such as in
-			“Length: 3.2-4.5 centimeters”. This means any length from 3.2 cm to
+			“Length: 3.2–4.5 centimeters”. This means any length from 3.2 cm to
 			4.5 cm, inclusive. However, different languages have different
-			conventions for the pluralization given to a range: should it be “0-1
-			centimeter” or “0-1 centimeters”? This becomes much more complicated
+			conventions for the pluralization given to a range: should it be “0–1
+			centimeter” or “0–1 centimeters”? This becomes much more complicated
 			for languages that have many different plural forms, such as Russian
 			or Arabic.</p>
 		<p>
@@ -2201,9 +2277,13 @@ decimalValue  = value ('.' value)?<br>digit         = 0|1|2|3|4|5|6|7|8|
 			allowing an implementation to derive the plural category of a range
 			from the plural categories of the <em>start</em> and <em>end</em>
 			values. If there is no value for a <em>&lt;start,end&gt;</em> pair,
-			the default result is <em>other</em>. However, where that result has
+			the default result is <em>end</em>. However, where that result has
 			been verified for a given language, it is included in the CLDR data.
 		</p>
+		<p>The data has been gathered presuming that in any usage, the
+			start value is strictly less than the end value, and that no values
+			are negative. Results for any cases that do not meet these criteria
+			are undefined.</p>
 		<h2>
 			6 <a name="Rule-Based_Number_Formatting"
 				href="#Rule-Based_Number_Formatting">Rule-Based Number
@@ -2390,7 +2470,7 @@ decimalValue  = value ('.' value)?<br>digit         = 0|1|2|3|4|5|6|7|8|
 
 		<hr>
 		<p class="copyright">
-			Copyright © 2001-2014 Unicode, Inc. All Rights Reserved. The Unicode
+			Copyright © 2001–2014 Unicode, Inc. All Rights Reserved. The Unicode
 			Consortium makes no expressed or implied warranty of any kind, and
 			assumes no liability for errors or omissions. No liability is assumed
 			for incidental and consequential damages in connection with or

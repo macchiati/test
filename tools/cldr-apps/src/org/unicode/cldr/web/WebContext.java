@@ -756,7 +756,16 @@ public class WebContext implements Cloneable, Appendable {
      * @return base URL
      */
     public static String base(HttpServletRequest request) {
-        return schemeHostPort(request) + request.getContextPath() + request.getServletPath();
+        return contextBase(request) + request.getServletPath();
+    }
+
+    /**
+     * The base not including /servlet
+     * @param request
+     * @return
+     */
+    public static String contextBase(HttpServletRequest request) {
+        return schemeHostPort(request) + request.getContextPath();
     }
 
     /**
@@ -2343,10 +2352,10 @@ public class WebContext implements Cloneable, Appendable {
             session.user.ip = userIP();
         } else {
             if ((email != null) && (email.length() > 0) && (session.user == null)) {
-                message = "<strong id='sessionMessage'>" + iconHtml("stop", "failed login") + "login failed.</strong> <a href='"
+                message = iconHtml("stop", "failed login") + "login failed. <a href='"
                     + request.getContextPath() + "/reset.jsp?email=" + email +
                     "&s=" + session.id +
-                    "' id='notselected'>Forgot&nbsp;Password?</a><br>";
+                    "' id='notselected'>recover password?</a><br>";
             }
         }
         // processs the 'remember me'

@@ -32,8 +32,9 @@ define({
 		htmlvoted: "Voting",
 		htmlcode: "Code",
 		htmlbaseline: "$BASELINE_LANGUAGE_NAME",
-		htmlproposed: "Proposed",
+		htmlproposed: "Winning",
 		htmlothers: "Others",
+		htmltoadd: "Add",
 		htmlchange: "Change",
 		htmlnoopinion: "Abstain",
 
@@ -115,6 +116,7 @@ define({
 
 		recentLoc: "Locale",
 		recentXpath: "XPath",
+		recentXpathCode: "XPath Code",
 		recentValue: "Value",
 		recentWhen: "When",
 		recentOrg: "Organization",
@@ -131,13 +133,15 @@ define({
 
 		online: "Online",
 		disconnected: "Disconnected",
-		error_restart: "(May be due to SurveyTool restart on server)",
+		error_restart: "(May be due to Survey Tool restart on server)",
 		error: "Disconnected: Error",
 		details: "Details...",
 		startup: "Starting up...",
 
 		admin_users: "Users",
 		admin_users_desc: "Currently logged-in users",
+		admin_users_action_kick: "Kick",
+		admin_users_action_kick_desc: "Logout this user",
 
 		// pClass ( see DataSection.java)
 		pClass_winner: "This item is currently winning.",
@@ -162,9 +166,9 @@ define({
 		lastReleaseStatus_msg: "${0} Last Release Value ",
 		lastReleaseStatus1_msg: "",
 		
-		reportGuidance: "Please see the special review page at left.",
-		dataPageInitialGuidance: "Welcome to the SurveyTool.<br>Be sure to read the <a href='http://cldr.unicode.org/index/survey-tool'>Instructions</a> carefully.  To vote for items:<br><ol><li>Click on a cell in the 'Code' column.</li><li>Read the details that appear for that row.</li><li>To vote for an existing item in the Proposed or Others column of that row, click on the <input type='radio'> for that item.</li><li> To vote for a value not already shown in that row, click on any other text item in the Proposed or Others column of that row. A new editing box will open, and you can enter a new value; you will automatically be voting for it once you hit RETURN on your keyboard.</li><li>To abstain (including retracting a vote), click on the <input type='radio'> in the Abstain column.</li><li>Don’t worry about incorrect values that aren't winning (eg in the Proposed column). They will disappear later on.</li></ol>",
-		generalPageInitialGuidance: "This area will show details of items as you work with the SurveyTool. <p> You may resize this pane by dragging the dividers.",
+		reportGuidance: " ",
+		dataPageInitialGuidance: "Please consult the <a target='_blank' href='http://cldr.unicode.org/index/survey-tool/guide'>Instructions <span class='glyphicon glyphicon-share'></span></a> page.<br/><br/>Briefly, for each row:<br/><ol><li>Click on a cell in the 'Code' column.</li><li>Read the details that appear in the right panel (widen your window to see it).</li><li> Hover over the English and the Winning value to see examples.</li><li>To vote:<ol><li>for an existing item in the Winning or Others column, click on the <input type='radio'/> for that item.</li><li>for a new value, click on the button in the \"Add\" column. A new editing box will open. Enter the new value and hit RETURN.</li><li>for no value (abstain, or retract a vote), click on the  <input type='radio'/> in the Abstain column.</li></ol></li></ol>",
+		generalPageInitialGuidance: "This area will show details of items as you work with the Survey Tool.",
 		localesInitialGuidance: "Choose a locale to get started.  <ul><li><span class='locked'>locked</span> locales may not be modified by anyone,</li><li><span class='canmodify'>hand icon</span> indicates editing allowed by you</li><li><span class='name_var'>Locales with (Variants)</span> may have specific differences to note.</li></ul><p>Don't see your locale? See: <a href='http://cldr.unicode.org/index/bug-reports#New_Locales'>Adding New Locales</a></p>",
 		
 		loginGuidance: "You may not make any changes, you are not logged in.",
@@ -195,12 +199,13 @@ define({
 		voteInfo_perValue_desc: "This shows the state and voters for a particular item.",
 		voteInfo_moreInfo: "Click here for a full explanation of the icons and their meanings.",
 		// CheckCLDR.StatusAction 
-		StatusAction_msg:              "Item was not submitted: ${0}",
+		StatusAction_msg:              "Not submitted: ${0}",
+		StatusAction_popupmsg:         "Sorry, your vote for '${1}' could not be submitted: ${0}", // same as StatusAction_msg but with context
 		StatusAction_ALLOW:            "(Actually, it was allowed.)", // shouldn't happen
 		StatusAction_FORBID:           "Forbidden.",
-		StatusAction_FORBID_ERRORS:    "Item had errors.",
-		StatusAction_FORBID_READONLY:  "Read-only.",
-		StatusAction_FORBID_COVERAGE:  "Outside of coverage.",
+		StatusAction_FORBID_ERRORS:    "The item had errors.",
+		StatusAction_FORBID_READONLY:  "The item is read-only.",
+		StatusAction_FORBID_COVERAGE:  "The item is not visible by coverage rules.",
 
 		// v.jsp
 		"v-title2_desc": "Locale title",
@@ -252,32 +257,56 @@ define({
 		section_forum: "Forum",
 		section_subpages: "Subpages",
 		special_search:  "Search",
+		special_mail: "Notifications (SMOKETEST ONLY)",
+		special_statistics: "Statistics",
+		special_r_compact: "Numbers",
+		special_r_datetime: "Datetime",
+		special_r_zones: "Zones",
+		special_r_vetting_json: "Dashboard",
 		searchNoResults: "No results found.",
 		searchGuidance: "This is a basic search facility. An exact word such as 'Monday' or 'Montag' can be entered, or an XPath or string ID like 'eeaf1f975877a5d'.  An optional locale ID can be prefixed to any search term, so 'mt:Monday' or 'mt:eeaf1f975877a5d'.",
 		section_help: "Choose an item from the 'Subpages' menu to begin working with this section.",
+		
+		statisticsGuidance: "This shows some basic statistics.  Note that this page may take a couple of minutes to load completely. Data shown here may be many minutes old.",
+		stats_overview: "Statistics Overview",
+		
+		stats_byday: "Votes by Day",
+		stats_byloc: "Votes by Locale",
+		stats_recent: "Recently Submitted Items",
 		
         section_info_Core_Data:  "The Core Data is vital for proper functioning of each locale. Because changes can disrupt the survey tool, data can only be changed via tickets. Please also review the Plural Rules for your locale: they are also vital.",
         section_info_Locale_Display_Names:  "The Locale Display Names are used to format names of locales, languages, scripts, and regions (including countries).",
         section_info_DateTime:  "The Date and Time data is used to format dates and times, including intervals (eg, 'Dec 10-12'). After completing this section, you should review the overall results with Review: Date/Time.",
         section_info_Timezones:  "The Timezones data is used to display timezones in a variety of ways. They also contain a list of cities associated with timezones. After completing this section, you should review the overall results with Review: Zones.",
         section_info_Numbers:  "The Numbers data is used to format numbers and currencies, including compact numbers (eg, '3M' for 3,000,000). After completing this section, you should review the overall results with Review: Numbers.",
+        section_info_Currencies:  "The Currencies data is used to format the names of currencies, and also provides the various currency symbols. After completing this section, you should review the overall results with Review: Numbers.",
         section_info_Units:  "The Units is used for formatting measurements, such as '3 hours' or '4 kg'.",
         section_info_Misc:  "The Miscellaneous data is used to some special purpose items, such as lists (eg, 'A, B, and C') and truncated strings (eg, 'supercalifrag…cious').",
 		
-		forumNewPostButton: "New Post",
-		forumNewButton_desc: "Clicking this will bring up a form to reply to this particular item, in a new window. Click 'view item' after submitting to return to this item.",
+        
+        survey_title: 'CLDR Survey Tool',
+		forumNewPostButton: "New Forum Post",
+		forumNewButton_desc: "Clicking this will bring up a form to reply to this particular item.",
 		forumNewPostFlagButton: "Flag for Review",
-		forumNewPostFlagButton_desc: "Clicking this will bring up a form to reply to this particular item, in a new window. Click 'view item' after submitting to return to this item.",
+		forumNewPostFlagButton_desc: "Clicking this will bring up a form to reply to this particular item.",
 		
-		special_general: "Please click the <b class='fakebutton'>General Info</b> button above, and choose a page to begin entering data. If you have not already done so, please read <a href='http://www.unicode.org/cldr/survey_tool.html'>Instructions</a>, particularly the Guide and the Walkthrough. You can also use the Review: Priority Items to see all the errors, warnings, and missing items in one place.",
-
+		user_me: "Me",
+		
+		special_general: "Please hover over the sidebar to choose a section to begin entering data. If you have not already done so, please read the <a target='_blank' href='http://www.unicode.org/cldr/survey_tool.html'>Instructions</a>, particularly the Guide and the Walkthrough. You can also use the Dashboard to see all the errors, warnings, and missing items in one place.",
+		special_forum: "Forum Posts",
+		forum_noposts: "No posts in this forum.",
+		forum_item: "Item",
+		forum_reply: "Reply",
+		forum_msg: "Showing posts for ${forum} and all sublocales.",
+		forumGuidance: "This is the forum page. This page will not reload when new posts come in, but you can use your browser's Refresh button to load new posts.",
+		generic_nolocale: "No locale chosen.",
 		defaultContent_msg: "This locale, ${info.name}  is the <i><a target='CLDR-ST-DOCS' href='http://cldr.unicode.org/translation/default-content'>default content locale</a></i> for <b><a class='notselected' href='#/${info.dcParent}'>${dcParentName}</a></b>, and thus editing or viewing is disabled. ",
 		defaultContentChild_msg: "This locale, ${info.name}  supplies the <i><a target='CLDR-ST-DOCS' href='http://cldr.unicode.org/translation/default-content'>default content</a></i> for <b><a class='notselected' href='#/${info.dcChild}'>${dcChildName}</a></b>. Please make sure that all the changes that you make here are appropriate for <b>${dcChildName}</b>. If there are multiple acceptable choices, please try to pick the one that would work for the most sublocales. ",           
 		defaultContent_header_msg: "= ${dcChild}",
 		defaultContent_titleLink: "content",
 		readonly_msg: "This locale may not be edited.<br/> ${msg}",
 		readonly_unknown: "Reason: Administrative Policy.",
-		
+		beta_msg: "The SurveyTool is currently in Beta. Any data added here will NOT go into CLDR.",
 		sidewaysArea_desc: "view of what the votes are in other, sister locales",
 		sideways_loading0: " ",
 		sideways_loading1: "Comparing to other locales...",
@@ -286,11 +315,11 @@ define({
 		sideways_noValue: "(no value)",
 		
 
-		ari_message: 'Something went wrong!',
+		ari_message: 'Problem with the SurveyTool',
 		ari_sessiondisconnect_message: "Your session has been disconnected.",
 		ari_force_reload: '[Second try: will force page reload]',
 
-		coverage_auto_msg: 'Automatic (Currently: ${surveyOrgCov})',
+		coverage_auto_msg: '${surveyOrgCov} (Default)',
 		coverage_core: 'Core',
 		coverage_posix: 'POSIX',
 		coverage_minimal: 'Minimal',
@@ -303,23 +332,33 @@ define({
 		coverage_menu_desc: 'Change the displayed coverage level. "Automatic" will use your organization\'s preferred value for this locale, if any.',
 
 		section_mail: 'Messages',
+
+		special_vsummary: "Priority Items Summary (slow)",
+		vsummaryGuidance: "This is the vetting summary. Click Recalculate to start and be patient, this may take a while.",
+		vsReload: "Recalculate",
+		vsStop: "Stop",
+		vsContent_initial: "Click Recalculate to calculate the summary",
 		
-		
-		jsonStatus_msg: "You should see your content shortly, thank you for waiting. By the way, there are ${users} logged-in users and ${guests} visitors to the SurveyTool. The server's workload is about ${sysloadpct} of normal capacity. You have been waiting about ${waitTime} seconds.",
+		jsonStatus_msg: "You should see your content shortly, thank you for waiting. By the way, there are ${users} logged-in users and ${guests} visitors to the Survey Tool. The server's workload is about ${sysloadpct} of normal capacity. You have been waiting about ${waitTime} seconds.",
 		err_what_section: "load part of this locale",
 		err_what_locmap: "load the list of locales",
-		err_what_menus: "load the SurveyTool menus",
+		err_what_menus: "load the Survey Tool menus",
 		err_what_status: "get the latest status from the server",
 		err_what_unknown: "process your request",
 		err_what_oldvotes: "fetch or import your old votes",
-		E_UNKNOWN: "An error occured while trying to '${what}', and the error code is '${code}'.\n (Sorry, the developers ought to write a more helpful error message here.)",
+		err_what_vote: "vote for a value",
+		E_UNKNOWN: "An error occured while trying to '${what}', and the error code is '${code}'.\n Reloading may resume your progress.",
+		E_INTERNAL: "An internal error occured trying to '${what}'. This is probably a bug in the SurveyTool.",
 		E_BAD_SECTION: "An error occured while trying to ${what}, the server could not find what was requested. \nPerhaps the URL is incorrect?",
-		E_BAD_LOCALE: "While trying to ${what}, the server told us that the locale, '${surveyCurrentLocale}',\n does not exist. It is either mistyped or has not been added to the SurveyTool.",
-		E_NOT_STARTED: "While trying to ${what}, the server told us that it's not quite ready yet. Please wait a bit, and try reloading this page.",
-		E_SPECIAL_SECTION: "An error occured while trying to ${what}, the server said that those items aren't visible in the SurveyTool.\nPerhaps the URL is incorrect or an item was deprected?",
-		E_SESSION_DISCONNECTED: "Your session was disconnected.",
-		E_NO_PERMISSION: "While trying to ${what}, the server told us that you do not have permission to do that operation. Sorry.",
-		E_NOT_LOGGED_IN: "While trying to ${what}, the server told us that you can't do that without being logged in.",
+		E_BAD_LOCALE: "The locale, '${surveyCurrentLocale}',\n does not exist. It was either mistyped or has not been added to the Survey Tool.",
+		E_NOT_STARTED: "The SurveyTool is still starting up. Please wait a bit and hit Reload.",
+		E_SPECIAL_SECTION: "An error occured while trying to ${what}, the server said that those items aren't visible in the Survey Tool.\nPerhaps the URL is incorrect or an item was deprected?",
+		E_SESSION_DISCONNECTED: "Your session has timed out or the SurveyTool has restarted. To continue from where you were, hit Reload.",
+		E_DISCONNECTED: "You were disconnected from the SurveyTool. To reconnect, hit Reload.",
+		E_NO_PERMISSION: "You do not have permission to do that operation.",
+		E_NOT_LOGGED_IN: "That operation cannot be done without being logged in.",
+		E_BAD_VALUE: "The vote was not accepted: ${err_data.message}",
+		E_BAD_XPATH: "This item does not exist in this locale.",
 		"": ""})
 //		"mt-MT": false
 

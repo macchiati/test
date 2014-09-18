@@ -91,19 +91,18 @@ h2,h3,h4,table {
 		<table border="1" cellpadding="2" cellspacing="0" class="wide">
 			<tr>
 				<td>Version</td>
-				<td>25</td>
+				<td>26</td>
 			</tr>
 			<tr>
 				<td>Editors</td>
-				<td>Peter Edberg (<a href="mailto:pedberg@apple.com">pedberg@apple.com</a>)
-					and <a href="tr35.html#Acknowledgments">other CLDR committee
-						members</a></td>
+				<td>Peter Edberg and <a href="tr35.html#Acknowledgments">other
+						CLDR committee members</a></td>
 			</tr>
 		</table>
 
 		<p>
 			For the full header, summary, and status, see <a href="tr35.html">
-				Part 1: Core specification</a>
+				Part 1: Core.</a>
 		</p>
 
 		<h3>
@@ -173,8 +172,8 @@ h2,h3,h4,table {
 		</h2>
 		<p>The LDML specification is divided into the following parts:</p>
 		<ul class="toc">
-			<li>Part 1: <a href="tr35.html#Contents">Core specification</a>
-				(languages, locales, basic structure)
+			<li>Part 1: <a href="tr35.html#Contents">Core</a> (languages,
+				locales, basic structure)
 			</li>
 			<li>Part 2: <a href="tr35-general.html#Contents">General</a>
 				(display names &amp; transforms, etc.)
@@ -188,8 +187,8 @@ h2,h3,h4,table {
 			<li>Part 5: <a href="tr35-collation.html#Contents">Collation</a>
 				(sorting, searching, grouping)
 			</li>
-			<li>Part 6: <a href="tr35-info.html#Contents">Related
-					Information</a> (supplemental data)
+			<li>Part 6: <a href="tr35-info.html#Contents">Supplemental</a>
+				(supplemental data)
 			</li>
 			<li>Part 7: <a href="tr35-keyboards.html#Contents">Keyboards</a>
 				(keyboard mappings)
@@ -204,19 +203,21 @@ h2,h3,h4,table {
 					Dates Element, Supplemental Date and Calendar Information</a></li>
 			<li>2 <a href="#Calendar_Elements">Calendar Elements</a>
 				<ul class="toc">
-					<li>2.1 <a href="#months_days_quarters_eras">&lt;months&gt;,
-							&lt;days&gt;, &lt;quarters&gt;, &lt;eras&gt;</a></li>
-					<li>2.2 <a href="#monthPatterns_cyclicNameSets">&lt;monthPatterns&gt;,
-							&lt;cyclicNameSets&gt;</a></li>
-					<li>2.3 <a href="#dayPeriods">&lt;dayPeriods&gt;</a></li>
-					<li>2.4 <a href="#dateFormats">&lt;dateFormats&gt;</a></li>
-					<li>2.5 <a href="#timeFormats">&lt;timeFormats&gt;</a></li>
-					<li>2.6 <a href="#dateTimeFormats">&lt;dateTimeFormats&gt;</a>
+					<li>2.1 <a href="#months_days_quarters_eras">Elements
+							months, days, quarters, eras</a></li>
+					<li>2.2 <a href="#monthPatterns_cyclicNameSets">Elements
+							monthPatterns, cyclicNameSets</a></li>
+					<li>2.3 <a href="#dayPeriods">Element dayPeriods</a></li>
+					<li>2.4 <a href="#dateFormats">Element dateFormats</a></li>
+					<li>2.5 <a href="#timeFormats">Element timeFormats</a></li>
+					<li>2.6 <a href="#dateTimeFormats">Element dateTimeFormats</a>
 						<ul class="toc">
-							<li>2.6.1 <a href="#dateTimeFormat">&lt;dateTimeFormat&gt;</a>
-							<li>2.6.2 <a href="#availableFormats_appendItems">&lt;availableFormats&gt;,
-									&lt;appendItems&gt;</a>
-							<li>2.6.3 <a href="#intervalFormats">&lt;intervalFormats&gt;</a>
+							<li>2.6.1 <a href="#dateTimeFormat">Element
+									dateTimeFormat</a></li>
+							<li>2.6.2 <a href="#availableFormats_appendItems">Elements
+									availableFormats, appendItems</a></li>
+							<li>2.6.3 <a href="#intervalFormats">Element
+									intervalFormats</a></li>
 						</ul>
 					</li>
 				</ul>
@@ -256,8 +257,8 @@ h2,h3,h4,table {
 			</li>
 			<li>8 <a href="#Date_Format_Patterns">Date Format Patterns</a>
 				<ul class="toc">
-					<li>Table: <a href="#Date_Field_Symbol_Table">Date Field
-							Symbol Table</a></li>
+					<li><a href="#Date_Field_Symbol_Table">Date Field Symbol
+							Table</a></li>
 					<li>8.1 <a href="#Localized_Pattern_Characters">Localized
 							Pattern Characters (deprecated)</a></li>
 					<li>8.2 <a href="#Date_Patterns_AM_PM">AM / PM</a></li>
@@ -269,7 +270,6 @@ h2,h3,h4,table {
 			</li>
 			<li>9 <a href="#Parsing_Dates_Times">Parsing Dates and Times</a></li>
 		</ul>
-
 		<h2>
 			1 <a name="Overview_Dates_Element_Supplemental"
 				href="#Overview_Dates_Element_Supplemental">Overview: Dates
@@ -373,8 +373,8 @@ h2,h3,h4,table {
 
 		<h3>
 			2.1 <a name="months_days_quarters_eras"
-				href="#months_days_quarters_eras">&lt;months&gt;, &lt;days&gt;,
-				&lt;quarters&gt;, &lt;eras&gt;</a>
+				href="#months_days_quarters_eras">Elements months, days,
+				quarters, eras</a>
 		</h3>
 
 		<p class="dtd">
@@ -384,8 +384,8 @@ h2,h3,h4,table {
 			stand-alone ) #REQUIRED &gt;<br> &lt;!ELEMENT monthWidth ( alias
 			| (month*, special*)) &gt;<br> &lt;!ATTLIST monthWidth type (
 			abbreviated| narrow | wide) #REQUIRED &gt;<br> &lt;!ELEMENT
-			month ( #PCDATA | cp )* &gt;<br> &lt;!ATTLIST month type ( 1 | 2
-			| 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 ) #REQUIRED &gt;<br>
+			month ( #PCDATA )* &gt;<br> &lt;!ATTLIST month type ( 1 | 2 | 3
+			| 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 ) #REQUIRED &gt;<br>
 			&lt;!ATTLIST month yeartype ( standard | leap ) #IMPLIED &gt;
 		</p>
 		<p class="dtd">
@@ -447,9 +447,9 @@ h2,h3,h4,table {
 			for Saturday and for Sunday. The narrow width is typically used in
 			calendar headers; it must be the shortest possible width, no more
 			than one character (or grapheme cluster, or exemplar set element) in
-			stand-alone values, and the shortest possible widths (in terms of
-			grapheme clusters) in format values. The short width (if present) is
-			often the shortest unambiguous form.</p>
+			stand-alone values (not including punctuation), and the shortest
+			possible widths (in terms of grapheme clusters) in format values. The
+			short width (if present) is often the shortest unambiguous form.</p>
 
 		<p>Era names should be distinct within each of the widths,
 			including narrow; there is less disambiguating information for them,
@@ -688,8 +688,8 @@ h2,h3,h4,table {
 
 		<h3>
 			2.2 <a name="monthPatterns_cyclicNameSets"
-				href="#monthPatterns_cyclicNameSets">&lt;monthPatterns&gt;,
-				&lt;cyclicNameSets&gt;</a>
+				href="#monthPatterns_cyclicNameSets">Elements monthPatterns,
+				cyclicNameSets</a>
 		</h3>
 
 		<p class="dtd">
@@ -708,9 +708,9 @@ h2,h3,h4,table {
 			&lt;!ELEMENT cyclicNameSets ( alias | (cyclicNameSet*, special*))
 			&gt;<br> &lt;!ELEMENT cyclicNameSet ( alias |
 			(cyclicNameContext*, special*)) &gt;<br> &lt;!ATTLIST
-			cyclicNameSet type ( years | months | days | dayParts | zodiacs )
-			#REQUIRED &gt;<br> &lt;!ELEMENT cyclicNameContext ( alias |
-			(cyclicNameWidth*, special*)) &gt;<br> &lt;!ATTLIST
+			cyclicNameSet type ( years | months | days | dayParts | zodiacs |
+			solarTerms ) #REQUIRED &gt;<br> &lt;!ELEMENT cyclicNameContext (
+			alias | (cyclicNameWidth*, special*)) &gt;<br> &lt;!ATTLIST
 			cyclicNameContext type ( format | stand-alone ) #REQUIRED &gt;<br>
 			&lt;!ELEMENT cyclicNameWidth ( alias | (cyclicName*, special*)) &gt;<br>
 			&lt;!ATTLIST cyclicNameWidth type ( abbreviated | narrow | wide )
@@ -747,13 +747,15 @@ h2,h3,h4,table {
 		<p>The Chinese and Hindu lunar calendars also use a 60-name cycle
 			for designating years. The Chinese lunar calendars can also use that
 			cycle for months and days, and can use 12-name cycles for designating
-			day subdivisions or zodiac names associated with years. The
-			&lt;cyclicNameSets&gt; element structure supports these special kinds
-			of name cycles; a cyclicNameSet can be provided for types "year",
-			"month", "day", "dayParts", or "zodiacs". For each cyclicNameSet,
-			there is a context and width structure similar to that for day names.
-			For a given context and width, a set of cyclicName elements provides
-			the actual names.</p>
+			day subdivisions or zodiac names associated with years; a 24-name
+			cycle of solar terms (12 pairs of minor and major terms) is used to
+			mark intervals in the solar cycle. The &lt;cyclicNameSets&gt; element
+			structure supports these special kinds of name cycles; a
+			cyclicNameSet can be provided for types "year", "month", "day",
+			"dayParts", or "zodiacs". For each cyclicNameSet, there is a context
+			and width structure similar to that for day names. For a given
+			context and width, a set of cyclicName elements provides the actual
+			names.</p>
 		<p>Example:</p>
 		<pre>
     &lt;monthPatterns&gt;
@@ -796,11 +798,22 @@ h2,h3,h4,table {
                 &lt;/cyclicNameWidth&gt;
             &lt;/cyclicNameContext&gt;
         &lt;/cyclicNameSet&gt;
+        &lt;cyclicNameSet type="solarTerms"&gt;
+            &lt;cyclicNameContext type="format"&gt;
+                &lt;cyclicNameWidth type="abbreviated"&gt;
+                    &lt;cyclicName type="1"&gt;立春&lt;/cyclicName&gt;
+                    &lt;cyclicName type="2"&gt;雨水&lt;/cyclicName&gt;
+                    ...
+                    &lt;cyclicName type="23"&gt;小寒&lt;/cyclicName&gt;
+                    &lt;cyclicName type="24"&gt;大寒&lt;/cyclicName&gt;
+                &lt;/cyclicNameWidth&gt;
+            &lt;/cyclicNameContext&gt;
+        &lt;/cyclicNameSet&gt;
     &lt;/cyclicNameSets&gt;
 </pre>
 
 		<h3>
-			2.3 <a name="dayPeriods" href="#dayPeriods">&lt;dayPeriods&gt;</a>
+			2.3 <a name="dayPeriods" href="#dayPeriods">Element dayPeriods</a>
 		</h3>
 
 		<p>The former am/pm elements have been deprecated, and replaced by
@@ -853,7 +866,7 @@ h2,h3,h4,table {
 </pre>
 
 		<h3>
-			2.4 <a name="dateFormats" href="#dateFormats">&lt;dateFormats&gt;</a>
+			2.4 <a name="dateFormats" href="#dateFormats">Element dateFormats</a>
 		</h3>
 
 		<p class="dtd">
@@ -892,7 +905,7 @@ h2,h3,h4,table {
 			name), medium, and short (usually with numeric month).</p>
 
 		<h3>
-			2.5 <a name="timeFormats" href="#timeFormats">&lt;timeFormats&gt;</a>
+			2.5 <a name="timeFormats" href="#timeFormats">Element timeFormats</a>
 		</h3>
 
 		<p class="dtd">
@@ -938,7 +951,8 @@ h2,h3,h4,table {
 		</p>
 
 		<h3>
-			2.6 <a name="dateTimeFormats" href="#dateTimeFormats">&lt;dateTimeFormats&gt;</a>
+			2.6 <a name="dateTimeFormats" href="#dateTimeFormats">Element
+				dateTimeFormats</a>
 		</h3>
 		<p class="dtd">
 			&lt;!ELEMENT dateTimeFormats (alias | (default*,
@@ -1026,7 +1040,8 @@ h2,h3,h4,table {
 			various ways.</p>
 
 		<h4>
-			2.6.1 <a name="dateTimeFormat" href="#dateTimeFormat">&lt;dateTimeFormat&gt;</a>
+			2.6.1 <a name="dateTimeFormat" href="#dateTimeFormat">Element
+				dateTimeFormat</a>
 		</h4>
 
 		<p class="dtd">
@@ -1074,8 +1089,8 @@ h2,h3,h4,table {
 
 		<h4>
 			2.6.2 <a name="availableFormats_appendItems"
-				href="#availableFormats_appendItems">&lt;availableFormats&gt;,
-				&lt;appendItems&gt;</a>
+				href="#availableFormats_appendItems">Elements availableFormats,
+				appendItems</a>
 		</h4>
 
 		<p class="dtd">
@@ -1192,7 +1207,8 @@ h2,h3,h4,table {
 		</p>
 
 		<h4>
-			2.6.3 <a name="intervalFormats" href="#intervalFormats">&lt;intervalFormats&gt;</a>
+			2.6.3 <a name="intervalFormats" href="#intervalFormats">Element
+				intervalFormats</a>
 		</h4>
 
 		<p class="dtd">&lt;!ELEMENT intervalFormats (alias |
@@ -1306,9 +1322,16 @@ h2,h3,h4,table {
 		<p class="dtd">
 			&lt;!ELEMENT fields ( alias | (field*, special*)) &gt;<br>
 			&lt;!ELEMENT field ( alias | (displayName*, relative*, relativeTime*,
-			special*)) &gt; &lt;!ATTLIST field type ( era | year | month | week |
-			day | weekday | sun | mon | tue | wed | thu | fri | sat | dayperiod |
-			hour | minute | second | zone ) #IMPLIED &gt;
+			special*)) &gt;<br> &lt;!ATTLIST field type ( era | year |
+			year-short | year-narrow | quarter | quarter-short | quarter-narrow |
+			month | month-short | month-narrow | week | week-short | week-narrow
+			| day | day-short | day-narrow | weekday | sun | sun-short |
+			sun-narrow | mon | mon-short | mon-narrow | tue | tue-short |
+			tue-narrow | wed | wed-short | wed-narrow | thu | thu-short |
+			thu-narrow | fri | fri-short | fri-narrow | sat | sat-short |
+			sat-narrow | dayperiod | hour | hour-short | hour-narrow | minute |
+			minute-short | minute-narrow | second | second-short | second-narrow
+			| zone ) #IMPLIED &gt;
 		</p>
 		<p class="dtd">
 			&lt;!ELEMENT relative (#PCDATA) &gt;<br> &lt;!ATTLIST relative
@@ -1419,9 +1442,13 @@ h2,h3,h4,table {
       &lt;displayName&gt;Second&lt;/displayName&gt;
       &lt;relative type="0"&gt;now&lt;/relative&gt;
       …
-    &lt;/field&gt;
-</pre>
-
+    &lt;/field&gt;</pre>
+		<p>Different widths can be supplied for certain fields, such as:</p>
+		<pre>&lt;field type=&quot;<strong>year-short</strong>&quot;&gt;<br>	&lt;displayName&gt;yr.&lt;/displayName&gt;<br>	&lt;relative type=&quot;-1&quot;&gt;last yr.&lt;/relative&gt;<br>	&lt;relative type=&quot;0&quot;&gt;this yr.&lt;/relative&gt;<br>	&lt;relative type=&quot;1&quot;&gt;next yr.&lt;/relative&gt;<br>	&lt;relativeTime type=&quot;future&quot;&gt;<br>		&lt;relativeTimePattern count=&quot;one&quot;&gt;in {0} yr.&lt;/relativeTimePattern&gt;<br>		&lt;relativeTimePattern count=&quot;other&quot;&gt;in {0} yr.&lt;/relativeTimePattern&gt;<br>	&lt;/relativeTime&gt;<br>	&lt;relativeTime type=&quot;past&quot;&gt;<br>		&lt;relativeTimePattern count=&quot;one&quot;&gt;{0} yr. ago&lt;/relativeTimePattern&gt;<br>		&lt;relativeTimePattern count=&quot;other&quot;&gt;{0} yr. ago&lt;/relativeTimePattern&gt;<br>	&lt;/relativeTime&gt;<br>&lt;/field&gt;</pre>
+		<p>
+			As in other cases, <strong>narrow</strong> may be ambiguous out of
+			context.
+		</p>
 		<h2>
 			4 <a name="Supplemental_Calendar_Data"
 				href="#Supplemental_Calendar_Data">Supplemental Calendar Data</a>
@@ -2075,6 +2102,7 @@ h2,h3,h4,table {
 			characters for time zone formatting. For more information, see <a
 				href="#Date_Format_Patterns"> <u>Date Format Patterns</u>
 			</a>.
+		</p>
 		<p>The commonlyUsed element is now deprecated. The CLDR committee
 			has found it nearly impossible to obtain accurate and reliable data
 			regarding which time zone abbreviations may be understood in a given
@@ -2210,7 +2238,7 @@ h2,h3,h4,table {
 			Unicode time zone ID (e.g. "Asia/Culcutta") for the zone ID (e.g.
 			"Asia/Kolkata"). For more details, see <a
 				href="tr35.html#Time_Zone_Identifiers">Section 3.7.1.2 Time Zone
-				Indetifiers</a>.
+				Identifiers</a>.
 		</p>
 		<p>
 			<b>Note: </b>Not all Unicode time zones have equivalent Windows TZID
@@ -2377,7 +2405,7 @@ h2,h3,h4,table {
 		<ul>
 			<li>&quot;-0800&quot; (basic)</li>
 			<li>&quot;-08&quot; (basic - short)</li>
-			<li>&quot;-08:00&quot; (extended)
+			<li>&quot;-08:00&quot; (extended)</li>
 			<li>&quot;Z&quot; (UTC)</li>
 		</ul>
 		<blockquote>
@@ -2532,6 +2560,7 @@ h2,h3,h4,table {
 				patterns (but not necessarily every timezone). That is, given a time
 				and a format pattern with a zone string, you can format, then parse,
 				and get back the same time.
+			</p>
 			<p>
 				Note that the round-tripping is not just important for parsing; it
 				provides for formatting dates and times in an unambiguous way for
@@ -2573,6 +2602,7 @@ h2,h3,h4,table {
 						<ul>
 							<li>falling back to long localized GMT</li>
 						</ul>
+					</li>
 					<li>Z/ZZZZZ/X+/x+ - ISO 8601 formats (no fallback necessary)</li>
 					<li>ZZZZ/O+ - Localized GMT formats (no fallback necessary)</li>
 				</ul></li>
@@ -2610,6 +2640,7 @@ h2,h3,h4,table {
 						<ul>
 							<li>falling back to long localized GMT</li>
 						</ul>
+					</li>
 				</ul></li>
 		</ol>
 
@@ -3302,7 +3333,8 @@ h2,h3,h4,table {
 				<td rowspan="4" style="vertical-align: top; text-align: left">Month
 					- Use one or two for the numerical month, three for the
 					abbreviation, four for the full (wide) name, or five for the narrow
-					name.</td>
+					name. With two ("MM"), the month number is zero-padded if necessary
+					(e.g. "08").</td>
 			</tr>
 			<tr>
 				<td style="text-align: center; vertical-align: top">3</td>
@@ -3320,10 +3352,10 @@ h2,h3,h4,table {
 				<td rowspan="4" style="text-align: center; vertical-align: top">L</td>
 				<td style="text-align: center; vertical-align: top">1..2</td>
 				<td style="vertical-align: top; text-align: left">09</td>
-				<td rowspan="4" style="vertical-align: top; text-align: left"><b>Stand-Alone</b>
-					Month - Use one or two for the numerical month, three for the
-					abbreviation, four for the full (wide) name, or 5 for the narrow
-					name.</td>
+				<td rowspan="4"><b>Stand-Alone</b> Month - Use one or two for
+					the numerical month, three for the abbreviation, four for the full
+					(wide) name, or 5 for the narrow name. With two ("LL"), the month
+					number is zero-padded if necessary (e.g. "08").</td>
 			</tr>
 			<tr>
 				<td style="text-align: center; vertical-align: top">3</td>
@@ -3354,7 +3386,9 @@ h2,h3,h4,table {
 				<td style="text-align: center">w</td>
 				<td style="text-align: center">1..2</td>
 				<td>27</td>
-				<td>Week of Year.</td>
+				<td>Week of Year. Use "w" to show the minimum number of digits,
+					or "ww" to always show two digits (zero-padding if necessary, e.g.
+					"08").</td>
 			</tr>
 			<tr>
 				<td style="text-align: center">W</td>
@@ -3367,7 +3401,9 @@ h2,h3,h4,table {
 				<td style="text-align: center">d</td>
 				<td style="text-align: center">1..2</td>
 				<td>1</td>
-				<td>Date - Day of the month</td>
+				<td>Date - Day of the month. Use "d" to show the minimum number
+					of digits, or "dd" to always show two digits (zero-padding if
+					necessary, e.g. "08").</td>
 			</tr>
 			<tr>
 				<td style="text-align: center">D</td>
@@ -3467,12 +3503,27 @@ h2,h3,h4,table {
 				<td style="vertical-align: top; text-align: left">Tu</td>
 			</tr>
 			<tr>
-				<th>period</th>
-				<td style="text-align: center">a</td>
-				<td style="text-align: center">1</td>
+				<th rowspan="3">period</th>
+				<td rowspan="3" style="text-align: center">a</td>
+				<td style="text-align: center">1-3</td>
 				<td>AM</td>
-				<td>AM or PM</td>
+				<td>Abbreviated/short form of AM or PM</td>
 			</tr>
+			<tr>
+				<td style="text-align: center">4</td>
+				<td>AM</td>
+				<td>Wide form of AM or PM. May be the same as the short form if
+					the “real” long form (eg <em>ante meridiem</em>) is not customarily
+					be used.
+				</td>
+			</tr>
+			<tr>
+				<td style="text-align: center">5</td>
+				<td>a</td>
+				<td>Narrow form of AM or PM. Unlike some other narrow forms,
+					must be unique.</td>
+			</tr>
+
 			<tr>
 				<th rowspan="6">hour</th>
 				<td style="text-align: center">h</td>
@@ -3543,14 +3594,18 @@ h2,h3,h4,table {
 				<td style="text-align: center">m</td>
 				<td style="text-align: center">1..2</td>
 				<td>59</td>
-				<td>Minute. Use one or two for zero padding.</td>
+				<td>Minute. Use "m" to show the minimum number of digits, or
+					"mm" to always show two digits (zero-padding if necessary, e.g.
+					"08").</td>
 			</tr>
 			<tr>
 				<th rowspan="3">second</th>
 				<td style="text-align: center">s</td>
 				<td style="text-align: center">1..2</td>
 				<td>12</td>
-				<td>Second. Use one or two for zero padding.</td>
+				<td>Second. Use "s" to show the minimum number of digits, or
+					"ss" to always show two digits (zero-padding if necessary, e.g.
+					"08").</td>
 			</tr>
 			<tr>
 				<td style="text-align: center">S</td>
@@ -3571,6 +3626,17 @@ h2,h3,h4,table {
 					forward. On a day of DST cessation, it will jump backward. This
 					reflects the fact that is must be combined with the offset field to
 					obtain a unique local time value.
+				</td>
+			</tr>
+			<tr>
+				<th>sep.</th>
+				<td>:</td>
+				<td colspan="3">Time separator. Like the use of "," in number
+					formats, this is a variable that can be replaced, depending on the
+					numbering system. For more information, see <em><strong>Part
+							3: <a href="tr35-numbers.html#Contents">Numbers</a>
+					</strong>, Section 2.3 <a href="tr35-numbers.html#Number_Symbols">Number
+							Symbols</a></em>.
 				</td>
 			</tr>
 			<tr>
@@ -3646,7 +3712,8 @@ h2,h3,h4,table {
 				<td>Pacific Time</td>
 				<td>The <i>long generic non-location format</i>. Where that is
 					unavailable, falls back to <i>generic location format</i> ("VVVV").
-				
+
+				</td>
 			</tr>
 			<tr>
 				<td rowspan="4" style="text-align: center">V</td>
@@ -3776,7 +3843,7 @@ h2,h3,h4,table {
 		<p>All non-letter characters represent themselves in a pattern,
 			except for the single quote. It is used to &#39;escape&#39; letters.
 			Two single quotes in a row, whether inside or outside a quoted
-			sequence, represent a &#39;real&#39; single quote.</p>
+			&#39;real&#39; single quote.</p>
 
 		<h3>
 			8.1 <a name="Localized_Pattern_Characters"
@@ -3953,7 +4020,7 @@ h2,h3,h4,table {
 
 		<hr>
 		<p class="copyright">
-			Copyright © 2001-2014 Unicode, Inc. All Rights Reserved. The Unicode
+			Copyright © 2001–2014 Unicode, Inc. All Rights Reserved. The Unicode
 			Consortium makes no expressed or implied warranty of any kind, and
 			assumes no liability for errors or omissions. No liability is assumed
 			for incidental and consequential damages in connection with or

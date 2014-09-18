@@ -281,6 +281,10 @@ public class SurveyThread extends Thread {
         }
     }
 
+    public boolean removeTask(SurveyTask t) {
+        return tasks.remove(t);
+    }
+
     /**
      * Request the ST to stop at its next available opportunity.
      */

@@ -443,6 +443,7 @@ public class UserRegistry {
          * 
          * @param other
          * @see VoteResolver.Level.isAdminFor()
+         * @deprecated
          */
         public boolean isAdminFor(User other) {
             return getLevel().isManagerFor(getOrganization(), other.getLevel(), other.getOrganization());
@@ -511,7 +512,12 @@ public class UserRegistry {
     private static Map<String, VoteResolver.Organization> orgToVrOrg = new HashMap<String, VoteResolver.Organization>();
 
     public static synchronized Organization computeVROrganization(String org) {
-        VoteResolver.Organization o = orgToVrOrg.get(org);
+        VoteResolver.Organization o = Organization.fromString(org);
+        if (o == null) {
+            o = orgToVrOrg.get(org);
+        } else {
+            orgToVrOrg.put(org, o); // from Organization.fromString
+        }
         if (o == null) {
             try {
                 String arg = org.replaceAll("Utilika Foundation", "utilika")
@@ -562,6 +568,7 @@ public class UserRegistry {
         try {
             synchronized (conn) {
                 // logger.info("UserRegistry DB: initializing...");
+
                 boolean hadUserTable = DBUtils.hasTable(conn, CLDR_USERS);
                 if (!hadUserTable) {
                     sql = createUserTable(conn);
@@ -575,6 +582,9 @@ public class UserRegistry {
                     conn.commit();
                 }
 
+                //create review and post table
+                sql = "(see ReviewHide.java)";
+                ReviewHide.createTable(conn);
                 boolean hadInterestTable = DBUtils.hasTable(conn, CLDR_INTEREST);
                 if (!hadInterestTable) {
                     Statement s = conn.createStatement();
@@ -891,7 +901,10 @@ public class UserRegistry {
             throw new InternalError("UserRegistry: SQL error trying to get " + email + " - " + DBUtils.unchainSqlException(se));
             // return null;
         } catch (LogoutException le) {
-            logger.log(java.util.logging.Level.SEVERE, "AUTHENTICATION FAILURE; email=" + email + "; ip=" + ip);
+            if (pass != null) {
+                // only log this if they were actually trying to login.
+                logger.log(java.util.logging.Level.SEVERE, "AUTHENTICATION FAILURE; email=" + email + "; ip=" + ip);
+            }
             throw le; // bubble
         } catch (Throwable t) {
             logger.log(java.util.logging.Level.SEVERE, "UserRegistry: some error trying to get " + email, t);
@@ -1502,7 +1515,7 @@ public class UserRegistry {
     }
 
     public User newUser(WebContext ctx, User u) {
-
+        final boolean hushUserMessages = CLDRConfig.getInstance().getEnvironment() == Environment.UNITTEST;
         u.email = normalizeEmail(u.email);
         // prepare quotes
         u.email = u.email.replace('\'', '_').toLowerCase();
@@ -1523,7 +1536,7 @@ public class UserRegistry {
             insertStmt.setString(5, u.password);
             insertStmt.setString(6, normalizeLocaleList(u.locales));
             if (!insertStmt.execute()) {
-                logger.info("Added.");
+                if (!hushUserMessages) logger.info("Added.");
                 conn.commit();
                 if (ctx != null)
                     ctx.println("<p>Added user.<p>");
@@ -1592,6 +1605,16 @@ public class UserRegistry {
     }
 
     /** What level can the new user be, given requested? */
+
+    @Deprecated
+    /**
+     * 
+     * @param u
+     * @param requestedLevel
+     * @return
+     * @deprecated
+     * @see Level#canCreateOrSetLevelTo
+     */
     public static final int userCanCreateUserOfLevel(User u, int requestedLevel) {
         if (requestedLevel < 0) {
             requestedLevel = 0;
@@ -1625,30 +1648,56 @@ public class UserRegistry {
         return userIsTC(u) || userIsExactlyManager(u);
     }
 
-    /** can the user modify this particular user? */
-    static final boolean userCanModifyUser(User u, int theirId, int theirLevel) {
-        if (userIsAdmin(u))
-            return true;
-        if (!u.org.equals(CookieSession.sm.reg.getInfo(theirId).org)) {
+    /**
+     * Returns true if the manager user can change the user's userlevel
+     * @param managerUser the user doing the changing
+     * @param targetId the user being changed
+     * @param targetNewUserLevel the new userlevel of the user
+     * @return true if the action can proceed, otherwise false
+     */
+    static final boolean userCanModifyUser(User managerUser, int targetId, int targetNewUserLevel) {
+        if (targetId == ADMIN_ID) {
+            return false; // can't modify admin user
+        }
+        if (managerUser == null) {
+            return false; // no user
+        }
+        if (userIsAdmin(managerUser)) {
+            return true; // admin can modify everyone
+        }
+        final User otherUser = CookieSession.sm.reg.getInfo(targetId); // TODO static
+        if (otherUser == null) {
+            return false; // ?
+        }
+        if (!managerUser.org.equals(otherUser.org)) {
             return false;
         }
-        return (userCanModifyUsers(u) && (theirId != ADMIN_ID) && (theirId != u.id) && (theirLevel >= u.userlevel));
+        if (!userCanModifyUsers(managerUser)) {
+            return false;
+        }
+        if (targetId == managerUser.id) {
+            return false; // cannot modify self
+        }
+        if (targetNewUserLevel < managerUser.userlevel) {
+            return false; // Cannot assign a userlevel higher than the manager
+        }
+        return true;
     }
 
-    static final boolean userCanDeleteUser(User u, int theirId, int theirLevel) {
-        return (userCanModifyUser(u, theirId, theirLevel) && theirLevel > u.userlevel); // must
-                                                                                        // be
-                                                                                        // at
-                                                                                        // a
-                                                                                        // lower
-                                                                                        // level
+    static final boolean userCanDeleteUser(User managerUser, int targetId, int targetLevel) {
+        return (userCanModifyUser(managerUser, targetId, targetLevel) && targetLevel > managerUser.userlevel); // must
+        // be
+        // at
+        // a
+        // lower
+        // level
     }
 
-    static final boolean userCanDoList(User u) {
-        return (userIsVetter(u));
+    static final boolean userCanDoList(User managerUser) {
+        return (userIsVetter(managerUser));
     }
 
-    static final boolean userCanCreateUsers(User u) {
+    public static final boolean userCanCreateUsers(User u) {
         return (userIsTC(u) || userIsExactlyManager(u));
     }
 
@@ -1724,7 +1773,24 @@ public class UserRegistry {
     }
 
     public enum ModifyDenial {
-        DENY_NULL_USER, DENY_LOCALE_READONLY, DENY_PHASE_READONLY, DENY_ALIASLOCALE, DENY_DEFAULTCONTENT, DENY_PHASE_CLOSED, DENY_NO_RIGHTS, DENY_LOCALE_LIST
+        DENY_NULL_USER("No user specified"),
+        DENY_LOCALE_READONLY("Locale is read-only"),
+        DENY_PHASE_READONLY("SurveyTool is in read-only mode"),
+        DENY_ALIASLOCALE("Locale is an alias"),
+        DENY_DEFAULTCONTENT("Locale is the Default Content for another locale"),
+        DENY_PHASE_CLOSED("SurveyTool is in 'closed' phase"),
+        DENY_NO_RIGHTS("User does not have any voting rights"),
+        DENY_LOCALE_LIST("User does not have rights to vote for this locale");
+
+        ModifyDenial(String reason) {
+            this.reason = reason;
+        }
+
+        final String reason;
+
+        public String getReason() {
+            return reason;
+        }
     }
 
     public static final boolean userCanModifyLocale(User u, CLDRLocale locale) {
@@ -2232,9 +2298,9 @@ public class UserRegistry {
             }
         } catch (SQLException se) {
             /* logger.severe */System.err.println(/*
-                                                     * java.util.logging.Level.SEVERE
-                                                     * ,
-                                                     */"UserRegistry: SQL error trying to get orgs resultset for: VI " + " - "
+                                                      * java.util.logging.Level.SEVERE
+                                                      * ,
+                                                      */"UserRegistry: SQL error trying to get orgs resultset for: VI " + " - "
                 + DBUtils.unchainSqlException(se)/* ,se */);
         } finally {
             // close out the RS
@@ -2247,9 +2313,9 @@ public class UserRegistry {
                 }
             } catch (SQLException se) {
                 /* logger.severe */System.err.println(/*
-                                                         * java.util.logging.Level.
-                                                         * SEVERE,
-                                                         */"UserRegistry: SQL error trying to close out: "
+                                                          * java.util.logging.Level.
+                                                          * SEVERE,
+                                                          */"UserRegistry: SQL error trying to close out: "
                     + DBUtils.unchainSqlException(se)/* ,se */);
             }
         } // end try
@@ -2282,9 +2348,9 @@ public class UserRegistry {
      */
     public int readUserFile(SurveyMain sm, final File inFile) {
         int nusers = 0;
-        if (CLDRConfig.getInstance().getEnvironment() != Environment.LOCAL) {
-            throw new InternalError("Error: can only do this in LOCAL"); // insanity
-                                                                         // check
+        if (CLDRConfig.getInstance().getEnvironment() != Environment.SMOKETEST) {
+            throw new InternalError("Error: can only do this in SMOKETEST"); // insanity
+            // check
         }
 
         Connection conn = null;
