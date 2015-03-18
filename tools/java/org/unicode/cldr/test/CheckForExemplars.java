@@ -187,8 +187,24 @@ public class CheckForExemplars extends FactoryCheckCLDR {
         // UnicodeSet temp = resolvedFile.getExemplarSet("standard");
         // if (temp != null) exemplars.addAll(temp);
         UnicodeSet auxiliary = safeGetExemplars("auxiliary", possibleErrors, resolvedFile, ok); // resolvedFile.getExemplarSet("auxiliary",
-                                                                                                // CLDRFile.WinningChoice.WINNING);
-        if (auxiliary != null) exemplars.addAll(auxiliary);
+        // CLDRFile.WinningChoice.WINNING);
+        if (auxiliary != null) {
+            exemplars.addAll(auxiliary);
+        }
+
+        if (CheckExemplars.USE_PUNCTUATION) {
+            UnicodeSet punctuation = safeGetExemplars("punctuation", possibleErrors, resolvedFile, ok); // resolvedFile.getExemplarSet("auxiliary",
+            if (punctuation != null) {
+                exemplars.addAll(punctuation);
+            }
+
+            UnicodeSet numbers = getNumberSystemExemplars();
+            exemplars.addAll(numbers);
+
+            // TODO fix replacement character
+            exemplars.add(STAND_IN);
+        }
+
         exemplars.addAll(CheckExemplars.AlwaysOK).freeze();
         exemplarsPlusAscii = new UnicodeSet(exemplars).addAll(ASCII).freeze();
 
@@ -199,6 +215,12 @@ public class CheckForExemplars extends FactoryCheckCLDR {
                 .setStrength2(Collator.PRIMARY))
             .setCompressRanges(true);
         return this;
+    }
+
+    private UnicodeSet getNumberSystemExemplars() {
+        String numberSystem = getCldrFileToCheck().getStringValue("//ldml/numbers/defaultNumberingSystem");
+        String digits = sdi.getDigits(numberSystem);
+        return new UnicodeSet().addAll(digits);
     }
 
     private UnicodeSet safeGetExemplars(String type, List<CheckStatus> possibleErrors, CLDRFile resolvedFile,
@@ -313,7 +335,7 @@ public class CheckForExemplars extends FactoryCheckCLDR {
             // check the other characters in the message format patterns
             value = patternMatcher.replaceAll(STAND_IN);
         } else if (matchList.size() > 0 && placeholderStatus == PlaceholderStatus.DISALLOWED) { // non-message field has
-                                                                                                // placeholder values
+            // placeholder values
             result
                 .add(new CheckStatus()
                     .setCause(this)

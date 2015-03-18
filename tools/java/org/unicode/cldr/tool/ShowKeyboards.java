@@ -152,7 +152,7 @@ public class ShowKeyboards {
             }
         }
         if (totalErrors.size() != 0) {
-            System.out.println("Errors\t" + CollectionUtilities.join(totalErrors, "\n\t"));
+            System.out.println("Errors\t" + CollectionUtilities.join(totalErrors, System.lineSeparator() + "\t"));
         }
         for (String item : totalModifiers) {
             System.out.println(item);
@@ -167,7 +167,7 @@ public class ShowKeyboards {
                 "Characters → Keyboards",
                 ToolConstants.CHART_DISPLAY_VERSION,
                 "",
-                headerAndFooter);
+                headerAndFooter, null);
             out.println(headerAndFooter[0] + ABOUT_KEYBOARD_CHARTS);
 
             // printTop("Characters → Keyboards", out);
@@ -181,7 +181,7 @@ public class ShowKeyboards {
                 "Keyboards → Characters",
                 ToolConstants.CHART_DISPLAY_VERSION,
                 "",
-                headerAndFooter);
+                headerAndFooter, null);
             out.println(headerAndFooter[0]
                 + ABOUT_KEYBOARD_CHARTS);
             // printTop("Keyboards → Characters", out);
@@ -230,7 +230,7 @@ public class ShowKeyboards {
             "Keyboard Layout Index",
             ToolConstants.CHART_DISPLAY_VERSION,
             "",
-            headerAndFooter);
+            headerAndFooter, "Keyboard Index");
         index
             .println(headerAndFooter[0] + ABOUT_KEYBOARD_CHARTS);
         // printTop("Keyboard Layout Index", index);
@@ -257,7 +257,7 @@ public class ShowKeyboards {
                 "Layouts: " + localeName + " (" + locale + ")",
                 ToolConstants.CHART_DISPLAY_VERSION,
                 "",
-                headerAndFooter);
+                headerAndFooter, null);
             out.println(headerAndFooter[0] + ABOUT_KEYBOARD_CHARTS);
             // printTop("Layouts: " + localeName + " (" + locale + ")", out);
             Set<R3<String, String, String>> keyboards = localeKeyboards.getValue();
@@ -377,7 +377,8 @@ public class ShowKeyboards {
             + "'<span class=\"cc\">"
             + toItem
             + "</span>'"
-            + ";\n");
+            + ";"
+            + System.lineSeparator());
     }
 
     static UnicodeSet INVISIBLE = new UnicodeSet("[[:C:][:Z:][:whitespace:][:Default_Ignorable_Code_Point:]-[\\u0020]]").freeze();

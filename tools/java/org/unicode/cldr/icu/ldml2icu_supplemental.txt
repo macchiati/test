@@ -1,6 +1,6 @@
 # ldml2icu_supplemental.txt
 #
-# Copyright © 2012-2014 Unicode, Inc.
+# Copyright © 2012-2015 Unicode, Inc.
 # CLDR data files are interpreted according to the LDML specification (http://unicode.org/reports/tr35/)
 # For terms of use, see http://www.unicode.org/copyright.html
 #
@@ -58,8 +58,6 @@
      ; /languageData/$1/primary/territories; values=$3
 //supplementalData/languageData/language[@type="(%W)"][@territories="(%W)"] ; /languageData/$1/primary/territories ; values=$2
 
-//supplementalData/parentLocales/parentLocale[@parent="(%A)"][@locales="(%A)"] ; /languageData/parentLocales/$1 ; values=$2
-
 //supplementalData/languageData/language[@type="(%W)"][@scripts="(%W)"][@alt="secondary"] ; /languageData/$1/secondary/scripts ; values=$2
 //supplementalData/languageData/language[@type="(%W)"][@territories="(%G)"][@alt="secondary"] ; /languageData/$1/secondary/territories ; values=$2
 //supplementalData/languageData/language[@type="(%W)"][@scripts="(%W)"][@territories="(%W)"][@alt="secondary"]
@@ -83,18 +81,21 @@
      ; /timeData/$3/allowed ; values=$1
      ; /timeData/$3/preferred ; values=$2
 
+//supplementalData/measurementData/measurementSystem[@type="metric"][@category="(%W)"][@territories="(%W)"] ; /measurementData/$2/MeasurementSystemCategory/$1:int ; values=0
+//supplementalData/measurementData/measurementSystem[@type="US"][@category="(%W)"][@territories="(%W)"] ; /measurementData/$2/MeasurementSystemCategory/$1:int ; values=1
+//supplementalData/measurementData/measurementSystem[@type="UK"][@category="(%W)"][@territories="(%W)"] ; /measurementData/$2/MeasurementSystemCategory/$1:int ; values=2
+
 //supplementalData/measurementData/measurementSystem[@type="metric"][@territories="(%W)"] ; /measurementData/$1/MeasurementSystem:int ; values=0
 //supplementalData/measurementData/measurementSystem[@type="US"][@territories="(%W)"] ; /measurementData/$1/MeasurementSystem:int ; values=1
+//supplementalData/measurementData/measurementSystem[@type="UK"][@territories="(%W)"] ; /measurementData/$1/MeasurementSystem:int ; values=2
 //supplementalData/measurementData/paperSize[@type="A4"][@territories="(%W)"] ; /measurementData/$1/PaperSize:intvector ; values=297 210
 //supplementalData/measurementData/paperSize[@type="US-Letter"][@territories="(%W)"] ; /measurementData/$1/PaperSize:intvector ; values=279 216
 
-//supplementalData/territoryInfo/territory[@type="(%W)"][@gdp="(%N)"][@literacyPercent="(%N)"][@population="(%N)"]
-# GDP, literacy fraction, population
+//supplementalData/territoryInfo/territory[@type="(%W)"][@gdp="(%N)"][@literacyPercent="(%N)"][@population="(%N)"]/languagePopulation[@type="(%W)"][@writingPercent="(%N)"][@populationPercent="(%N)"][@officialStatus="(%W)"]([@references="%W"])?
     ; /territoryInfo/$1/territoryF:intvector ; values=&exp($2) &exp($3,-2) &exp($4) ; base_xpath=//supplementalData/territoryInfo/territory[@type="$1"]
-
-//supplementalData/territoryInfo/territory[@type="(%W)"][@gdp="(%N)"][@literacyPercent="(%N)"][@population="(%N)"]/languagePopulation[@type="(%W)"][@populationPercent="(%N)"]([@references="%W"])?
-    ; /territoryInfo/$1/territoryF:intvector ; values=&exp($2) &exp($3,-2) &exp($4) ; base_xpath=//supplementalData/territoryInfo/territory[@type="$1"]
-    ; /territoryInfo/$1/$5/populationShareF:int ; values=&exp($6,-2)
+    ; /territoryInfo/$1/$5/writingShareF:int ; values=&exp($6,-2)
+    ; /territoryInfo/$1/$5/populationShareF:int ; values=&exp($7,-2)
+    ; /territoryInfo/$1/$5/officialStatus ; values=$8
 
 //supplementalData/territoryInfo/territory[@type="(%W)"][@gdp="(%N)"][@literacyPercent="(%N)"][@population="(%N)"]/languagePopulation[@type="(%W)"][@writingPercent="(%N)"][@populationPercent="(%N)"]([@references="%W"])?
     ; /territoryInfo/$1/territoryF:intvector ; values=&exp($2) &exp($3,-2) &exp($4) ; base_xpath=//supplementalData/territoryInfo/territory[@type="$1"]
@@ -106,11 +107,12 @@
     ; /territoryInfo/$1/$5/populationShareF:int ; values=&exp($6,-2)
     ; /territoryInfo/$1/$5/officialStatus ; values=$7
 
-//supplementalData/territoryInfo/territory[@type="(%W)"][@gdp="(%N)"][@literacyPercent="(%N)"][@population="(%N)"]/languagePopulation[@type="(%W)"][@writingPercent="(%N)"][@populationPercent="(%N)"][@officialStatus="(%W)"]([@references="%W"])?
+//supplementalData/territoryInfo/territory[@type="(%W)"][@gdp="(%N)"][@literacyPercent="(%N)"][@population="(%N)"]/languagePopulation[@type="(%W)"][@populationPercent="(%N)"]([@references="%W"])?
     ; /territoryInfo/$1/territoryF:intvector ; values=&exp($2) &exp($3,-2) &exp($4) ; base_xpath=//supplementalData/territoryInfo/territory[@type="$1"]
-    ; /territoryInfo/$1/$5/writingShareF:int ; values=&exp($6,-2)
-    ; /territoryInfo/$1/$5/populationShareF:int ; values=&exp($7,-2)
-    ; /territoryInfo/$1/$5/officialStatus ; values=$8
+    ; /territoryInfo/$1/$5/populationShareF:int ; values=&exp($6,-2)
+
+//supplementalData/territoryInfo/territory[@type="(%W)"][@gdp="(%N)"][@literacyPercent="(%N)"][@population="(%N)"]
+    ; /territoryInfo/$1/territoryF:intvector ; values=&exp($2) &exp($3,-2) &exp($4) ; base_xpath=//supplementalData/territoryInfo/territory[@type="$1"]
 
 //supplementalData/calendarData/calendar[@type="(%W)"]/calendarSystem[@type="(%W)"] ; /calendarData/$1/system ; values=$2
 //supplementalData/calendarData/calendar[@type="(%W)"]/eras/era[@type="(%W)"][@(start|end)="(%A)"] ; /calendarData/$1/eras/$2/$3:intvector ; values=&date($4,$3)
@@ -124,11 +126,6 @@
 
 # likelySubtags.xml
 //supplementalData/likelySubtags/likelySubtag[@from="(%A)"][@to="(%A)"] ; /$1 ; values=$2
-
-# supplementalMetadata.xml
-//supplementalData/metadata/alias/(language|script|territory|variant)Alias[@type="(%A)"][@replacement="(%A)"][@reason="%A"] ; /$1Alias/$2 ; values="$3"
-# Specify the value explicitly so that the LDMLConverter will split it.
-//supplementalData/metadata/validity/variable[@type="choice"][@id="\$territory"] ; /regionCodes ; values={value}
 
 # metaZones.xml - metaZones.txt
 //supplementalData/metaZones/mapTimezones[@type="metazones"][@typeVersion="%A"]/mapZone[@type="(%A)"][@other="(%W)"][@territory="(%W)"] ; /mapTimezones/$2/$3 ; values=$1
@@ -158,3 +155,16 @@
 
 # postalCodeData.xml
 //supplementalData/postalCodeData/postCodeRegex[@territoryId="(%W)"] ; /$1
+
+# locale info
+//supplementalData/parentLocales/parentLocale[@parent="(%A)"][@locales="(%A)"] ; /parentLocales/$1 ; values=$2
+//supplementalData/metadata/defaultContent[@locales="(%A)"] ; /defaultContent ; values=$1
+
+# supplementalMetadata.xml (metadata.txt)
+//supplementalData/metadata/alias/(language|script|territory|variant)Alias[@type="(%A)"][@replacement="(%A)"][@reason="(%A)"]
+     ; /alias/$1/$2/reason ; values="$4"
+     ; /alias/$1/$2/replacement ; values="$3"
+
+# Region codes used by ICU's Region class
+# Specify the value explicitly so that the LDMLConverter will split it.
+//supplementalData/metadata/validity/variable[@type="choice"][@id="\$territory"] ; /regionCodes ; values={value}

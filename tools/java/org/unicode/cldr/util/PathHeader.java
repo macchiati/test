@@ -66,7 +66,12 @@ public class PathHeader implements Comparable<PathHeader> {
         /**
          * Allow change box and votes. Can be overridden in Phase.getAction()
          */
-        READ_WRITE
+        READ_WRITE,
+        /**
+         * Changes are allowed as READ_WRITE, but field is always displayed as
+         * LTR, even in RTL locales (used for patterns).
+         */
+        LTR_ALWAYS
     }
 
     private static EnumNames<SectionId> SectionIdNames = new EnumNames<SectionId>();
@@ -399,7 +404,7 @@ public class PathHeader implements Comparable<PathHeader> {
     }
 
     public String getHeader() {
-        return header;
+        return header == null ? "" : header;
     }
 
     public String getCode() {
@@ -471,6 +476,41 @@ public class PathHeader implements Comparable<PathHeader> {
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Internal problem comparing " + this + " and " + other, e);
         }
+    }
+
+    public int compareHeader(PathHeader other) {
+        int result;
+        if (0 != (result = headerOrder - other.headerOrder)) {
+            return result;
+        }
+        if (0 != (result = alphabeticCompare(header, other.header))) {
+            return result;
+        }
+        return result;
+    }
+
+    public int compareCode(PathHeader other) {
+        int result;
+        if (0 != (result = codeOrder - other.codeOrder)) {
+            return result;
+        }
+        if (codeSuborder != null) { // do all three cases, for transitivity
+            if (other.codeSuborder != null) {
+                if (0 != (result = codeSuborder.compareTo(other.codeSuborder))) {
+                    return result;
+                }
+            } else {
+                return 1; // if codeSuborder != null (and other.codeSuborder
+                // == null), it is greater
+            }
+        } else if (other.codeSuborder != null) {
+            return -1; // if codeSuborder == null (and other.codeSuborder !=
+            // null), it is greater
+        }
+        if (0 != (result = alphabeticCompare(code, other.code))) {
+            return result;
+        }
+        return result;
     }
 
     @Override
@@ -1112,11 +1152,11 @@ public class PathHeader implements Comparable<PathHeader> {
                 }
             });
             functionMap.put("languageSection", new Transform<String, String>() {
-                char[] languageRangeStartPoints = { 'a', 'e', 'k', 'o', 't' };
-                char[] languageRangeEndPoints = { 'd', 'j', 'n', 's', 'z' };
+                char[] languageRangeStartPoints = { 'A', 'E', 'K', 'O', 'T' };
+                char[] languageRangeEndPoints = { 'D', 'J', 'N', 'S', 'Z' };
 
                 public String transform(String source0) {
-                    char firstLetter = source0.charAt(0);
+                    char firstLetter = getEnglishFirstLetter(source0).charAt(0);
                     for (int i = 0; i < languageRangeStartPoints.length; i++) {
                         if (firstLetter >= languageRangeStartPoints[i] && firstLetter <= languageRangeEndPoints[i]) {
                             return "Languages (" + Character.toUpperCase(languageRangeStartPoints[i]) + "-" + Character.toUpperCase(languageRangeEndPoints[i])
@@ -1128,7 +1168,20 @@ public class PathHeader implements Comparable<PathHeader> {
             });
             functionMap.put("firstLetter", new Transform<String, String>() {
                 public String transform(String source0) {
-                    return source0.substring(0, 1).toUpperCase();
+                    return getEnglishFirstLetter(source0);
+                }
+            });
+            functionMap.put("languageSort", new Transform<String, String>() {
+                public String transform(String source0) {
+                    String languageOnlyPart;
+                    int underscorePos = source0.indexOf("_");
+                    if (underscorePos > 0) {
+                        languageOnlyPart = source0.substring(0, underscorePos);
+                    } else {
+                        languageOnlyPart = source0;
+                    }
+
+                    return englishFile.getName(CLDRFile.LANGUAGE_NAME, languageOnlyPart) + " \u25BA " + source0;
                 }
             });
             functionMap.put("scriptFromLanguage", new Transform<String, String>() {
@@ -1546,6 +1599,17 @@ public class PathHeader implements Comparable<PathHeader> {
             return -1;
         }
 
+        private static String getEnglishFirstLetter(String s) {
+            String languageOnlyPart;
+            int underscorePos = s.indexOf("_");
+            if (underscorePos > 0) {
+                languageOnlyPart = s.substring(0, underscorePos);
+            } else {
+                languageOnlyPart = s;
+            }
+            return englishFile.getName(CLDRFile.LANGUAGE_NAME, languageOnlyPart).substring(0, 1).toUpperCase();
+        }
+
         static class HyphenSplitter {
             String main;
             String extras;
@@ -1636,14 +1700,8 @@ public class PathHeader implements Comparable<PathHeader> {
     private static final List<String> COUNTS = Arrays.asList("displayName", "zero", "one", "two", "few", "many", "other", "per");
 
     private static int alphabeticCompare(String aa, String bb) {
+        // A frozen Collator is thread-safe.
         return alphabetic.compare(aa, bb);
-        // workaround for ICU threading issue http://bugs.icu-project.org/trac/ticket/10215
-//        while (true) {
-//            try {
-//                return alphabetic.compare(aa, bb);
-//            } catch (IndexOutOfBoundsException e) {
-//            }
-//        }
     }
 
     public enum BaseUrl {

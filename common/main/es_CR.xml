@@ -11,6 +11,13 @@ For terms of use, see http://www.unicode.org/copyright.html
 		<language type="es"/>
 		<territory type="CR"/>
 	</identity>
+	<dates>
+		<fields>
+			<field type="day">
+				<relative type="-2">antier</relative>
+			</field>
+		</fields>
+	</dates>
 	<numbers>
 		<symbols numberSystem="latn">
 			<decimal>,</decimal>
@@ -23,3 +30,4 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</currencies>
 	</numbers>
 </ldml>
+

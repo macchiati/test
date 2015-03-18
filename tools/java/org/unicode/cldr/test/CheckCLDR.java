@@ -207,7 +207,7 @@ abstract public class CheckCLDR {
             }
 
             if (this == Phase.SUBMISSION) {
-                return status == SurveyToolStatus.READ_WRITE
+                return (status == SurveyToolStatus.READ_WRITE || status == SurveyToolStatus.LTR_ALWAYS)
                     ? StatusAction.ALLOW
                     : StatusAction.ALLOW_VOTING_AND_TICKET;
             }
@@ -218,7 +218,7 @@ abstract public class CheckCLDR {
             for (CandidateInfo value : pathValueInfo.getValues()) {
                 valueStatus = getValueStatus(value, valueStatus);
                 if (valueStatus != ValueStatus.NONE) {
-                    return status == SurveyToolStatus.READ_WRITE
+                    return (status == SurveyToolStatus.READ_WRITE || status == SurveyToolStatus.LTR_ALWAYS)
                         ? StatusAction.ALLOW
                         : StatusAction.ALLOW_VOTING_AND_TICKET;
                 }
@@ -248,7 +248,7 @@ abstract public class CheckCLDR {
             PathHeader.SurveyToolStatus status,
             UserInfo userInfo // can get voterInfo from this.
         ) {
-            if (status != SurveyToolStatus.READ_WRITE) {
+            if (status != SurveyToolStatus.READ_WRITE && status != SurveyToolStatus.LTR_ALWAYS) {
                 return StatusAction.FORBID_READONLY; // not writable.
             }
 
@@ -480,7 +480,7 @@ abstract public class CheckCLDR {
                 }
             }
             // otherwise, see if there is an organization level
-            return sc.getLocaleCoverageLevel(get(Option.CoverageLevel_localeType), localeID);
+            return sc.getLocaleCoverageLevel("Cldr", localeID);
         }
 
         public boolean contains(Option o) {
@@ -567,7 +567,7 @@ abstract public class CheckCLDR {
             .setFilter(Pattern.compile(nameMatcher, Pattern.CASE_INSENSITIVE).matcher(""))
             //.add(new CheckAttributeValues(factory))
             .add(new CheckChildren(factory))
-            // .add(new CheckCoverage(factory)) // outmoded
+            .add(new CheckCoverage(factory))
             .add(new CheckDates(factory))
             .add(new CheckForCopy(factory))
             .add(new CheckDisplayCollisions(factory))
@@ -756,7 +756,8 @@ abstract public class CheckCLDR {
             illegalNumberingSystem,
             unexpectedOrderOfEraYear,
             invalidPlaceHolder,
-            asciiQuotesNotAllowed;
+            asciiQuotesNotAllowed,
+            badMinimumGroupingDigits;
 
             public String toString() {
                 return TO_STRING.matcher(name()).replaceAll(" $1").toLowerCase();

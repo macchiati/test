@@ -6,6 +6,7 @@ import java.io.PrintWriter;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +29,16 @@ import org.unicode.cldr.util.DtdData;
 import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.FileProcessor;
 import org.unicode.cldr.util.Level;
+import org.unicode.cldr.util.LocaleIDParser;
+import org.unicode.cldr.util.StandardCodes;
 import org.unicode.cldr.util.SupplementalDataInfo;
 import org.unicode.cldr.util.XPathParts;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.ibm.icu.dev.util.BagFormatter;
 import com.ibm.icu.impl.Utility;
 
@@ -44,8 +52,10 @@ import com.ibm.icu.impl.Utility;
 public class Ldml2JsonConverter {
     private static boolean DEBUG = false;
     private static final String MAIN = "main";
-    private static final String SEGMENTS = "segments";
-
+    private static final String SUPPLEMENTAL = "supplemental";
+    private static final StandardCodes sc = StandardCodes.make();
+    private Set<String> defaultContentLocales = SupplementalDataInfo.getInstance().getDefaultContentLocales();
+    private Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private static final Options options = new Options(
         "Usage: LDML2JsonConverter [OPTIONS] [FILES]\n" +
             "This program converts CLDR data to the JSON format.\n" +
@@ -69,6 +79,8 @@ public class Ldml2JsonConverter {
             "Whether the output JSON should output data for all numbering systems, even those not used in the locale")
         .add("other", 'o', "(true|false)", "false",
             "Whether to write out the 'other' section, which contains any unmatched paths")
+        .add("packages", 'p', "(true|false)", "false",
+            "Whether to group data files into installable packages")
         .add("identity", 'i', "(true|false)", "true",
             "Whether to copy the identity info into all sections containing data")
         .add("konfig", 'k', ".*", null, "LDML to JSON configuration file");
@@ -76,18 +88,19 @@ public class Ldml2JsonConverter {
     public static void main(String[] args) throws Exception {
         options.parse(args, true);
 
-        Ldml2JsonConverter extractor = new Ldml2JsonConverter(
+        Ldml2JsonConverter l2jc = new Ldml2JsonConverter(
             options.get("commondir").getValue(),
             options.get("destdir").getValue(),
             Boolean.parseBoolean(options.get("fullnumbers").getValue()),
             Boolean.parseBoolean(options.get("resolved").getValue()),
             options.get("coverage").getValue(),
             options.get("match").getValue(),
+            Boolean.parseBoolean(options.get("packages").getValue()),
             options.get("konfig").getValue());
 
         long start = System.currentTimeMillis();
         DraftStatus status = DraftStatus.valueOf(options.get("draftstatus").getValue());
-        extractor.processDirectory(options.get("type").getValue(), status);
+        l2jc.processDirectory(options.get("type").getValue(), status);
         long end = System.currentTimeMillis();
         System.out.println("Finished in " + (end - start) + " ms");
     }
@@ -104,10 +117,13 @@ public class Ldml2JsonConverter {
     private String match;
     // Used to filter based on coverage
     private int coverageValue;
+    // Whether we should write output files into installable packages
+    private boolean writePackages;
 
     private class JSONSection implements Comparable<JSONSection> {
         public String section;
         public Matcher matcher;
+        public String packageName;
 
         public int compareTo(JSONSection other) {
             return section.compareTo(other.section);
@@ -117,25 +133,33 @@ public class Ldml2JsonConverter {
 
     private Map<JSONSection, List<CldrItem>> sectionItems = new TreeMap<JSONSection, List<CldrItem>>();
 
+    private Map<String,String> dependencies;
     private List<JSONSection> sections;
+    private Set<String> packages;
 
     public Ldml2JsonConverter(String cldrDir, String outputDir, boolean fullNumbers, boolean resolve, String coverage, String match,
-        String configFile) {
+        boolean writePackages, String configFile) {
         this.cldrCommonDir = cldrDir;
         this.outputDir = outputDir;
         this.fullNumbers = fullNumbers;
         this.resolve = resolve;
         this.match = match;
+        this.writePackages = writePackages;
         this.coverageValue = Level.get(coverage).getLevel();
 
         sections = new ArrayList<JSONSection>();
+        packages = new TreeSet<String>();
+        dependencies = new HashMap<String,String>();
+
         FileProcessor myReader = new FileProcessor() {
             @Override
             protected boolean handleLine(int lineCount, String line) {
                 String[] lineParts = line.trim().split("\\s*;\\s*");
-                String key, value, section = null, path = null;
+                String key, value, section = null, path = null, packageName = null, dependency = null;
                 boolean hasSection = false;
                 boolean hasPath = false;
+                boolean hasPackage = false;
+                boolean hasDependency = false;
                 for (String linePart : lineParts) {
                     int pos = linePart.indexOf('=');
                     if (pos < 0) {
@@ -149,15 +173,26 @@ public class Ldml2JsonConverter {
                     } else if (key.equals("path")) {
                         hasPath = true;
                         path = value;
-                    }
-                    if (hasSection && hasPath) {
-                        JSONSection j = new JSONSection();
-                        j.section = section;
-                        j.matcher = Pattern.compile(path).matcher("");
-                        sections.add(j);
+                    } else if (key.equals("package")) {
+                        hasPackage = true;
+                        packageName = value;
+                    } else if (key.equals("dependency")) {
+                        hasDependency = true;
+                        dependency = value;
                     }
                 }
-
+                if (hasSection && hasPath) {
+                    JSONSection j = new JSONSection();
+                    j.section = section;
+                    j.matcher = Pattern.compile(path).matcher("");
+                    if (hasPackage) {
+                        j.packageName = packageName;
+                    }
+                    sections.add(j);
+                }
+                if (hasDependency && hasPackage) {
+                    dependencies.put(packageName, dependency);
+                }
                 return true;
             }
         };
@@ -266,7 +301,7 @@ public class Ldml2JsonConverter {
             }
             // Discard root identity element unless the locale is root
             rootIdentityMatcher.reset(fullPath);
-            if (rootIdentityMatcher.matches() && !"root".equals(locID) ) {
+            if (rootIdentityMatcher.matches() && !"root".equals(locID)) {
                 continue;
             }
 
@@ -352,7 +387,7 @@ public class Ldml2JsonConverter {
      * @throws IOException
      * @throws ParseException
      */
-    private void convertCldrItems(String outDirname, String pathPrefix)
+    private void convertCldrItems(String dirName, String filename, String pathPrefix)
         throws IOException, ParseException {
         // zone and timezone items are queued for sorting first before they are
         // processed.
@@ -432,15 +467,147 @@ public class Ldml2JsonConverter {
             closeNodes(out, nodesForLastItem.size() - 2, 0);
             String outFilename;
             outFilename = js.section + ".json";
+            String tier = "";
             boolean writeOther = Boolean.parseBoolean(options.get("other").getValue());
             if (js.section.equals("other") && !writeOther) {
                 continue;
             } else {
-                writeToFile(outDirname, outFilename, out);
+                StringBuilder outputDirname = new StringBuilder(outputDir);
+                if (writePackages) {
+                    if (!dirName.equals(SUPPLEMENTAL)) {
+                        LocaleIDParser lp = new LocaleIDParser();
+                        lp.set(filename);
+                        if (defaultContentLocales.contains(filename) &&
+                            lp.getRegion().length() > 0) {
+                            continue;
+                        }
+                        Level localeCoverageLevel = sc.getLocaleCoverageLevel("Cldr", filename);
+                        if (localeCoverageLevel == Level.MODERN || filename.equals("root")) {
+                            tier = "-modern";
+                        } else {
+                            tier = "-full";
+                        }
+                    }
+                    if (js.packageName != null) {
+                        String packageName = "cldr-" + js.packageName + tier;
+                        outputDirname.append("/" + packageName);
+                        packages.add(packageName);
+                    }
+                    outputDirname.append("/"+dirName+"/");
+                    if (!dirName.equals(SUPPLEMENTAL)) {
+                        outputDirname.append(filename.replaceAll("_", "-"));
+                    }
+               }
+                File dir = new File(outputDirname.toString());
+                if (!dir.exists()) {
+                    dir.mkdirs();
+                }
+                writeToFile(outputDirname.toString(), outFilename, out);
+                if (writePackages && tier.equals("-modern")) {
+                    writeToFile(outputDirname.toString().replaceFirst("-modern", "-full"), outFilename, out );
+                }
             }
-
             System.out.println(String.format("  %s = %d values", outFilename, valueCount));
         }
+    }
+    /**
+     * Creates the packaging files ( i.e. package.json ) for a particular package
+     * 
+     * @param packageName
+     *            The name of the installable package
+    */
+    public void writePackagingFiles(String outputDir, String packageName) throws IOException {
+        writePackageJson(outputDir, packageName);
+        writeBowerJson(outputDir, packageName);
+    }
+
+    public void writeBasicInfo(JsonObject obj, String packageName) {
+
+        obj.addProperty("name", packageName);
+        String versionString = CLDRFile.GEN_VERSION;
+        while (versionString.split("\\.").length < 3) {
+            versionString = versionString + ".0";
+        }
+        obj.addProperty("version", versionString);
+        
+        String [] packageNameParts = packageName.split("-");
+        String dependency = dependencies.get(packageNameParts[1]);
+        if (dependency != null) {
+            String[] dependentPackageNames = new String[1];
+            String tier = packageNameParts[packageNameParts.length-1];
+            if (dependency.equals("core")) {
+                dependentPackageNames[0] = "cldr-core";                
+            } else {
+                dependentPackageNames[0] = "cldr-"+dependency+"-"+tier;
+            }
+            
+            JsonObject dependencies = new JsonObject();
+            for (String dependentPackageName : dependentPackageNames) {
+                if (dependentPackageName != null) {
+                    dependencies.addProperty(dependentPackageName, versionString);
+                }
+            }
+            obj.add("dependencies",dependencies);
+        }      
+    }
+   
+    public void writePackageJson(String outputDir, String packageName) throws IOException {
+        PrintWriter outf = BagFormatter.openUTF8Writer(outputDir+"/"+packageName, "package.json");
+        System.out.println("Creating packaging file => "+outputDir+packageName+File.separator+"package.json");
+        JsonObject obj = new JsonObject();
+        writeBasicInfo(obj,packageName);
+        
+        JsonArray licenses = new JsonArray();
+        JsonArray maintainers = new JsonArray();
+        JsonObject UnicodeLicense = new JsonObject();
+        JsonObject primaryMaintainer = new JsonObject();
+
+        obj.addProperty("homepage", "http://cldr.unicode.org");
+        obj.addProperty("author", "The Unicode Consortium");
+        
+        primaryMaintainer.addProperty("name", "John Emmons");
+        primaryMaintainer.addProperty("email","emmo@us.ibm.com");
+        primaryMaintainer.addProperty("url","https://github.com/JCEmmons");        
+        maintainers.add(primaryMaintainer);
+        obj.add("maintainers", maintainers);
+
+        JsonObject repository = new JsonObject();
+        repository.addProperty("type", "git");
+        repository.addProperty("url", "git://github.com/unicode-cldr/"+packageName+".git");
+        obj.add("repository",repository);
+        
+        UnicodeLicense.addProperty("type", "Unicode-TOU");
+        UnicodeLicense.addProperty("url","http://www.unicode.org/copyright.html");
+        licenses.add(UnicodeLicense);
+        obj.add("licenses", licenses);
+        
+        obj.addProperty("bugs","http://unicode.org/cldr/trac/newticket");
+        
+        outf.println(gson.toJson(obj));
+        outf.close();
+    }
+    
+    public void writeBowerJson(String outputDir, String packageName) throws IOException {
+        PrintWriter outf = BagFormatter.openUTF8Writer(outputDir+"/"+packageName, "bower.json");
+        System.out.println("Creating packaging file => "+outputDir+packageName+File.separator+"bower.json");
+        JsonObject obj = new JsonObject();
+        writeBasicInfo(obj,packageName);
+        if (options.get("type").getValue().equals(SUPPLEMENTAL)) {
+            JsonArray mainPaths = new JsonArray();
+            mainPaths.add(new JsonPrimitive("availableLocales.json"));
+            mainPaths.add(new JsonPrimitive(options.get("type").getValue() + "/*.json"));
+            obj.add("main", mainPaths);
+        } else {
+            obj.addProperty("main", options.get("type").getValue() + "/**/*.json");
+        }
+
+        JsonArray ignorePaths = new JsonArray();
+        ignorePaths.add(new JsonPrimitive(".gitattributes"));
+        ignorePaths.add(new JsonPrimitive("README.md"));
+        obj.add("ignore", ignorePaths);
+
+        outf.println(gson.toJson(obj));
+        outf.close();
     }
 
     /**
@@ -885,17 +1052,14 @@ public class Ldml2JsonConverter {
             }
             mapPathsToSections(file, pathPrefix, sdi);
 
-            String outputDirname;
-            if (dirName.equals(MAIN) || dirName.equals(SEGMENTS)) {
-                outputDirname = outputDir + File.separator + filename.replaceAll("_", "-");
-            } else {
-                outputDirname = outputDir + File.separator + dirName;
+            convertCldrItems(dirName, filename, pathPrefix);
+
+        }
+        
+        if (writePackages) {
+            for (String currentPackage : packages) {
+                writePackagingFiles(outputDir,currentPackage);
             }
-            File dir = new File(outputDirname);
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-            convertCldrItems(outputDirname, pathPrefix);
         }
     }
 

@@ -1,6 +1,6 @@
 /*
  **********************************************************************
- * Copyright (c) 2002-2012, International Business Machines
+ * Copyright (c) 2002-2015, International Business Machines
  * Corporation and others.  All Rights Reserved.
  **********************************************************************
  * Author: Mark Davis
@@ -143,7 +143,7 @@ public class CLDRFile implements Freezable<CLDRFile>, Iterable<String> {
     public static final String SUPPLEMENTAL_NAME = "supplementalData";
     public static final String SUPPLEMENTAL_METADATA = "supplementalMetadata";
     public static final String SUPPLEMENTAL_PREFIX = "supplemental";
-    public static final String GEN_VERSION = "26";
+    public static final String GEN_VERSION = "27";
     public static final List<String> SUPPLEMENTAL_NAMES = Arrays.asList("characters", "coverageLevels", "dayPeriods", "genderList", "languageInfo",
         "likelySubtags", "metaZones", "numberingSystems", "ordinals", "plurals", "postalCodeData", "supplementalData", "supplementalMetadata",
         "telephoneCodeData", "windowsZones");
@@ -1339,10 +1339,11 @@ public class CLDRFile implements Freezable<CLDRFile>, Iterable<String> {
                 || attribute.equals("mzone")
                 || attribute.equals("from")
                 || attribute.equals("to")
-                || attribute.equals("value")
+                || attribute.equals("value") && !elementName.equals("rbnfrule")
                 || attribute.equals("yeartype")
                 || attribute.equals("numberSystem")
                 || attribute.equals("parent")
+                || elementName.equals("annotation") && attribute.equals("cp")
                 || (attribute.equals("type")
                     && !elementName.equals("default")
                     && !elementName.equals("measurementSystem")
@@ -1351,7 +1352,7 @@ public class CLDRFile implements Freezable<CLDRFile>, Iterable<String> {
                     && !elementName.equals("preferenceOrdering"));
         case ldmlBCP47:
             return attribute.equals("_q")
-                || attribute.equals("alias")
+                //|| attribute.equals("alias")
                 || attribute.equals("name");
         case supplementalData:
             return attribute.equals("_q")
@@ -1395,7 +1396,12 @@ public class CLDRFile implements Freezable<CLDRFile>, Iterable<String> {
                 || elementName.equals("currency") && attribute.equals("to")
                 || elementName.equals("currency") && attribute.equals("iso4217")
                 || elementName.equals("parentLocale") && attribute.equals("parent")
-                || elementName.equals("currencyCodes") && (attribute.equals("numeric") || attribute.equals("type"));
+                || elementName.equals("currencyCodes") && (attribute.equals("numeric") || attribute.equals("type"))
+                || elementName.equals("approvalRequirement") && (attribute.equals("locales") || attribute.equals("paths"))
+                || elementName.equals("coverageVariable") && attribute.equals("key")
+                || elementName.equals("coverageLevel") && (attribute.equals("inLanguage") || attribute.equals("inScript") || attribute.equals("inTerritory") || attribute.equals("match"))
+                ;
+
         case keyboard:
             return attribute.equals("_q")
                 || elementName.equals("keyboard") && attribute.equals("locale")
@@ -1515,9 +1521,9 @@ public class CLDRFile implements Freezable<CLDRFile>, Iterable<String> {
     // "gb2312han"};
 
     /*    *//**
-               * Value that contains a node. WARNING: this is not done yet, and may change.
-               * In particular, we don't want to return a Node, since that is mutable, and makes caching unsafe!!
-               */
+                * Value that contains a node. WARNING: this is not done yet, and may change.
+                * In particular, we don't want to return a Node, since that is mutable, and makes caching unsafe!!
+                */
     /*
      * static public class NodeValue extends Value {
      * private Node nodeValue;
@@ -2242,6 +2248,11 @@ public class CLDRFile implements Freezable<CLDRFile>, Iterable<String> {
                 Set<String> set = Iso639Data.getNames(code);
                 if (set != null) {
                     return set.iterator().next();
+                }
+                Map<String, Map<String, String>> map = StandardCodes.getLStreg().get("language");
+                Map<String, String> info = map.get(code);
+                if (info != null) {
+                    result = info.get("Description");
                 }
             } else if (type == TERRITORY_NAME) {
                 Map<String, String> info = StandardCodes.getLStreg()

@@ -8,7 +8,6 @@ import java.util.Set;
 
 import org.unicode.cldr.tool.GeneratePluralRanges.RangeSample;
 import org.unicode.cldr.tool.PluralRulesFactory.SamplePatterns;
-import org.unicode.cldr.tool.ShowLanguages.FormattedFileWriter;
 import org.unicode.cldr.util.CLDRConfig;
 import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.CLDRURLS;
@@ -50,17 +49,17 @@ public class ShowPlurals {
         String section2 = "Comparison";
 
         final String title = "Language Plural Rules";
-        final PrintWriter pw = new PrintWriter(new FormattedFileWriter(index, title, null, false));
+        final PrintWriter pw = new PrintWriter(new FormattedFileWriter(null, title, null, ShowLanguages.SUPPLEMENTAL_INDEX_ANCHORS));
         ShowLanguages.showContents(pw, "rules", "Rules", "comparison", "Comparison");
 
-        pw.append("<h2>" + CldrUtility.getDoubleLinkedText("rules", "1. " + section1) + "</h2>\n");
+        pw.append("<h2>" + CldrUtility.getDoubleLinkedText("rules", "1. " + section1) + "</h2>" + System.lineSeparator());
         printPluralTable(english, localeFilter, pw, factory);
 
-        pw.append("<h2>" + CldrUtility.getDoubleLinkedText("comparison", "2. " + section2) + "</h2>\n");
+        pw.append("<h2>" + CldrUtility.getDoubleLinkedText("comparison", "2. " + section2) + "</h2>" + System.lineSeparator());
         pw.append("<p style='text-align:left'>The plural forms are abbreviated by first letter, with 'x' for 'other'. "
             +
             "If values are made redundant by explicit 0 and 1, they are underlined. " +
-            "The fractional and integral results are separated for clarity.</p>\n");
+            "The fractional and integral results are separated for clarity.</p>" + System.lineSeparator());
         PluralSnapshot.writeTables(english, pw);
         appendBlanksForScrolling(pw);
         pw.close();
@@ -68,7 +67,7 @@ public class ShowPlurals {
 
     public void appendBlanksForScrolling(final Appendable pw) {
         try {
-            pw.append(Utility.repeat("<br>", 100)).append('\n');
+            pw.append(Utility.repeat("<br>", 100)).append(System.lineSeparator());
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
         }
@@ -209,7 +208,7 @@ public class ShowPlurals {
                     .finishRow();
             }
         }
-        appendable.append(tablePrinter.toTable()).append('\n');
+        appendable.append(tablePrinter.toTable()).append(System.lineSeparator());
     }
 
     private String getExamples(FixedDecimalSamples exampleList) {

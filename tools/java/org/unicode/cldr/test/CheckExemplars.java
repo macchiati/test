@@ -19,6 +19,8 @@ import com.ibm.icu.text.UnicodeSetIterator;
 import com.ibm.icu.util.ULocale;
 
 public class CheckExemplars extends FactoryCheckCLDR {
+
+    public static final boolean USE_PUNCTUATION = false;
     private static final boolean SUPPRESS_AUX_EMPTY_CHECK = true;
     private static final String[] QUOTE_ELEMENTS = {
         "quotationStart", "quotationEnd",
@@ -32,11 +34,18 @@ public class CheckExemplars extends FactoryCheckCLDR {
     static final UnicodeSet HangulSyllables = new UnicodeSet(
         "[[:Hangul_Syllable_Type=LVT:][:Hangul_Syllable_Type=LV:]]").freeze();
 
-    public static final UnicodeSet AlwaysOK = new UnicodeSet(
-        "[[[:Nd:][:script=common:][:script=inherited:]-[:Default_Ignorable_Code_Point:]-[:C:] - [_]] [\u05BE \u05F3 \u066A-\u066C]" +
-            "[[؉][་ །༌][ཱ]‎‎{য়}য়]" + // TODO Fix this Hack
-            "]").freeze(); // [\\u200c-\\u200f] [:script=common:][:script=inherited:]
-
+    public static final UnicodeSet AlwaysOK;
+    static {
+        if (USE_PUNCTUATION) {
+            AlwaysOK = new UnicodeSet("[\\u0020\\u00A0]");
+        } else {
+            AlwaysOK = new UnicodeSet(
+                "[[[:Nd:][:script=common:][:script=inherited:]-[:Default_Ignorable_Code_Point:]-[:C:] - [_]] [\u05BE \u05F3 \u066A-\u066C]" +
+                    "[[؉][་ །༌][ཱ]‎‎{য়}য়]" + // TODO Fix this Hack
+                    "]"); // [\\u200c-\\u200f] [:script=common:][:script=inherited:]
+        }
+        AlwaysOK.freeze();
+    }
     // TODO Fix some of these characters
     private static final UnicodeSet SPECIAL_ALLOW = new UnicodeSet(
         "[\\u200E\\u200F\\u200c\\u200d"
@@ -44,13 +53,13 @@ public class CheckExemplars extends FactoryCheckCLDR {
             "‎‎‎[\u064B\u064E-\u0651\u0670]‎[:Nd:]‎[\u0951\u0952]‎[\u064B-\u0652\u0654-\u0657\u0670]‎[\u0A66-\u0A6F][\u0ED0-\u0ED9][\u064B-\u0652]‎[\\u02BB\\u02BC][\u0CE6-\u0CEF]‎‎[\u0966-\u096F]"
             +
             "‎‎‎[:word_break=Katakana:][:word_break=ALetter:][:word_break=MidLetter:] ]" // restore
-                                                                                         // [:word_break=Katakana:][:word_break=ALetter:][:word_break=MidLetter:]
+            // [:word_break=Katakana:][:word_break=ALetter:][:word_break=MidLetter:]
     ).freeze(); // add RLM, LRM [\u200C\u200D]‎
 
     public static final UnicodeSet UAllowedInExemplars = new UnicodeSet("[[:assigned:]-[:Z:]]") // [:alphabetic:][:Mn:][:word_break=Katakana:][:word_break=ALetter:][:word_break=MidLetter:]
         .removeAll(AlwaysOK) // this will remove some
-                             // [:word_break=Katakana:][:word_break=ALetter:][:word_break=MidLetter:] so we restore them
-                             // in SPECIAL_ALLOW
+        // [:word_break=Katakana:][:word_break=ALetter:][:word_break=MidLetter:] so we restore them
+        // in SPECIAL_ALLOW
         .addAll(SPECIAL_ALLOW) // add RLM, LRM [\u200C\u200D]‎
         .freeze();
 
@@ -64,8 +73,8 @@ public class CheckExemplars extends FactoryCheckCLDR {
     public static final UnicodeSet ALLOWED_IN_AUX = new UnicodeSet(AllowedInExemplars)
         .addAll(ALLOWED_IN_PUNCTUATION)
         .removeAll(AlwaysOK) // this will remove some
-                             // [:word_break=Katakana:][:word_break=ALetter:][:word_break=MidLetter:] so we restore them
-                             // in SPECIAL_ALLOW
+        // [:word_break=Katakana:][:word_break=ALetter:][:word_break=MidLetter:] so we restore them
+        // in SPECIAL_ALLOW
         .addAll(SPECIAL_ALLOW) // add RLM, LRM [\u200C\u200D]‎
         .freeze();
 

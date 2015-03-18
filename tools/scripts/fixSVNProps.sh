@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (C) 2013, International Business Machines Corporation
+# Copyright (C) 2013-2015, International Business Machines Corporation
 #  and others.  All Rights Reserved.
 #
 
@@ -10,7 +10,7 @@ then
 fi
 
 cd ${CLDR_DIR}
-find common exemplars keyboards seed specs tools/java -type f -print | while read filename
+find common exemplars keyboards seed specs tools/java tools/cldr-unittest -type f -print | while read filename
 do
    echo "Processing... ${filename}"
    ext=`echo ${filename} | cut -f2 -d'.'`
@@ -29,6 +29,11 @@ do
    then
       svn propset -q svn:eol-style native ${filename}
       svn propset -q svn:mime-type "text/plain" ${filename}
+   fi
+   if [ "x${ext}" = "xcss" ];
+   then
+      svn propset -q svn:eol-style native ${filename}
+      svn propset -q svn:mime-type "text/css" ${filename}
    fi
    if [ "x${ext}" = "xhtml" ];
    then

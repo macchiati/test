@@ -35,7 +35,7 @@ public class GenerateBcp47Text {
 
             String extension = extensionAndKeys.getKey();
             PrintWriter out = BagFormatter
-                .openUTF8Writer(ShowLanguages.CHART_TARGET_DIR, "bcp47-" + extension + ".txt");
+                .openUTF8Writer(FormattedFileWriter.CHART_TARGET_DIR, "bcp47-" + extension + ".txt");
             showField(out, "Version", ToolConstants.CHART_DISPLAY_VERSION);
             showField(out, "Extension", extension);
 
@@ -89,6 +89,6 @@ public class GenerateBcp47Text {
     }
 
     private void showField(PrintWriter out, String title, String item) {
-        out.write(item == null || item.isEmpty() ? "" : title + ": " + item + "\n");
+        out.write(item == null || item.isEmpty() ? "" : title + ": " + item + System.lineSeparator());
     }
 }

@@ -26,6 +26,7 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,6 +39,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.unicode.cldr.util.RegexLookup.Finder;
+
+import com.ibm.icu.dev.test.TestFmwk;
 import com.ibm.icu.dev.util.BagFormatter;
 import com.ibm.icu.dev.util.TransliteratorUtilities;
 import com.ibm.icu.impl.Utility;
@@ -49,6 +53,7 @@ import com.ibm.icu.text.UTF16;
 import com.ibm.icu.text.UnicodeSet;
 import com.ibm.icu.text.UnicodeSetIterator;
 import com.ibm.icu.util.Freezable;
+import com.ibm.icu.util.Output;
 import com.ibm.icu.util.TimeZone;
 
 public class CldrUtility {
@@ -56,7 +61,7 @@ public class CldrUtility {
     public static final Charset UTF8 = Charset.forName("utf-8");
     public static final boolean BETA = false;
 
-    public static final String LINE_SEPARATOR = "\n";
+    public static final String LINE_SEPARATOR = System.getProperty("line.separator");
     public final static Pattern SEMI_SPLIT = Pattern.compile("\\s*;\\s*");
 
     private static final boolean HANDLEFILE_SHOW_SKIP = false;
@@ -1315,4 +1320,35 @@ public class CldrUtility {
         //        in.close(); 
     }
 
+    public static <T> T ifNull(T x, T y) {
+        return x == null ? y : x;
+    }
+
+    public static <T> T ifSame(T source, T replaceIfSame, T replacement) {
+        return source == replaceIfSame ? replacement : source;
+    }
+
+    public static <T> Set<T> intersect(Set<T> a, Collection<T> b) {
+        Set<T> result = new LinkedHashSet<>(a);
+        result.retainAll(b);
+        return result;
+    }
+
+    public static <T> Set<T> subtract(Set<T> a, Collection<T> b) {
+        Set<T> result = new LinkedHashSet<>(a);
+        result.removeAll(b);
+        return result;
+    }
+
+    public static <T> void logRegexLookup(TestFmwk testFramework, RegexLookup<T> lookup, String toLookup) {
+        Output<String[]> arguments = new Output<>();
+        Output<Finder> matcherFound = new Output<>();
+        List<String> failures = new ArrayList<String>();
+        lookup.get(toLookup, null, arguments, matcherFound, failures);
+        testFramework.logln("lookup arguments: " + Arrays.asList(arguments.value));
+        testFramework.logln("lookup matcherFound: " + matcherFound);
+        for (String s : failures) {
+            testFramework.logln(s);
+        }
+    }
 }

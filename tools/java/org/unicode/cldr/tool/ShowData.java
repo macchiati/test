@@ -70,8 +70,9 @@ public class ShowData {
     public static String dateFooter() {
         return "<!-- SVN: $" + // break these apart to prevent SVN replacement in code
             "Date$, $" + // break these apart to prevent SVN replacement in code
-            "Revision: 4538 $ -->\n" +
-            "<p>Generation: " + CldrUtility.isoFormat(new java.util.Date()) + "</p>\n";
+            "Revision: 4538 $ -->" + System.lineSeparator() +
+            "<p>Generation: " + CldrUtility.isoFormat(new java.util.Date()) + "</p>" +
+            System.lineSeparator();
     }
 
     static RuleBasedCollator uca = (RuleBasedCollator) Collator
@@ -229,13 +230,13 @@ public class ShowData {
                 getChartTemplate(
                     "Locale Data Summary for " + getLocaleNameAndCode(locale),
                     ToolConstants.CHART_DISPLAY_VERSION,
-                    "<script>" + CldrUtility.LINE_SEPARATOR
-                        + "if (location.href.split('?')[1].split(',')[0]=='hide') {" + CldrUtility.LINE_SEPARATOR
-                        + "document.write('<style>');" + CldrUtility.LINE_SEPARATOR
-                        + "document.write('.xx {display:none}');" + CldrUtility.LINE_SEPARATOR
-                        + "document.write('</style>');" + CldrUtility.LINE_SEPARATOR + "}" + CldrUtility.LINE_SEPARATOR
+                    "<script type='text/javascript'>" + System.lineSeparator()
+                        + "if (location.href.split('?')[1].split(',')[0]=='hide') {" + System.lineSeparator()
+                        + "document.write('<style>');" + System.lineSeparator()
+                        + "document.write('.xx {display:none}');" + System.lineSeparator()
+                        + "document.write('</style>');" + System.lineSeparator() + "}" + System.lineSeparator()
                         + "</script>",
-                    headerAndFooter);
+                    headerAndFooter, locale.equals("root") ? "Main Charts Index" : null);
                 pw.println(headerAndFooter[0]);
                 showLinks(pw, locale);
                 showChildren(pw, locale);
@@ -254,7 +255,7 @@ public class ShowData {
                     + (showEnglish ? "<th>English</th>" : "")
                     + "<th>Native</th>"
                     + "<th>Sublocales…</th>"
-                    + "<tr>");
+                    + "</tr>");
 
                 int count = 0;
                 PathHeader oldParts = null;
@@ -365,7 +366,7 @@ public class ShowData {
                 "Locale Data Summary for ALL-CHANGED",
                 ToolConstants.CHART_DISPLAY_VERSION,
                 "",
-                headerAndFooter);
+                headerAndFooter, null);
             pw.println(headerAndFooter[0]);
             pw.println("<table border=\"1\" cellpadding=\"2\" cellspacing=\"0\">");
             pw.println("<tr>" +
@@ -404,7 +405,8 @@ public class ShowData {
                         .append(DataShower.getPrettyValue(value.substring(breakPoint + 2)))
                         .append("</td><td>")
                         .append(CollectionUtilities.join(s.getValue(), ", "))
-                        .append("</td></tr>\n");
+                        .append("</td></tr>")
+                        .append(System.lineSeparator());
                     addRow = true;
                 }
             }
@@ -420,7 +422,7 @@ public class ShowData {
     public static void showValue(PrintWriter pw, String value, Set<String> locales, boolean isExemplar) {
         final boolean noLocales = locales == null || locales.isEmpty();
         pw.println("<td"
-            + (isExemplar ? " max-width='20%'" : "")
+            + (isExemplar ? " style='max-width:20%'" : "")
             + (noLocales ? "" : " title='" + CollectionUtilities.join(locales, ", ") + "'")
             + (value == null ? "></i>n/a</i>" : " class='v'" + DataShower.getBidiStyle(value) + ">" + DataShower.getPrettyValue(value))
             + "</td>");
@@ -638,11 +640,11 @@ public class ShowData {
             }
             char firstChar = name.charAt(0);
             if (first) {
-                pw.print("\n<p style='margin-left:5em'>&gt; ");
+                pw.print(System.lineSeparator() + "<p style='margin-left:5em'>&gt; ");
                 lastFirstChar = firstChar;
                 first = false;
             } else if (firstChar != lastFirstChar) {
-                pw.print("</p>\n<p style='margin-left:5em'> ");
+                pw.print("</p>" + System.lineSeparator() + "<p style='margin-left:5em'> ");
                 lastFirstChar = firstChar;
             } else {
                 pw.print(", ");
@@ -685,15 +687,23 @@ public class ShowData {
     // ULocale.ENGLISH);
 
     static public void getChartTemplate(String title, String version,
-        String header, String[] headerAndFooter) throws IOException {
+        String header, String[] headerAndFooter, String indexTitle) throws IOException {
         if (version == null) {
             version = ToolConstants.CHART_DISPLAY_VERSION;
         }
         VariableReplacer langTag = new VariableReplacer()
             .add("%title%", title)
             .add("%header%", header)
+            .add("%index-title%", "Index")
+            .add("%index%", "index.html")
+            .add("%header%", header)
             .add("%version%", version)
             .add("%date%", CldrUtility.isoFormat(new Date()));
+        if (indexTitle != null) {
+            langTag
+            .add("%index-title%", indexTitle)
+            .add("%index%", "../index.html");
+        }
         // "$" //
         // + "Date" //
         // + "$") // odd style to keep CVS from substituting
@@ -710,7 +720,7 @@ public class ShowData {
                 result.setLength(0);
                 continue;
             }
-            result.append(langTagPattern).append(CldrUtility.LINE_SEPARATOR);
+            result.append(langTagPattern).append(System.lineSeparator());
         }
         headerAndFooter[1] = result.toString();
     }
