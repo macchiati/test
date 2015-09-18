@@ -8,10 +8,8 @@ For terms of use, see http://www.unicode.org/copyright.html
 <ldml>
 	<identity>
 		<version number="$Revision$"/>
-		<generation date="$Date$"/>
 		<language type="en"/>
 		<territory type="US"/>
 	</identity>
-	<collations>
-	</collations>
+	<!-- This file only exists for en_US_POSIX. -->
 </ldml>

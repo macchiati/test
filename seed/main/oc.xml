@@ -7,7 +7,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 <ldml>
 	<identity>
 		<version number="$Revision$"/>
-		<generation date="$Date$"/>
 		<language type="oc"/>
 	</identity>
 	<localeDisplayNames>
@@ -95,7 +94,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="CF" draft="unconfirmed">Republica Centraficana</territory>
 			<territory type="CG" draft="unconfirmed">Còngo - Brazzaville</territory>
 			<territory type="CH" draft="unconfirmed">Soïssa</territory>
-			<territory type="CI" draft="unconfirmed">Còsta d'Evòri</territory>
+			<territory type="CI" draft="unconfirmed">Còsta d’Evòri</territory>
 			<territory type="CL" draft="unconfirmed">Chile</territory>
 			<territory type="CM" draft="unconfirmed">Cameron</territory>
 			<territory type="CN" draft="unconfirmed">China</territory>
@@ -271,6 +270,15 @@ For terms of use, see http://www.unicode.org/copyright.html
 	</numbers>
 	<units>
 		<unitLength type="long">
+			<unit type="duration-year">
+				<unitPattern count="other">{0} annadas</unitPattern>
+			</unit>
+			<unit type="duration-month">
+				<unitPattern count="other">{0} mes</unitPattern>
+			</unit>
+			<unit type="duration-week">
+				<unitPattern count="other">{0} setmanas</unitPattern>
+			</unit>
 			<unit type="duration-day">
 				<unitPattern count="other">{0} jorns</unitPattern>
 			</unit>
@@ -280,18 +288,10 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<unit type="duration-minute">
 				<unitPattern count="other">{0} minutas</unitPattern>
 			</unit>
-			<unit type="duration-month">
-				<unitPattern count="other">{0} mes</unitPattern>
-			</unit>
 			<unit type="duration-second">
 				<unitPattern count="other">{0} segondas</unitPattern>
-			</unit>
-			<unit type="duration-week">
-				<unitPattern count="other">{0} setmanas</unitPattern>
-			</unit>
-			<unit type="duration-year">
-				<unitPattern count="other">{0} annadas</unitPattern>
 			</unit>
 		</unitLength>
 	</units>
 </ldml>
+

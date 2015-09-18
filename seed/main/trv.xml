@@ -7,7 +7,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 <ldml>
 	<identity>
 		<version number="$Revision$"/>
-		<generation date="$Date$"/>
 		<language type="trv"/>
 	</identity>
 	<localeDisplayNames>
@@ -65,7 +64,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="ZZ" draft="provisional">ini klayi na alang ni</territory>
 		</territories>
 		<types>
-			<type type="gregorian" key="calendar" draft="provisional">Jiyax Yisu Thulang</type>
+			<type key="calendar" type="gregorian" draft="provisional">Jiyax Yisu Thulang</type>
 		</types>
 		<measurementSystemNames>
 			<measurementSystemName type="metric" draft="provisional">Snamrika</measurementSystemName>
@@ -170,28 +169,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 						</dateFormat>
 					</dateFormatLength>
 				</dateFormats>
-				<timeFormats>
-					<timeFormatLength type="full">
-						<timeFormat>
-							<pattern draft="provisional">HH:mm:ss zzzz</pattern>
-						</timeFormat>
-					</timeFormatLength>
-					<timeFormatLength type="long">
-						<timeFormat>
-							<pattern draft="provisional">HH:mm:ss z</pattern>
-						</timeFormat>
-					</timeFormatLength>
-					<timeFormatLength type="medium">
-						<timeFormat>
-							<pattern draft="provisional">HH:mm:ss</pattern>
-						</timeFormat>
-					</timeFormatLength>
-					<timeFormatLength type="short">
-						<timeFormat>
-							<pattern draft="provisional">HH:mm</pattern>
-						</timeFormat>
-					</timeFormatLength>
-				</timeFormats>
 				<dateTimeFormats>
 					<availableFormats>
 						<dateFormatItem id="d" draft="provisional">d</dateFormatItem>
@@ -357,22 +334,22 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<timeFormats>
 					<timeFormatLength type="full">
 						<timeFormat>
-							<pattern draft="provisional">HH:mm:ss zzzz</pattern>
+							<pattern draft="provisional">h:mm:ss a zzzz</pattern>
 						</timeFormat>
 					</timeFormatLength>
 					<timeFormatLength type="long">
 						<timeFormat>
-							<pattern draft="provisional">HH:mm:ss z</pattern>
+							<pattern draft="provisional">h:mm:ss a z</pattern>
 						</timeFormat>
 					</timeFormatLength>
 					<timeFormatLength type="medium">
 						<timeFormat>
-							<pattern draft="provisional">HH:mm:ss</pattern>
+							<pattern draft="provisional">h:mm:ss a</pattern>
 						</timeFormat>
 					</timeFormatLength>
 					<timeFormatLength type="short">
 						<timeFormat>
-							<pattern draft="provisional">HH:mm</pattern>
+							<pattern draft="provisional">h:mm a</pattern>
 						</timeFormat>
 					</timeFormatLength>
 				</timeFormats>
@@ -665,6 +642,15 @@ For terms of use, see http://www.unicode.org/copyright.html
 	</numbers>
 	<units>
 		<unitLength type="long">
+			<unit type="duration-year">
+				<unitPattern count="other">{0} Hnkawas</unitPattern>
+			</unit>
+			<unit type="duration-month">
+				<unitPattern count="other">{0} Idas</unitPattern>
+			</unit>
+			<unit type="duration-week">
+				<unitPattern count="other">{0} Jiyax iyax sngayan</unitPattern>
+			</unit>
 			<unit type="duration-day">
 				<unitPattern count="other">{0} Jiyax</unitPattern>
 			</unit>
@@ -674,17 +660,8 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<unit type="duration-minute">
 				<unitPattern count="other">{0} spngan</unitPattern>
 			</unit>
-			<unit type="duration-month">
-				<unitPattern count="other">{0} Idas</unitPattern>
-			</unit>
 			<unit type="duration-second">
 				<unitPattern count="other">{0} Seykn</unitPattern>
-			</unit>
-			<unit type="duration-week">
-				<unitPattern count="other">{0} Jiyax iyax sngayan</unitPattern>
-			</unit>
-			<unit type="duration-year">
-				<unitPattern count="other">{0} Hnkawas</unitPattern>
 			</unit>
 		</unitLength>
 	</units>
@@ -695,3 +672,4 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</messages>
 	</posix>
 </ldml>
+

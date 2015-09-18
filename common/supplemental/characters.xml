@@ -8,7 +8,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 
 <supplementalData>
 	<version number="$Revision$"/>
-	<generation date="$Date$"/>
 	<characters>
 		<character-fallback>
 			<character value = "©">
@@ -223,6 +222,9 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</character>
 			<character value = "₽">
 				<substitute>RUB</substitute>
+			</character>
+			<character value = "₾">
+				<substitute>GEL</substitute>
 			</character>
 			<character value = "℞">
 				<substitute>Rx</substitute>

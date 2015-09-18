@@ -84,11 +84,13 @@ import org.unicode.cldr.util.Factory.DirectoryType;
 import org.unicode.cldr.util.Factory.SourceTreeType;
 import org.unicode.cldr.util.LDMLUtilities;
 import org.unicode.cldr.util.Level;
+import org.unicode.cldr.util.Organization;
 import org.unicode.cldr.util.Pair;
 import org.unicode.cldr.util.PathHeader;
 import org.unicode.cldr.util.PathHeader.PageId;
 import org.unicode.cldr.util.PathHeader.SurveyToolStatus;
 import org.unicode.cldr.util.PathUtilities;
+import org.unicode.cldr.util.PatternCache;
 import org.unicode.cldr.util.SimpleFactory;
 import org.unicode.cldr.util.SpecialLocales;
 import org.unicode.cldr.util.SpecialLocales.Type;
@@ -126,6 +128,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
     private static final String VURL_LOCALES = "v#locales///";
     public static final String CLDR_OLDVERSION = "CLDR_OLDVERSION";
     public static final String CLDR_NEWVERSION = "CLDR_NEWVERSION";
+    public static final String CLDR_LASTVOTEVERSION = "CLDR_LASTVOTEVERSION";
     public static final String CLDR_DIR = "CLDR_DIR";
     public static final String CLDR_DIR_REPOS = "http://unicode.org/repos/cldr";
 
@@ -258,6 +261,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
     private static Phase currentPhase = Phase.VETTING;
     /** set by CLDR_PHASE property. **/
     private static String oldVersion = "OLDVERSION";
+    private static String lastVoteVersion = "LASTVOTEVERSION";
     private static String newVersion = "NEWVERSION";
 
     public static boolean isConfigSetup = false;
@@ -1830,7 +1834,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
 
         boolean newOrgOk = false;
         try {
-            VoteResolver.Organization newOrgEnum = VoteResolver.Organization.fromString(new_org);
+            Organization newOrgEnum = Organization.fromString(new_org);
             newOrgOk = true;
         } catch (IllegalArgumentException iae) {
             newOrgOk = false;
@@ -5407,7 +5411,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
         // if((zone == null)||(zone.length()==0)) {
         if (true) {
             // showPathList(ctx, DataSection.EXEMPLAR_PARENT,
-            // XPathMatcher.regex(Pattern.compile(".*exemplarCity.*")), null);
+            // XPathMatcher.regex(PatternCache.get(".*exemplarCity.*")), null);
             showPathList(ctx, DataSection.EXEMPLAR_PARENT, null, false);
             return;
         }
@@ -5548,7 +5552,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
             ctx,
             canModify,
             XPathMatcher.regex(BaseAndPrefixMatcher.getInstance(XPathTable.NO_XPATH, zoneXpath),
-                Pattern.compile(".*/((short)|(long))/.*")), true);
+                PatternCache.get(".*/((short)|(long))/.*")), true);
         printSectionTableClose(ctx, section, canModify);
         if (canModify && false) {
             ctx.println("<input  type='submit' value='" + getSaveButtonText() + "'>"); // style='float:right'
@@ -5895,6 +5899,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
             progress.update("Setup props..");
             newVersion = survprops.getProperty(CLDR_NEWVERSION, CLDR_NEWVERSION);
             oldVersion = survprops.getProperty(CLDR_OLDVERSION, CLDR_OLDVERSION);
+            lastVoteVersion = survprops.getProperty(CLDR_LASTVOTEVERSION, oldVersion);
             progress.update("Setup dirs..");
 
             getVetdir();
@@ -7172,6 +7177,14 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
     public static String getOldVersion() {
         return oldVersion;
     }
+    
+    /**
+     * The last version where there was voting. CLDR_LASTVOTEVERSION
+     * @return
+     */
+    public static String getLastVoteVersion() {
+        return lastVoteVersion;
+    }
 
     public static String getNewVersion() {
         return newVersion;
@@ -7204,7 +7217,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
         return new Date(Timestamp.valueOf(getVotesAfterString()).getTime());
     }
 
-    Pattern ALLOWED_EMPTY = Pattern.compile("//ldml/fallback(?![a-zA-Z])");
+    Pattern ALLOWED_EMPTY = PatternCache.get("//ldml/fallback(?![a-zA-Z])");
 
     // TODO move to central location
 

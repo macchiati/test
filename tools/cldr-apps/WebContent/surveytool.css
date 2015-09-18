@@ -3152,7 +3152,7 @@ div.voterList .voterOrg {
 .dtf-fix {width:1px}
 .dtf-left {text-align:left;}
 .dtf-nopad {padding:0px; vertical-align:top;}
-
+.dtf-gray {background-color:#EEF}
 
 .rolloverspan:hover {
 	color: white !important;
@@ -3552,3 +3552,62 @@ table.flaggedItems .flaggedPath {
 .flaggedItemsBox {
     margin:  1em;
 }
+
+.special_flagged {
+	display:  table;
+}
+
+.special_flagged .flaggedLocaleHeader {
+	display:  table-row;
+	background-color:  #fee;
+	padding-top:  4em;
+}
+
+.special_flagged h3 {
+	padding-left: 32px;
+	background: url(flag.png) left center no-repeat;
+}
+
+.special_flagged div.flaggedItem {
+	display:  table-row;
+}
+.special_flagged div span {
+	padding-right:  .5em;
+}
+
+.special_flagged .flaggedLocaleHeader span {
+	padding-left:  1em;
+}
+
+.special_flagged div span,
+.special_flagged div .thinUser {
+	display:  table-cell;
+}
+
+.special_flagged .dateChunk {
+	padding-left:  1em;
+}
+
+.special_flagged .thinUser {
+	margin-left:  20px;
+}
+.special_flagged div .thinUser img {
+	float:  left;
+}
+
+
+.special_flagged .thinUser .adminUserName {
+	font-size:  small;
+}
+
+div.thinUser {
+	border:  1px solid gray;
+	border-radius: .5em;
+	padding: 0.1em;
+}
+
+.special_flagged .pathHeaderInfo {
+	font-size:  smaller;
+	white-space: nowrap;
+}
+

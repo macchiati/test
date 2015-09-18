@@ -55,6 +55,7 @@ import org.unicode.cldr.util.PathHeader.PageId;
 import org.unicode.cldr.util.PathHeader.SectionId;
 import org.unicode.cldr.util.PathHeader.SurveyToolStatus;
 import org.unicode.cldr.util.PathUtilities;
+import org.unicode.cldr.util.PatternCache;
 import org.unicode.cldr.util.StandardCodes;
 import org.unicode.cldr.util.VoteResolver;
 import org.unicode.cldr.util.VoteResolver.Status;
@@ -133,7 +134,12 @@ public class DataSection implements JSONString {
             public String getProcessedValue() {
                 if (value == null)
                     return null;
-                return getProcessor().processForDisplay(xpath, value);
+                try {
+                    return getProcessor().processForDisplay(xpath, value);
+                } catch(Throwable t) {
+                    if(SurveyLog.DEBUG) SurveyLog.logException(t, "While processing " + xpath + ":"+value);
+                    return value;
+                }
             }
 
             private CandidateItem(String value) {
@@ -142,7 +148,11 @@ public class DataSection implements JSONString {
 
             public String getValueHash() {
                 if (valueHash == null) {
-                    valueHash = DataSection.getValueHash(value);
+                    if (isFallback && !locale.isLanguageLocale()) {
+                        valueHash = DataSection.getValueHash(CldrUtility.INHERITANCE_MARKER);
+                    } else {
+                        valueHash = DataSection.getValueHash(value);
+                    }
                 }
                 return valueHash;
             }
@@ -173,9 +183,7 @@ public class DataSection implements JSONString {
 
             public Set<UserRegistry.User> getVotes() {
                 if (!checkedVotes) {
-                    if (!isFallback) {
-                        votes = ballotBox.getVotesForValue(xpath, value);
-                    }
+                    votes = ballotBox.getVotesForValue(xpath, value);
                     checkedVotes = true;
                 }
                 return votes;
@@ -578,7 +586,7 @@ public class DataSection implements JSONString {
                     .put("isBailey", isBailey)
                     //                        .put("inheritFrom", inheritFrom)
                     //                        .put("inheritFromDisplay", ((inheritFrom != null) ? inheritFrom.getDisplayName() : null))
-                    //                        .put("isFallback", isFallback)
+                    .put("isFallback", isFallback)
                     .put("pClass", getPClass())
                     .put("tests", SurveyAjax.JSONWriter.wrap(this.tests));
                 Set<User> theVotes = getVotes();
@@ -905,6 +913,14 @@ public class DataSection implements JSONString {
         }
 
         public CandidateItem getItem(String value) {
+            if (value.equals(CldrUtility.INHERITANCE_MARKER)) {
+                for (CandidateItem item : items.values()) {
+                    if (item.isFallback) {
+                        return item;
+                    }
+                }
+                return null;
+            }
             return items.get(value);
         }
 
@@ -969,6 +985,13 @@ public class DataSection implements JSONString {
         CandidateItem getWinningItem() {
             if (winningValue == null)
                 return null;
+            if (winningValue.equals(CldrUtility.INHERITANCE_MARKER)) {
+                for (CandidateItem ci : items.values()) {
+                    if (ci.isFallback) {
+                        return ci;
+                    }
+                }
+            }
             CandidateItem ci = items.get(winningValue);
             //            if (DEBUG)
             //                System.err.println("WV = '" + winningValue + "' and return is " + ci);
@@ -1628,7 +1651,9 @@ public class DataSection implements JSONString {
                 } else { // item already contained
                     CandidateItem otherItem = items.get(value);
                     otherItem.isBailey = true;
-                    // throw new InternalError("could not get inherited value: "
+                    otherItem.isFallback = true;
+                    inheritedValue = otherItem;
+                   // throw new InternalError("could not get inherited value: "
                     // + xpath);
                 }
             }
@@ -1709,9 +1734,9 @@ public class DataSection implements JSONString {
                 JSONObject jo = new JSONObject();
                 jo.put("xpath", xpath);
                 jo.put("xpid", xpathId);
-                jo.put("rowFlagged", sm.getSTFactory().getFlag(locale, xpathId) ? true : null);
+                jo.put("rowFlagged", sm.getSTFactory().getFlag(locale, xpathId));
                 jo.put("xpstrid", XPathTable.getStringIDString(xpath));
-                jo.put("winningValue", winningValue);
+                jo.put("winningValue", winningValue != null ? winningValue : "");
                 jo.put("displayName", displayName);
                 jo.put("displayExample", displayExample);
                 // .put("showstatus",
@@ -1730,6 +1755,8 @@ public class DataSection implements JSONString {
                 jo.put("voteVhash", voteVhash);
                 jo.put("voteResolver", SurveyAjax.JSONWriter.wrap(resolver));
                 jo.put("items", itemsJson);
+                jo.put("inheritedValue", inheritedValue != null ? inheritedValue.value : null);
+                jo.put("inheritedPClass", inheritedValue != null ? inheritedValue.getPClass() : "fallback");
                 jo.put("canFlagOnLosing", resolver.getRequiredVotes() == VoteResolver.HIGH_BAR);
                 if (ph.getSurveyToolStatus() == SurveyToolStatus.LTR_ALWAYS) {
                     jo.put("dir", "ltr");
@@ -2163,7 +2190,7 @@ public class DataSection implements JSONString {
     private static Pattern mostPattern;
 
     private static int n = 0;
-    static final Pattern NAME_TYPE_PATTERN = Pattern.compile("[a-zA-Z0-9]+|.*exemplarCity.*");
+    static final Pattern NAME_TYPE_PATTERN = PatternCache.get("[a-zA-Z0-9]+|.*exemplarCity.*");
 
     //    private static final boolean NOINHERIT = true;
 
@@ -2217,18 +2244,18 @@ public class DataSection implements JSONString {
 
     private static synchronized void init() {
         if (!isInitted) {
-            typeReplacementPattern = Pattern.compile("\\[@(?:type|key)=['\"]([^'\"]*)['\"]\\]");
-            Pattern.compile("([^/]*)/(.*)");
+            typeReplacementPattern = PatternCache.get("\\[@(?:type|key)=['\"]([^'\"]*)['\"]\\]");
+            PatternCache.get("([^/]*)/(.*)");
 
             /* This one is only used with non-pageID use. */
-            mostPattern = Pattern.compile("^//ldml/localeDisplayNames.*|"
+            mostPattern = PatternCache.get("^//ldml/localeDisplayNames.*|"
                 + // these are excluded when 'misc' is chosen.
                 "^//ldml/characters/exemplarCharacters.*|" + "^//ldml/numbers.*|" + "^//ldml/units.*|"
                 + "^//ldml/references.*|" + "^//ldml/dates/timeZoneNames/zone.*|" + "^//ldml/dates/timeZoneNames/metazone.*|"
                 + "^//ldml/dates/calendar.*|" + "^//ldml/identity.*");
 
             /* Always excluded. Compare with PathHeader/Coverage. */
-            excludeAlways = Pattern.compile("^//ldml/segmentations.*|" + "^//ldml/measurement.*|" + ".*week/minDays.*|"
+            excludeAlways = PatternCache.get("^//ldml/segmentations.*|" + "^//ldml/measurement.*|" + ".*week/minDays.*|"
                 + ".*week/firstDay.*|" + ".*/usesMetazone.*|" + ".*week/weekendEnd.*|" + ".*week/weekendStart.*|" +
                 // "^//ldml/dates/.*localizedPatternChars.*|" +
                 "^//ldml/posix/messages/.*expr$|" + "^//ldml/dates/timeZoneNames/.*/GMT.*exemplarCity$|" // //ldml/dates/timeZoneNames/zone[@type="Etc/GMT+11"]/exemplarCity
@@ -2236,7 +2263,7 @@ public class DataSection implements JSONString {
 
             int pn;
             for (pn = 0; pn < fromto.length / 2; pn++) {
-                fromto_p[pn] = Pattern.compile(fromto[pn * 2]);
+                fromto_p[pn] = PatternCache.get(fromto[pn * 2]);
             }
 
         }
@@ -2561,7 +2588,7 @@ public class DataSection implements JSONString {
         SectionId sectionId = (pageId != null) ? pageId.getSectionId() : null;
 
         //SupplementalDataInfo sdi = sm.getSupplementalDataInfo();
-        int workingCoverageValue = Level.valueOf(workingCoverageLevel.toUpperCase()).getLevel();
+        int workingCoverageValue = Level.fromString(workingCoverageLevel).getLevel();
         if (sectionId == SectionId.Timezones || pageId == PageId.Timezone_Display_Patterns
             || (pageId == null && xpathPrefix.startsWith("//ldml/" + "dates/timeZoneNames"))) {
             // work on zones
@@ -2714,16 +2741,8 @@ public class DataSection implements JSONString {
                     // set it up..
                     int base_xpath = sm.xpt.getByXpath(base_xpath_string);
 
-                    if (true) {
-
-                        // set up the row
-                        if (CheckCLDR.FORCE_ZOOMED_EDIT.matcher(base_xpath_string).matches()) {
-                            myp.zoomOnly = true;
-                        }
-
-                        // set up tests
-                        myp.setShimTests(base_xpath, base_xpath_string, checkCldr, options);
-                    }
+                    // set up tests
+                    myp.setShimTests(base_xpath, base_xpath_string, checkCldr, options);
                 }
             }
         } // tz
@@ -2824,7 +2843,7 @@ public class DataSection implements JSONString {
             lastTime = countStart = System.currentTimeMillis();
         }
 
-        int workingCoverageValue = Level.valueOf(workingCoverageLevel.toUpperCase()).getLevel();
+        int workingCoverageValue = Level.fromString(workingCoverageLevel).getLevel();
 
         //        CLDRFile vettedParent = null;
         //        CLDRLocale parentLoc = locale.getParent();
@@ -3023,7 +3042,7 @@ public class DataSection implements JSONString {
             DataRow p = getDataRow(xpath);
 
             if (oldFile != null) {
-                p.oldValue = oldFile.getStringValue(xpath);
+                p.oldValue = oldFile.getStringValueWithBailey(xpath);
             } else {
                 p.oldValue = null;
             }
@@ -3054,6 +3073,10 @@ public class DataSection implements JSONString {
                 // if "oldValue" isn't already represented as an item, add it.
                 CandidateItem oldItem = p.addItem(p.oldValue);
                 oldItem.isOldValue = true;
+            }
+            if ((locale.getCountry() != null && locale.getCountry().length() > 0) && (v == null || !v.contains(CldrUtility.INHERITANCE_MARKER))) {
+                // if "vote for inherited" isn't already represented as an item, add it (child locales only)
+                p.addItem(CldrUtility.INHERITANCE_MARKER);
             }
 
             p.coverageValue = coverageValue;
@@ -3158,63 +3181,65 @@ public class DataSection implements JSONString {
                     System.err.println("n07.2  (check) " + (System.currentTimeMillis() - nextTime));
                 checkCldr.getExamples(xpath, isExtraPath ? null : value, examplesResult);
             }
-            DataSection.DataRow.CandidateItem myItem = null;
+            
+            if (value != null && value.length() > 0) {
+                DataSection.DataRow.CandidateItem myItem = null;
 
-            if (TRACE_TIME)
-                System.err.println("n08  (check) " + (System.currentTimeMillis() - nextTime));
-            myItem = p.addItem(value);
+                if (TRACE_TIME)
+                    System.err.println("n08  (check) " + (System.currentTimeMillis() - nextTime));
+                myItem = p.addItem(value);
 
-            if (DEBUG) {
-                System.err.println("Added item " + value + " - now items=" + p.items.size());
-            }
-            // if("gsw".equals(type)) System.err.println(myItem + " - # " +
-            // p.items.size());
-
-            if (!checkCldrResult.isEmpty()) {
-                myItem.setTests(checkCldrResult);
-                // set the parent
-                checkCldrResult = new ArrayList<CheckStatus>(); // can't
-                // reuse it
-                // if
-                // nonempty
-            }
-
-            if (sourceLocaleStatus != null && sourceLocaleStatus.pathWhereFound != null
-                && !sourceLocaleStatus.pathWhereFound.equals(xpath)) {
-                // System.err.println("PWF diff: " + xpath + " vs " +
-                // sourceLocaleStatus.pathWhereFound);
-                myItem.pathWhereFound = sourceLocaleStatus.pathWhereFound;
-                // set up Pod alias-ness
-                p.aliasFromLocale = sourceLocale;
-                p.aliasFromXpath = sm.xpt.xpathToBaseXpathId(sourceLocaleStatus.pathWhereFound);
-            }
-            myItem.inheritFrom = setInheritFrom;
-            if (setInheritFrom == null) {
-                myItem.isFallback = false;
-                myItem.isParentFallback = false;
-            }
-            // store who voted for what. [ this could be loaded at
-            // displaytime..]
-            // myItem.votes = sm.vet.gatherVotes(locale, xpath);
-
-            if (!examplesResult.isEmpty()) {
-                // reuse the same ArrayList unless it contains something
-                if (myItem.examples == null) {
-                    myItem.examples = new Vector<ExampleEntry>();
+                if (DEBUG) {
+                    System.err.println("Added item " + value + " - now items=" + p.items.size());
                 }
-                for (Iterator<CheckStatus> it3 = examplesResult.iterator(); it3.hasNext();) {
-                    CheckCLDR.CheckStatus status = it3.next();
-                    myItem.examples.add(addExampleEntry(new ExampleEntry(this, p, myItem, status)));
+                // if("gsw".equals(type)) System.err.println(myItem + " - # " +
+                // p.items.size());
+
+                if (!checkCldrResult.isEmpty()) {
+                    myItem.setTests(checkCldrResult);
+                    // set the parent
+                    checkCldrResult = new ArrayList<CheckStatus>(); // can't
+                    // reuse it
+                    // if
+                    // nonempty
                 }
-                // myItem.examplesList = examplesResult;
-                // examplesResult = new ArrayList(); // getExamples will
-                // clear it.
+
+                if (sourceLocaleStatus != null && sourceLocaleStatus.pathWhereFound != null
+                    && !sourceLocaleStatus.pathWhereFound.equals(xpath)) {
+                    // System.err.println("PWF diff: " + xpath + " vs " +
+                    // sourceLocaleStatus.pathWhereFound);
+                    myItem.pathWhereFound = sourceLocaleStatus.pathWhereFound;
+                    // set up Pod alias-ness
+                    p.aliasFromLocale = sourceLocale;
+                    p.aliasFromXpath = sm.xpt.xpathToBaseXpathId(sourceLocaleStatus.pathWhereFound);
+                }
+                myItem.inheritFrom = setInheritFrom;
+                if (setInheritFrom == null) {
+                    myItem.isFallback = false;
+                    myItem.isParentFallback = false;
+                }
+                // store who voted for what. [ this could be loaded at
+                // displaytime..]
+                // myItem.votes = sm.vet.gatherVotes(locale, xpath);
+
+                if (!examplesResult.isEmpty()) {
+                    // reuse the same ArrayList unless it contains something
+                    if (myItem.examples == null) {
+                        myItem.examples = new Vector<ExampleEntry>();
+                    }
+                    for (Iterator<CheckStatus> it3 = examplesResult.iterator(); it3.hasNext();) {
+                        CheckCLDR.CheckStatus status = it3.next();
+                        myItem.examples.add(addExampleEntry(new ExampleEntry(this, p, myItem, status)));
+                    }
+                    // myItem.examplesList = examplesResult;
+                    // examplesResult = new ArrayList(); // getExamples will
+                    // clear it.
+                }
+
+                // if ((eRefs != null) && (!isInherited)) {
+                // myItem.references = eRefs;
+                // }
             }
-
-            // if ((eRefs != null) && (!isInherited)) {
-            // myItem.references = eRefs;
-            // }
-
         }
         // aFile.close();
     }
@@ -3590,17 +3615,33 @@ public class DataSection implements JSONString {
     @Override
     public String toJSONString() throws JSONException {
         JSONObject itemList = new JSONObject();
+        JSONObject result = new JSONObject();
         try {
-            for (Map.Entry<String, DataRow> e : rowsHash.entrySet()) {
-                itemList.put(e.getValue().fieldHash(), e.getValue());
+//            for (Map.Entry<String, DataRow> e : rowsHash.entrySet()) {
+//                itemList.put(e.getValue().fieldHash(), e.getValue());
+//            }
+            for (DataRow d : rowsHash.values()) {
+                try {
+                    String str = d.toJSONString();
+                    JSONObject obj = new JSONObject(str);
+                    itemList.put(d.fieldHash(), obj);
+                } catch (JSONException ex) {
+                    SurveyLog.logException(ex, "JSON serialization error for row: " + d.xpath + " : Full row is: " + d.toString());
+                    throw new JSONException(ex);
+              }
             }
             // String x = itemList.toString();
             // System.out.println("rows: " + x);
+            result.put("rows", itemList);
+            result.put("hasExamples", hasExamples);
+            result.put("xpathPrefix", xpathPrefix);
+            result.put("skippedDueToCoverage", getSkippedDueToCoverage());
+            result.put("coverage", getPtype());
+            return result.toString();
         } catch (Throwable t) {
             SurveyLog.logException(t, "Trying to load rows for " + this.toString());
+            throw new JSONException(t);
         }
-        return new JSONObject().put("rows", itemList).put("hasExamples", hasExamples).put("xpathPrefix", xpathPrefix)
-            .put("skippedDueToCoverage", getSkippedDueToCoverage()).put("coverage", getPtype()).toString();
     }
 
     /**

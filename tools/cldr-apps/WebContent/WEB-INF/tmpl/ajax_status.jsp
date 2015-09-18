@@ -55,6 +55,7 @@ var surveyCurrentLocaleStamp = 0;
 var surveyCurrentLocaleStampId = '';
 var surveyVersion = '<%=SurveyMain.getNewVersion() %>';
 var surveyOldVersion = '<%= SurveyMain.getOldVersion() %>';
+var surveyLastVoteVersion = '<%= SurveyMain.getLastVoteVersion() %>';
 var surveyOfficial = <%= !SurveyMain.isUnofficial() %>;
 var surveyCurrev = '<%= SurveyMain.getCurrevStr() %>';
 var BUG_URL_BASE = '<%= SurveyMain.BUG_URL_BASE %>';
@@ -93,6 +94,14 @@ var surveySessionId=null;
 <% } 
 SurveyMain curSurveyMain = null;
 curSurveyMain = SurveyMain.getInstance(request);
+STFactory stf = null;
+if(curSurveyMain!=null) {
+	stf = curSurveyMain.getSTFactory();
+}
+boolean haveFlags = false;
+if(stf!=null) {
+	haveFlags = stf.haveFlags();
+}
 if(myUser!=null) {
 %>
 var surveyUser= '<%= myUser.toJSONString() %>';
@@ -110,7 +119,7 @@ var surveyUserPerms = {
         userIsVetter: <%= !UserRegistry.userIsTC(myUser) && UserRegistry.userIsVetter(myUser)%>,
         userIsLocked: <%= !UserRegistry.userIsTC(myUser) && !UserRegistry.userIsVetter(myUser) && !UserRegistry.userIsLocked(myUser)%>,
         
-        hasFlag: <%= (mySession != null) && (myUser != null) && UserRegistry.userIsTC(myUser) && curSurveyMain.getSTFactory().haveFlags()%>,
+        hasFlag: <%= haveFlags %>,
         hasDataSource: <%= curSurveyMain.dbUtils.hasDataSource() %>,
 };
 var surveyUserURL = {
@@ -126,8 +135,29 @@ var surveyUserURL = {
         RSS: "survey/feed?email=" + userEmail + "&pw=" + userPWD+ "&&feed=rss_2.0",
                 
         about: "about.jsp",
-        browse: "browse.jsp",
+        browse: "browse.jsp"
 };
+<%
+if(UserRegistry.userIsAdmin(myUser)) {
+%>
+	surveyUserURL.adminPanel = 'survey?dump=<%= SurveyMain.vap %>';
+<%
+}
+%>
+
+<% } else { 
+	// User session not present. Set a few things so that we don't fail.
+%>
+var surveyUser=null;
+var surveyUserURL = {};
+var organizationName =null ; 
+var org = null;
+var surveyUserPerms = {
+        userExist: false,
+        hasFlag: <%= haveFlags %>
+};
+<% }%>
+
 var surveyImgInfo = {
         flag: { 
             src: "flag.png",
@@ -142,9 +172,6 @@ var surveyImgInfo = {
             border: 0,
         }
 };
-<% } else { %>
-var surveyUser=null;
-<% }%>
 var warnIcon = "<%= WebContext.iconHtml(request,"warn","Test Warning") %>";
 var stopIcon = "<%= WebContext.iconHtml(request,"stop","Test Error") %>";
 var WHAT_GETROW = "<%= SurveyAjax.WHAT_GETROW %>";

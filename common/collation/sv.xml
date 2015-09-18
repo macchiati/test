@@ -8,14 +8,15 @@ For terms of use, see http://www.unicode.org/copyright.html
 <ldml>
 	<identity>
 		<version number="$Revision$"/>
-		<generation date="$Date$"/>
 		<language type="sv"/> 
 	</identity>
-	<collations >
+	<collations>
 		<defaultCollation>reformed</defaultCollation>
-		<collation type="search" >
-			<import source="und" type="search"/>
-			<import source="sv" type="standard"/>
+		<collation type="search">
+			<cr><![CDATA[
+				[import und-u-co-search]
+				[import sv-u-co-standard]
+			]]></cr>
 		</collation>
 		<collation type="standard">
 			<cr><![CDATA[

@@ -7,7 +7,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 <ldml>
 	<identity>
 		<version number="$Revision$"/>
-		<generation date="$Date$"/>
 		<language type="aa"/>
 	</identity>
 	<localeDisplayNames>
@@ -21,9 +20,9 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</territories>
 	</localeDisplayNames>
 	<characters>
-		<exemplarCharacters>[a b t s e c k x i d q r f g o l m n u w h y]</exemplarCharacters>
+		<exemplarCharacters>[a b c d e f g h i k l m n o q r s t u w x y]</exemplarCharacters>
 		<exemplarCharacters type="auxiliary">[j p v z]</exemplarCharacters>
-		<exemplarCharacters type="index">[A B T S E C K X I D Q R F G O L M N U W H Y]</exemplarCharacters>
+		<exemplarCharacters type="index">[A B C D E F G H I K L M N O Q R S T U W X Y]</exemplarCharacters>
 	</characters>
 	<dates>
 		<calendars>
@@ -142,9 +141,13 @@ For terms of use, see http://www.unicode.org/copyright.html
 					</dayPeriodContext>
 				</dayPeriods>
 				<eras>
-					<eraAbbr>
+					<eraNames>
 						<era type="0" draft="unconfirmed">Yaasuusuk Duma</era>
 						<era type="1" draft="unconfirmed">Yaasuusuk Wadir</era>
+					</eraNames>
+					<eraAbbr>
+						<era type="0" draft="unconfirmed">YD</era>
+						<era type="1" draft="unconfirmed">YW</era>
 					</eraAbbr>
 				</eras>
 				<dateFormats>
@@ -209,3 +212,4 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</currencies>
 	</numbers>
 </ldml>
+

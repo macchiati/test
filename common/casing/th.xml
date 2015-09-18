@@ -7,12 +7,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 <ldml>
 	<identity>
 		<version number="$Revision$"/>
-		<generation date="$Date$"/>
 		<language type="th"/>
 	</identity>
-	<metadata>
-		<casingData>
-			<casingItem type="symbol">titlecase</casingItem>
-		</casingData>
-	</metadata>
 </ldml>

@@ -7,7 +7,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 <ldml>
 	<identity>
 		<version number="$Revision$"/>
-		<generation date="$Date$"/>
 		<language type="nds"/>
 	</identity>
 	<localeDisplayNames>
@@ -284,7 +283,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<language type="mn" draft="unconfirmed">Mongoolsch</language>
 			<language type="mnc" draft="unconfirmed">Mandschuursch</language>
 			<language type="mni" draft="unconfirmed">Manipuri</language>
-			<language type="mo" draft="unconfirmed">Moldaawsch</language>
 			<language type="moh" draft="unconfirmed">Mohawk</language>
 			<language type="mos" draft="unconfirmed">Mossi</language>
 			<language type="mr" draft="unconfirmed">Marathi</language>
@@ -300,7 +298,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<language type="nap" draft="unconfirmed">Neapolitaansch</language>
 			<language type="nb" draft="unconfirmed">Norweegsch Bokmål</language>
 			<language type="nd" draft="unconfirmed">Noord-Ndebele</language>
-			<language type="nds" draft="unconfirmed">Neddersass'sch</language>
+			<language type="nds" draft="unconfirmed">Neddersass’sch</language>
 			<language type="ne" draft="unconfirmed">Nepaleesch</language>
 			<language type="new" draft="unconfirmed">Newari</language>
 			<language type="ng" draft="unconfirmed">Ndonga</language>
@@ -352,6 +350,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<language type="rm" draft="unconfirmed">Rätoromaansch</language>
 			<language type="rn" draft="unconfirmed">Rundi</language>
 			<language type="ro" draft="unconfirmed">Rumäänsch</language>
+			<language type="ro_MD" draft="unconfirmed">Moldaawsch</language>
 			<language type="rom" draft="unconfirmed">Romani</language>
 			<language type="root" draft="unconfirmed">Wortel</language>
 			<language type="ru" draft="unconfirmed">Russ’sch</language>
@@ -915,24 +914,24 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<key type="numbers" draft="unconfirmed">Tallen</key>
 		</keys>
 		<types>
-			<type type="big5han" key="collation" draft="unconfirmed">Traditschonell Chineesch Sorteerregeln - Big5</type>
-			<type type="buddhist" key="calendar" draft="unconfirmed">Buddhistisch Klenner</type>
-			<type type="chinese" key="calendar" draft="unconfirmed">Chineesch Klenner</type>
-			<type type="gb2312han" key="collation" draft="unconfirmed">Vereenfacht Chineesch Sorteerregeln - GB2312</type>
-			<type type="gregorian" key="calendar" draft="unconfirmed">Gregoriaansch Klenner</type>
-			<type type="hebrew" key="calendar" draft="unconfirmed">Hebrääsch Klenner</type>
-			<type type="indian" key="calendar" draft="unconfirmed">Indsch Nationalklenner</type>
-			<type type="islamic" key="calendar" draft="unconfirmed">Islaamsch Klenner</type>
-			<type type="islamic-civil" key="calendar" draft="unconfirmed">Islaamsch Zivilklenner</type>
-			<type type="iso8601" key="calendar" draft="unconfirmed">ISO-8601-Klenner</type>
-			<type type="japanese" key="calendar" draft="unconfirmed">Japaansch Klenner</type>
-			<type type="latn" key="numbers" draft="unconfirmed">Araabsch Tallen</type>
-			<type type="phonebook" key="collation" draft="unconfirmed">Telefonbook-Sorteerregeln</type>
-			<type type="pinyin" key="collation" draft="unconfirmed">Pinyin-Sorteerregeln</type>
-			<type type="roc" key="calendar" draft="unconfirmed">Klenner vun de Republik China</type>
-			<type type="standard" key="collation" draft="unconfirmed">Standard-Sorteerreeg</type>
-			<type type="stroke" key="collation" draft="unconfirmed">Streekfolg</type>
-			<type type="traditional" key="collation" draft="unconfirmed">Traditschonelle Sorteerregeln</type>
+			<type key="calendar" type="buddhist" draft="unconfirmed">Buddhistisch Klenner</type>
+			<type key="calendar" type="chinese" draft="unconfirmed">Chineesch Klenner</type>
+			<type key="calendar" type="gregorian" draft="unconfirmed">Gregoriaansch Klenner</type>
+			<type key="calendar" type="hebrew" draft="unconfirmed">Hebrääsch Klenner</type>
+			<type key="calendar" type="indian" draft="unconfirmed">Indsch Nationalklenner</type>
+			<type key="calendar" type="islamic" draft="unconfirmed">Islaamsch Klenner</type>
+			<type key="calendar" type="islamic-civil" draft="unconfirmed">Islaamsch Zivilklenner</type>
+			<type key="calendar" type="iso8601" draft="unconfirmed">ISO-8601-Klenner</type>
+			<type key="calendar" type="japanese" draft="unconfirmed">Japaansch Klenner</type>
+			<type key="calendar" type="roc" draft="unconfirmed">Klenner vun de Republik China</type>
+			<type key="collation" type="big5han" draft="unconfirmed">Traditschonell Chineesch Sorteerregeln - Big5</type>
+			<type key="collation" type="gb2312han" draft="unconfirmed">Vereenfacht Chineesch Sorteerregeln - GB2312</type>
+			<type key="collation" type="phonebook" draft="unconfirmed">Telefonbook-Sorteerregeln</type>
+			<type key="collation" type="pinyin" draft="unconfirmed">Pinyin-Sorteerregeln</type>
+			<type key="collation" type="standard" draft="unconfirmed">Standard-Sorteerreeg</type>
+			<type key="collation" type="stroke" draft="unconfirmed">Streekfolg</type>
+			<type key="collation" type="traditional" draft="unconfirmed">Traditschonelle Sorteerregeln</type>
+			<type key="numbers" type="latn" draft="unconfirmed">Araabsch Tallen</type>
 		</types>
 		<measurementSystemNames>
 			<measurementSystemName type="metric" draft="unconfirmed">Metersch</measurementSystemName>
@@ -1482,7 +1481,7 @@ For terms of use, see http://www.unicode.org/copyright.html
 							<greatestDifference id="y" draft="unconfirmed">MM/y – MM/y</greatestDifference>
 						</intervalFormatItem>
 						<intervalFormatItem id="yMd">
-							<greatestDifference id="d" draft="unconfirmed">d.-d.M.y</greatestDifference>
+							<greatestDifference id="d" draft="unconfirmed">d.–d.M.y</greatestDifference>
 							<greatestDifference id="M" draft="unconfirmed">d.M.–d.M.y</greatestDifference>
 							<greatestDifference id="y" draft="unconfirmed">d.M.y – d.M.y</greatestDifference>
 						</intervalFormatItem>
@@ -1619,9 +1618,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<regionFormat type="daylight" draft="unconfirmed">{0}-Summertiet</regionFormat>
 			<regionFormat type="standard" draft="unconfirmed">{0}-Standardtiet</regionFormat>
 			<fallbackFormat draft="unconfirmed">{1} ({0})</fallbackFormat>
-			<zone type="Antarctica/South_Pole">
-				<exemplarCity draft="unconfirmed">Süüdpool</exemplarCity>
-			</zone>
 			<zone type="Etc/Unknown">
 				<exemplarCity draft="unconfirmed">Nich begäng</exemplarCity>
 			</zone>
@@ -2001,8 +1997,8 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<symbol draft="unconfirmed">PLN</symbol>
 			</currency>
 			<currency type="RUB">
-				<displayName draft="unconfirmed">Russ'sch Ruvel</displayName>
-				<displayName count="other" draft="unconfirmed">Russ'sch Ruvel</displayName>
+				<displayName draft="unconfirmed">Russ’sch Ruvel</displayName>
+				<displayName count="other" draft="unconfirmed">Russ’sch Ruvel</displayName>
 				<symbol draft="unconfirmed">RUB</symbol>
 			</currency>
 			<currency type="SAR">
@@ -2052,6 +2048,18 @@ For terms of use, see http://www.unicode.org/copyright.html
 	</numbers>
 	<units>
 		<unitLength type="long">
+			<unit type="duration-year">
+				<displayName draft="unconfirmed">Johr</displayName>
+				<unitPattern count="other">{0} Johren</unitPattern>
+			</unit>
+			<unit type="duration-month">
+				<displayName draft="unconfirmed">Maanden</displayName>
+				<unitPattern count="other">{0} Maanden</unitPattern>
+			</unit>
+			<unit type="duration-week">
+				<displayName draft="unconfirmed">Weken</displayName>
+				<unitPattern count="other">{0} Weken</unitPattern>
+			</unit>
 			<unit type="duration-day">
 				<displayName draft="unconfirmed">Daag</displayName>
 				<unitPattern count="other">{0} Daag</unitPattern>
@@ -2060,33 +2068,17 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<displayName draft="unconfirmed">Stünnen</displayName>
 				<unitPattern count="other">{0} Stünnen</unitPattern>
 			</unit>
-			<unit type="duration-millisecond">
-				<displayName draft="unconfirmed">Millisekunnen</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0} Millisekunnen</unitPattern>
-			</unit>
 			<unit type="duration-minute">
 				<displayName draft="unconfirmed">Minuten</displayName>
 				<unitPattern count="other">{0} Minuten</unitPattern>
-			</unit>
-			<unit type="duration-month">
-				<displayName draft="unconfirmed">Maanden</displayName>
-				<unitPattern count="other">{0} Maanden</unitPattern>
 			</unit>
 			<unit type="duration-second">
 				<displayName draft="unconfirmed">Sekunnen</displayName>
 				<unitPattern count="other">{0} Sekunnen</unitPattern>
 			</unit>
-			<unit type="duration-week">
-				<displayName draft="unconfirmed">Weken</displayName>
-				<unitPattern count="other">{0} Weken</unitPattern>
-			</unit>
-			<unit type="duration-year">
-				<displayName draft="unconfirmed">Johr</displayName>
-				<unitPattern count="other">{0} Johren</unitPattern>
-			</unit>
-			<unit type="length-centimeter">
-				<displayName draft="unconfirmed">Zentimeters</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0} Zentimeter</unitPattern>
+			<unit type="duration-millisecond">
+				<displayName draft="unconfirmed">Millisekunnen</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0} Millisekunnen</unitPattern>
 			</unit>
 			<unit type="length-kilometer">
 				<displayName draft="unconfirmed">Kilometers</displayName>
@@ -2096,17 +2088,21 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<displayName draft="unconfirmed">Meters</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0} Meter</unitPattern>
 			</unit>
+			<unit type="length-centimeter">
+				<displayName draft="unconfirmed">Zentimeters</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0} Zentimeter</unitPattern>
+			</unit>
 			<unit type="length-millimeter">
 				<displayName draft="unconfirmed">Millimeters</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0} Millimeter</unitPattern>
 			</unit>
-			<unit type="mass-gram">
-				<displayName draft="unconfirmed">Gramm</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0} Gramm</unitPattern>
-			</unit>
 			<unit type="mass-kilogram">
 				<displayName draft="unconfirmed">Kilogramm</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0} Kilogramm</unitPattern>
+			</unit>
+			<unit type="mass-gram">
+				<displayName draft="unconfirmed">Gramm</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0} Gramm</unitPattern>
 			</unit>
 			<unit type="speed-kilometer-per-hour">
 				<displayName draft="unconfirmed">Kilometers per Stünn</displayName>
@@ -2122,6 +2118,18 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</unit>
 		</unitLength>
 		<unitLength type="short">
+			<unit type="duration-year">
+				<displayName draft="unconfirmed">J.</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0} J.</unitPattern>
+			</unit>
+			<unit type="duration-month">
+				<displayName draft="unconfirmed">Mnd.</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0} Mnd.</unitPattern>
+			</unit>
+			<unit type="duration-week">
+				<displayName draft="unconfirmed">Wk.</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0} Wk.</unitPattern>
+			</unit>
 			<unit type="duration-day">
 				<displayName draft="unconfirmed">Dg.</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0} Dg.</unitPattern>
@@ -2130,33 +2138,17 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<displayName draft="unconfirmed">Stn.</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0} Stn.</unitPattern>
 			</unit>
-			<unit type="duration-millisecond">
-				<displayName draft="unconfirmed">ms</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0} ms</unitPattern>
-			</unit>
 			<unit type="duration-minute">
 				<displayName draft="unconfirmed">Min.</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0} Min.</unitPattern>
-			</unit>
-			<unit type="duration-month">
-				<displayName draft="unconfirmed">Mnd.</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0} Mnd.</unitPattern>
 			</unit>
 			<unit type="duration-second">
 				<displayName draft="unconfirmed">Sek.</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0} Sek.</unitPattern>
 			</unit>
-			<unit type="duration-week">
-				<displayName draft="unconfirmed">Wk.</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0} Wk.</unitPattern>
-			</unit>
-			<unit type="duration-year">
-				<displayName draft="unconfirmed">J.</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0} J.</unitPattern>
-			</unit>
-			<unit type="length-centimeter">
-				<displayName draft="unconfirmed">cm</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0} cm</unitPattern>
+			<unit type="duration-millisecond">
+				<displayName draft="unconfirmed">ms</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0} ms</unitPattern>
 			</unit>
 			<unit type="length-kilometer">
 				<displayName draft="unconfirmed">km</displayName>
@@ -2166,17 +2158,21 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<displayName draft="unconfirmed">m</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0} m</unitPattern>
 			</unit>
+			<unit type="length-centimeter">
+				<displayName draft="unconfirmed">cm</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0} cm</unitPattern>
+			</unit>
 			<unit type="length-millimeter">
 				<displayName draft="unconfirmed">mm</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0} mm</unitPattern>
 			</unit>
-			<unit type="mass-gram">
-				<displayName draft="unconfirmed">Gramm</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0} Gramm</unitPattern>
-			</unit>
 			<unit type="mass-kilogram">
 				<displayName draft="unconfirmed">kg</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0} kg</unitPattern>
+			</unit>
+			<unit type="mass-gram">
+				<displayName draft="unconfirmed">Gramm</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0} Gramm</unitPattern>
 			</unit>
 			<unit type="speed-kilometer-per-hour">
 				<displayName draft="unconfirmed">km/h</displayName>
@@ -2192,6 +2188,18 @@ For terms of use, see http://www.unicode.org/copyright.html
 			</unit>
 		</unitLength>
 		<unitLength type="narrow">
+			<unit type="duration-year">
+				<displayName draft="unconfirmed">a</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0}a</unitPattern>
+			</unit>
+			<unit type="duration-month">
+				<displayName draft="unconfirmed">M.</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0}M.</unitPattern>
+			</unit>
+			<unit type="duration-week">
+				<displayName draft="unconfirmed">W.</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0}W.</unitPattern>
+			</unit>
 			<unit type="duration-day">
 				<displayName draft="unconfirmed">d</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0}d</unitPattern>
@@ -2200,33 +2208,17 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<displayName draft="unconfirmed">h</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0}h</unitPattern>
 			</unit>
-			<unit type="duration-millisecond">
-				<displayName draft="unconfirmed">ms</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0}ms</unitPattern>
-			</unit>
 			<unit type="duration-minute">
 				<displayName draft="unconfirmed">min</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0}min</unitPattern>
-			</unit>
-			<unit type="duration-month">
-				<displayName draft="unconfirmed">M.</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0}M.</unitPattern>
 			</unit>
 			<unit type="duration-second">
 				<displayName draft="unconfirmed">s</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0}s</unitPattern>
 			</unit>
-			<unit type="duration-week">
-				<displayName draft="unconfirmed">W.</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0}W.</unitPattern>
-			</unit>
-			<unit type="duration-year">
-				<displayName draft="unconfirmed">a</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0}a</unitPattern>
-			</unit>
-			<unit type="length-centimeter">
-				<displayName draft="unconfirmed">cm</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0} cm</unitPattern>
+			<unit type="duration-millisecond">
+				<displayName draft="unconfirmed">ms</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0}ms</unitPattern>
 			</unit>
 			<unit type="length-kilometer">
 				<displayName draft="unconfirmed">km</displayName>
@@ -2236,17 +2228,21 @@ For terms of use, see http://www.unicode.org/copyright.html
 				<displayName draft="unconfirmed">m</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0} m</unitPattern>
 			</unit>
+			<unit type="length-centimeter">
+				<displayName draft="unconfirmed">cm</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0} cm</unitPattern>
+			</unit>
 			<unit type="length-millimeter">
 				<displayName draft="unconfirmed">mm</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0} mm</unitPattern>
 			</unit>
-			<unit type="mass-gram">
-				<displayName draft="unconfirmed">g</displayName>
-				<unitPattern count="other" draft="unconfirmed">{0} g</unitPattern>
-			</unit>
 			<unit type="mass-kilogram">
 				<displayName draft="unconfirmed">kg</displayName>
 				<unitPattern count="other" draft="unconfirmed">{0} kg</unitPattern>
+			</unit>
+			<unit type="mass-gram">
+				<displayName draft="unconfirmed">g</displayName>
+				<unitPattern count="other" draft="unconfirmed">{0} g</unitPattern>
 			</unit>
 			<unit type="speed-kilometer-per-hour">
 				<displayName draft="unconfirmed">km/h</displayName>
@@ -2286,3 +2282,4 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</messages>
 	</posix>
 </ldml>
+

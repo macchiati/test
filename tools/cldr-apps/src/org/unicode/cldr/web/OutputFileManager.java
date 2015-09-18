@@ -322,7 +322,7 @@ public class OutputFileManager {
         try {
             File outFile = sm.getDataFile(kind, loc);
 
-            doWriteFile(loc, file, isFlat, outFile);
+            doWriteFile(loc, file, kind, isFlat, outFile);
             SurveyLog.debug("Updater: Wrote: " + kind + "/" + loc + " - " + ElapsedTimer.elapsedTime(st));
 
             if (tryCommit && (kind.equals("vxml") || kind.equals("pxml"))) {
@@ -339,7 +339,7 @@ public class OutputFileManager {
                         tryCommit = false;
                     } else if (e.getMessage().contains("E155015")) {
                         svnRemoveAndResolved(outFile);
-                        doWriteFile(loc, file, isFlat, outFile);
+                        doWriteFile(loc, file, kind, isFlat, outFile);
                         SurveyLog
                             .debug("Updater: Resolved, Re-Wrote: " + kind + "/" + loc + " - " + ElapsedTimer.elapsedTime(st));
                     } else if (!e.getMessage().contains("E150002")) {
@@ -370,7 +370,7 @@ public class OutputFileManager {
                                 SurveyLog.logException(e1, "While trying to update " + outFile.getAbsolutePath());
                             } finally {
                                 outFile.delete(); //
-                    doWriteFile(loc, file, isFlat, outFile);
+                    doWriteFile(loc, file, kind, isFlat, outFile);
                     SurveyLog.debug("Updater: Updated, Re-Wrote: " + kind + "/" + loc + " - "
                         + ElapsedTimer.elapsedTime(st));
                 }
@@ -404,11 +404,19 @@ public class OutputFileManager {
      * @throws UnsupportedEncodingException
      * @throws FileNotFoundException
      */
-    private void doWriteFile(CLDRLocale loc, CLDRFile file, boolean isFlat, File outFile) throws UnsupportedEncodingException,
+    private void doWriteFile(CLDRLocale loc, CLDRFile file, String kind, boolean isFlat, File outFile) throws UnsupportedEncodingException,
         FileNotFoundException {
         PrintWriter u8out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outFile), "UTF8"));
+
+        Map<String,Object> options = CldrUtility.asMap(new Object[][] {
+            { "SUPPRESS_IM" , true }});
+        
         if (!isFlat) {
-            file.write(u8out);
+            if (kind.equals("vxml") || kind.equals("rxml")) {
+                file.write(u8out,options);                
+            } else {
+                file.write(u8out);
+            }
         } else {
             Set<String> keys = new TreeSet<String>();
             for (String k : file) {
@@ -912,6 +920,7 @@ public class OutputFileManager {
     }
 
     boolean haveVbv = false;
+    public boolean outputDisabled = false;
 
     public Timestamp getLocaleTime(Connection conn, CLDRLocale loc) throws SQLException {
         Timestamp theDate = null;
@@ -1019,7 +1028,7 @@ public class OutputFileManager {
 
             @Override
             public void run() {
-                if (SurveyMain.isBusted() || !SurveyMain.isSetup) {
+                if (outputDisabled || SurveyMain.isBusted() || !SurveyMain.isSetup) {
                     return;
                 }
                 // System.err.println("spinner hot...ac="+SurveyThread.activeCount());
@@ -1138,18 +1147,17 @@ public class OutputFileManager {
                     // SurveyLog.logger.warning("Finished writing " + loc);
                 } catch (InterruptedException ie) {
                     SurveyLog.logger.warning("Interrupted while running Updater - goodbye: " + ie);
-                } catch (SQLException e) {
-                    SurveyLog.logException(e);
-                    SurveyLog.logger.warning("While running Updater: " + DBUtils.unchainSqlException(e));
-                    SurveyMain.busted("while running updater", e);
-                } catch (IOException e) {
-                    SurveyLog.logException(e);
-                    e.printStackTrace();
-                    SurveyMain.busted("while running updater", e);
+//                } catch (SQLException e) {
+//                    SurveyLog.logException(e, "while running updater");
+//                    outputDisabled = true; // SurveyMain.busted("while running updater", e);
+//                } catch (IOException e) {
+//                    SurveyLog.logException(e);
+//                    e.printStackTrace();
+//                    SurveyMain.busted("while running updater", e);
                 } catch (Throwable e) {
-                    SurveyLog.logException(e);
+                    SurveyLog.logException(e, "while running updater");
                     e.printStackTrace();
-                    SurveyMain.busted("while running updater", e);
+                    outputDisabled = true; // SurveyMain.busted("while running updater", e);
                 } finally {
                     // SurveyLog.logger.warning("(exitting updater");
                     if (progress != null)

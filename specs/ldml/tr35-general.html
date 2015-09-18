@@ -94,7 +94,7 @@ h2, h3, h4, table {
 		<table border="1" cellpadding="2" cellspacing="0" class="wide">
 			<tr>
 				<td>Version</td>
-				<td>27</td>
+				<td>28</td>
 			</tr>
 			<tr>
 				<td>Editors</td>
@@ -130,7 +130,7 @@ h2, h3, h4, table {
 			<i>Status</i>
 		</h3>
 
-		<!-- NOT YET APPROVED 
+		<!-- NOT YET APPROVED
 		<p>
 			<i class="changed">This is a<b><font color="#ff3333">
 						draft </font></b>document which may be updated, replaced, or superseded by
@@ -140,7 +140,7 @@ h2, h3, h4, table {
 				progress.
 			</i>
 		</p>
-		 END NOT YET APPROVED -->
+		END NOT YET APPROVED -->
 		<!-- APPROVED -->
 		<p>
 			<i>This document has been reviewed by Unicode members and other
@@ -231,6 +231,7 @@ h2, h3, h4, table {
 					<li>6.1 <a href="#perUnitPatterns">per Unit patterns</a></li>
 					<li>6.2 <a href="#Unit_Sequences">Unit Sequences</a></li>
 					<li>6.3 <a href="#durationUnit">durationUnit</a></li>
+					<li>6.4 <a href="#coordinateUnit">coordinateUnit</a></li>
 				</ul>
 			</li>
 			<li>7 <a href="#POSIX_Elements">POSIX Elements</a></li>
@@ -288,6 +289,12 @@ h2, h3, h4, table {
 			1 <a name="Display_Name_Elements" href="#Display_Name_Elements">Display
 				Name Elements</a>
 		</h2>
+		<p class="dtd">
+			&lt;!ELEMENT localeDisplayNames ( alias
+				| ( localeDisplayPattern?, languages?, scripts?, territories?,
+				subdivisions?, variants?, keys?, types?, transformNames?,
+				measurementSystemNames?, codePatterns?, special* ) )&gt;
+		</p>
 		<p>
 			Display names for scripts, languages, countries, currencies, and
 			variants in this locale are supplied by this element. They supply
@@ -608,6 +615,29 @@ h2, h3, h4, table {
 					style="color: blue">Language: {0}</span>&lt;/type&gt;
 </pre>
 		</blockquote>
+		<p class="dtd">
+			&lt;!ELEMENT subdivisions ( alias | (
+				subdivision | special )* ) &gt;<br> &lt;!ELEMENT subdivision (
+				#PCDATA )&gt;
+		</p>
+		<p>Note that the subdivision names are in separate
+			files, in the subdivisions/ directory. The type values are the fully
+			qualified subdivsion names. For example:</p>
+		<p class="xmlExample">
+			&lt;subdivision type=&quot;AL-04&quot;&gt;Fier
+			County&lt;/subdivision&gt;<br> &lt;subdivision
+			type=&quot;AL-FR&quot;&gt;Fier&lt;/subdivision&gt; &lt;!-- in AL-04 :
+			Fier County --&gt;<br> &lt;subdivision
+			type=&quot;AL-LU&quot;&gt;Lushnjë&lt;/subdivision&gt; &lt;!-- in
+			AL-04 : Fier County --&gt;<br> &lt;subdivision
+			type=&quot;AL-MK&quot;&gt;Mallakastër&lt;/subdivision&gt; &lt;!-- in
+			AL-04 : Fier County --&gt;
+		</p>
+		<p>
+			See also <strong>Part 6</strong> <em>Section 2.1.1 <a
+				href="tr35-info.html#Subdivision_Containment">Subdivision
+					Containment</a></em>.
+		</p>
 
 
 		<h2>
@@ -1022,136 +1052,28 @@ h2, h3, h4, table {
 		<h3>
 			3.2 <a name="Character_Mapping" href="#Character_Mapping">Mapping</a>
 		</h3>
+		
+		<p><b>This element has been deprecated.</b> For information
+			on its structure and how it was intended to specify locale-specific
+			preferred encodings for various purposes (e-mail, web), see the <a
+				href="http://www.unicode.org/reports/tr35/tr35-39/tr35-general.html#Character_Mapping">Mapping</a>
+			section from the CLDR 27 version of the LDML Specification.</p>
 
-
-		<p class="element2">
-			&lt;mapping registry="<span style="color: blue">iana</span>" type="<span
-				style="color: blue">iso-2022-jp utf-8</span>" alt="<span
-				style="color: blue">email</span>"/&gt;
-		</p>
-
-		<p>The mapping element describes character conversion mapping
-			tables that are commonly used to encode data in the language of this
-			locale for a particular purpose. Each encoding is identified by a
-			name from the specified registry. If more than one encoding is used
-			for a particular purpose, the encodings are listed in the type
-			attribute in order, from most preferred to least. An alt tag is used
-			to indicate the purpose ("email" or "www" being the most frequent);
-			if it is absent, then the encoding(s) may be used for all purposes
-			not explicitly specified.</p>
-
-		<p>Each locale may have at most one mapping element tagged with a
-			particular purpose, and at most one general-purpose mapping element.
-			Inheritance is on an element basis; an element in a sub-locale
-			overrides an inherited element with the same purpose.</p>
-
-		<p>For email usage (alt="email") the list begins with encodings
-			that should be tried for outgoing mail; these encodings should be
-			tried in order until one is found that can represent the message
-			text. Typically, this section of the encoding list terminates with
-			encoding "utf-8", which can represent any message text. Any encodings
-			listed after "utf-8" may be encountered in incoming messages (along
-			with the encodings in the first section) and should be handled for
-			incoming messages, but should not be used for outgoing messages.</p>
-
-		<p>
-			Currently the only registry that can be used is "iana", which
-			specifies use of&nbsp; an <a
-				href="http://www.iana.org/assignments/character-sets">IANA name</a>.
-		</p>
-
-		<blockquote>
-			<p>
-				<b>Note:</b> While IANA names are not precise for conversion (see <i>UTS
-					#22: Character Mapping Tables</i> [<a
-					href="http://www.unicode.org/reports/tr41/#UTS22">UTS22</a>]), they
-				are sufficient for this purpose.
-			</p>
-		</blockquote>
 
 		<h3>
 			3.3 <a name="IndexLabels" href="#IndexLabels">Index Labels</a>
 		</h3>
 
-
-		<p>
-			<em>The elements described in this section are not currently
-				used in CLDR data nor in CLDR implementations. These elements should
-				be considered as "beta" and implementers should not depend on them
-				yet.</em>
-		</p>
+		<p><b>This element and its subelements have been
+			deprecated.</b> For information on its structure and how it was intended
+			to provide data for a compressed display of index exemplar characters
+			where space is limited, see the <a
+				href="http://www.unicode.org/reports/tr35/tr35-39/tr35-general.html#IndexLabels">Index
+			Labels</a> section from the CLDR 27 version of the LDML Specification.</p>
 
 		<p class="dtd">&lt;!ELEMENT indexLabels (indexSeparator*,
 			compressedIndexSeparator*, indexRangePattern*, indexLabelBefore*,
-			indexLabelAfter*, indexLabel*) &gt;</p>
-
-		<p class="dtd">&lt;!ELEMENT indexSeparator ( #PCDATA ) &gt;</p>
-
-		<p class="dtd">&lt;!ELEMENT compressedIndexSeparator ( #PCDATA )
-			&gt;</p>
-
-		<p class="dtd">&lt;!ELEMENT indexRangePattern ( #PCDATA ) &gt;</p>
-
-		<p class="dtd">&lt;!ELEMENT indexLabelBefore ( #PCDATA ) &gt;</p>
-
-		<p class="dtd">&lt;!ELEMENT indexLabelAfter ( #PCDATA ) &gt;</p>
-
-		<p class="dtd">
-			&lt;!ELEMENT indexLabel ( #PCDATA ) &gt;<br> &lt;!ATTLIST
-			indexLabel indexSource CDATA #IMPLIED &gt;<br> &lt;!ATTLIST
-			indexLabel priority ( 1 | 2 | 3 ) #IMPLIED &gt;
-		</p>
-
-		<p>
-			The index label elements provide information for modifying the index
-			exemplar characters in display. In particular, they are used to
-			indicate how index exemplar characters can be compressed where screen
-			real estate is limited. For example, <span class="example">A B
-				C D E F G H I J K L M N O P Q R S T U V W X Y Z</span> can be represented
-			as <span class="example">A • E • I • N • S • Z</span>.
-		</p>
-
-		<p>The indexSeparator can be used to separate the index characters
-			if they occur in free flowing text (instead of, say, on buttons or in
-			cells). The default (root) is a space. Where the index is compressed
-			(by omitting values &mdash; see the priority attribute below), the
-			compressedIndexSeparator can be used instead.</p>
-
-		<p>The indexRangePattern is used for dynamic configuration. That
-			is, if there are few items in X, Y, and Z, they can be grouped into a
-			single bucket with
-			&lt;indexRangePattern&gt;{0}-{1}&lt;/separator&gt;, giving "X-Z". The
-			indexLabel can either be applied to a single string from the
-			exemplars, or to the result of an indexRangePattern; so the localizer
-			can turn "X-Z" into "XYZ" if desired.</p>
-
-		<p>The indexLabelBefore and indexLabelAfter are used before and
-			after a list. The default (root) value is an ellipsis, as in the
-			example at the top.</p>
-
-		<p>When displaying index characters with multiple scripts, the
-			main language can be used for all characters from the main script.
-			For other scripts there are two possibilities:</p>
-
-		<ol>
-			<li>Use the primary characters from the UCA. This has the
-				disadvantage that many very uncommon characters show up.</li>
-			<li>Use the likely-subtags language for each scripts. For
-				example, if the main language is French, and Cyrillic characters are
-				present, then the likely subtags language for Cyrillic is "ru"
-				(derived by looking up "und-Cyrl").</li>
-		</ol>
-
-		<p>
-			The indexLabel is used to display characters (if it is available).
-			That is, when displaying index characters, if there is an indexLabel
-			with non-empty text contents, display that text instead. For example,
-			for Hungarian, we could have A =&gt; "<strong>A, Á</strong>".
-		</p>
-
-		<p>The priority is used where not all of the index characters can
-			be displayed. In that case, only the higher priorities (lower
-			numbers) would be displayed.</p>
+			indexLabelAfter*, indexLabel*) &gt; </p>
 
 
 		<h3>
@@ -1256,12 +1178,12 @@ h2, h3, h4, table {
 			&lt;!ELEMENT measurementData ( measurementSystem*, paperSize* ) &gt;<br>
 			<br> &lt;!ELEMENT measurementSystem EMPTY &gt;<br>
 			&lt;!ATTLIST measurementSystem type ( metric | US | UK ) #REQUIRED
-			&gt;<br> &lt;!ATTLIST
-				measurementSystem category ( temperature ) #IMPLIED &gt;<br>&lt;!ATTLIST
-			measurementSystem territories NMTOKENS #REQUIRED &gt;<br> <br>
-			&lt;!ELEMENT paperSize EMPTY &gt;<br> &lt;!ATTLIST paperSize
-			type ( A4 | US-Letter ) #REQUIRED &gt;<br> &lt;!ATTLIST
-			paperSize territories NMTOKENS #REQUIRED &gt;
+			&gt;<br> &lt;!ATTLIST measurementSystem category ( temperature )
+			#IMPLIED &gt;<br>&lt;!ATTLIST measurementSystem territories
+			NMTOKENS #REQUIRED &gt;<br> <br> &lt;!ELEMENT paperSize
+			EMPTY &gt;<br> &lt;!ATTLIST paperSize type ( A4 | US-Letter )
+			#REQUIRED &gt;<br> &lt;!ATTLIST paperSize territories NMTOKENS
+			#REQUIRED &gt;
 		</p>
 
 		<p>The measurement system is the normal measurement system in
@@ -1289,17 +1211,16 @@ h2, h3, h4, table {
 				as used in the United States: feet, inches, pints, quarts, degrees
 				Fahrenheit, and so on.</li>
 			<li>The "UK" value indicates the customary system of measurement
-				as was used in the United Kingdom:
-				feet, inches, pints, quarts, and so on. It is also called the <em>Imperial
-					system</em>: the pint, quart, and so on are different sizes than in
-				"US".
+				as was used in the United Kingdom: feet, inches, pints, quarts, and
+				so on. It is also called the <em>Imperial system</em>: the pint,
+				quart, and so on are different sizes than in "US".
 			</li>
 		</ul>
-		<p>In some cases, it may be common to use
-			different measurement systems for different categories of
-			measurements. For example, the following indicates that for the
-			category of temperature, in the regions LR and MM, it is more common
-			to use metric units than US units.</p>
+		<p>In some cases, it may be common to use different measurement
+			systems for different categories of measurements. For example, the
+			following indicates that for the category of temperature, in the
+			regions LR and MM, it is more common to use metric units than US
+			units.</p>
 
 		<pre>
 			&lt;measurementSystem type=&quot;metric&quot; category=&quot;temperature&quot; territories=&quot;LR MM&quot;/&gt;
@@ -1337,36 +1258,32 @@ h2, h3, h4, table {
 		</h2>
 
 
-		<p class="dtd">&lt;!ELEMENT units (alias | (unit*, unitLength*,
-			durationUnit*, special*)) &gt;</p>
 		<p class="dtd">
-			&lt;!ELEMENT unitLength (alias | (compoundUnit*, unit*, special*))
-			&gt;<br> &lt;!ATTLIST unitLength type ( long | short | narrow )
-			#REQUIRED &gt;
-		</p>
-		<p class="dtd">
-			&lt;!ELEMENT compoundUnit (alias | (compoundUnitPattern*, special*))
-			&gt;<br> &lt;!ATTLIST compoundUnit type NMTOKEN #REQUIRED &gt;
-		</p>
-		<p class="dtd">
-			&lt;!ELEMENT unit (alias | (displayName*, unitPattern*,
-			perUnitPattern*, special*)) &gt;<br> &lt;!ATTLIST unit type
-			NMTOKEN #REQUIRED &gt;
-		</p>
-		<p class="dtd">
-			&lt;!ELEMENT durationUnit (alias | (durationUnitPattern*, special*))
-			&gt;<br> &lt;!ATTLIST durationUnit type NMTOKEN #REQUIRED &gt;
-		</p>
-		<p class="dtd">
-			&lt;!ELEMENT unitPattern ( #PCDATA ) &gt;<br> &lt;!ATTLIST
-			unitPattern count (0 | 1 | zero | one | two | few | many | other)
-			#REQUIRED &gt;
-		</p>
-		<p class="dtd">
-			&lt;!ELEMENT compoundUnitPattern ( #PCDATA ) &gt;<br>
-		</p>
-		<p class="dtd">
-			&lt;!ELEMENT durationUnitPattern ( #PCDATA ) &gt;<br>
+			&lt;!ELEMENT units (alias | (unit*, unitLength*, durationUnit*,
+			special*) ) &gt;<br>
+			<br> &lt;!ELEMENT unitLength (alias | (compoundUnit*, unit*, coordinateUnit*, special*) ) &gt;<br>
+			&lt;!ATTLIST unitLength type (long | short | narrow) #REQUIRED &gt;
+			<br>
+			<br> &lt;!ELEMENT compoundUnit (alias | (compoundUnitPattern*,
+			special*) ) &gt;<br> &lt;!ATTLIST compoundUnit type NMTOKEN
+			#REQUIRED &gt; <br>
+			<br> &lt;!ELEMENT unit (alias | (displayName*, unitPattern*,
+			perUnitPattern*, special*) ) &gt;<br> &lt;!ATTLIST unit type
+			NMTOKEN #REQUIRED &gt; <br>
+			<br> &lt;!ELEMENT durationUnit (alias | (durationUnitPattern*,
+			special*) ) &gt;<br> &lt;!ATTLIST durationUnit type NMTOKEN
+			#REQUIRED &gt; <br>
+			<br> &lt;!ELEMENT unitPattern ( #PCDATA ) &gt;<br>
+			&lt;!ATTLIST unitPattern count (0 | 1 | zero | one | two | few | many
+			| other) #REQUIRED &gt; <br>
+			<br> &lt;!ELEMENT compoundUnitPattern ( #PCDATA ) &gt;<br>
+			<br> &lt;!ELEMENT coordinateUnit (
+				alias | ( coordinateUnitPattern*, special* ) ) &gt;<br>&lt;!ELEMENT
+				coordinateUnitPattern ( #PCDATA ) &gt;<br> &lt;!ATTLIST
+				coordinateUnitPattern type (north | east | south | west) #REQUIRED
+				&gt;
+			<br>
+			<br> &lt;!ELEMENT durationUnitPattern ( #PCDATA ) &gt;<br>
 		</p>
 
 		<p>These elements specify the localized way of formatting
@@ -1402,12 +1319,9 @@ h2, h3, h4, table {
 			</tr>
 		</table>
 		<p>&nbsp;</p>
-		<p>
-			The units in CLDR are not comprehensive; it is anticipated that more
-			will be added over time. The codes
-				currently supported are found in the root.xml file, in items of the
-				type:
-		</p>
+		<p>The units in CLDR are not comprehensive; it is anticipated that
+			more will be added over time. The codes currently supported are found
+			in the root.xml file, in items of the type:</p>
 		<p class="xmlExample">&lt;unit type=&quot;X-Y&quot;&gt;</p>
 		<p>
 			The characters up to the first hyphen are the <strong>type</strong>,
@@ -1416,7 +1330,11 @@ h2, h3, h4, table {
 		<p class="xmlExample">&lt;unit
 			type=&quot;acceleration-g-force&quot;&gt;</p>
 		<p>​</p>
-		<p>Examples of these include:</p>
+		<p>
+			Examples of these include the following.
+				The complete list is in the validity data: see <em>Section <a
+					href="tr35.html#Validity_Data">3.11 Validity Data</a></em>.
+			</p>
 		<table>
 			<tr>
 				<td><strong>Type</strong></td>
@@ -1435,6 +1353,21 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>angle</em></td>
+				<td>revolution</td>
+				<td>{0} rev</td>
+			</tr>
+			<tr>
+				<td><em>angle</em></td>
+				<td>radian</td>
+				<td>{0} rad</td>
+			</tr>
+			<tr>
+				<td><em>angle</em></td>
+				<td>degree</td>
+				<td>{0}°</td>
+			</tr>
+			<tr>
+				<td><em>angle</em></td>
 				<td>arc-minute</td>
 				<td>{0}′</td>
 			</tr>
@@ -1444,19 +1377,9 @@ h2, h3, h4, table {
 				<td>{0}″</td>
 			</tr>
 			<tr>
-				<td><em>angle</em></td>
-				<td>degree</td>
-				<td>{0}°</td>
-			</tr>
-			<tr>
-				<td><em>angle</em></td>
-				<td>radian</td>
-				<td>{0} rad</td>
-			</tr>
-			<tr>
 				<td><em>area</em></td>
-				<td>acre</td>
-				<td>{0} ac</td>
+				<td>square-kilometer</td>
+				<td>{0} km²</td>
 			</tr>
 			<tr>
 				<td><em>area</em></td>
@@ -1465,8 +1388,28 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>area</em></td>
+				<td>square-meter</td>
+				<td>{0} m²</td>
+			</tr>
+			<tr>
+				<td><em>area</em></td>
 				<td>square-centimeter</td>
 				<td>{0} cm²</td>
+			</tr>
+			<tr>
+				<td><em>area</em></td>
+				<td>square-mile</td>
+				<td>{0} mi²</td>
+			</tr>
+			<tr>
+				<td><em>area</em></td>
+				<td>acre</td>
+				<td>{0} ac</td>
+			</tr>
+			<tr>
+				<td><em>area</em></td>
+				<td>square-yard</td>
+				<td>{0} yd²</td>
 			</tr>
 			<tr>
 				<td><em>area</em></td>
@@ -1475,18 +1418,8 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>area</em></td>
-				<td>square-kilometer</td>
-				<td>{0} km²</td>
-			</tr>
-			<tr>
-				<td><em>area</em></td>
-				<td>square-meter</td>
-				<td>{0} m²</td>
-			</tr>
-			<tr>
-				<td><em>area</em></td>
-				<td>square-mile</td>
-				<td>{0} mi²</td>
+				<td>square-inch</td>
+				<td>{0} in²</td>
 			</tr>
 			<tr>
 				<td><em>consumption</em></td>
@@ -1495,23 +1428,23 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>consumption</em></td>
+				<td>liter-per-100kilometers</td>
+				<td>{0} L/100km</td>
+			</tr>
+			<tr>
+				<td><em>consumption</em></td>
 				<td>mile-per-gallon</td>
 				<td>{0} mpg</td>
 			</tr>
 			<tr>
 				<td><em>digital</em></td>
-				<td>bit</td>
-				<td>{0} bit</td>
+				<td>terabyte</td>
+				<td>{0} TB</td>
 			</tr>
 			<tr>
 				<td><em>digital</em></td>
-				<td>byte</td>
-				<td>{0} byte</td>
-			</tr>
-			<tr>
-				<td><em>digital</em></td>
-				<td>gigabit</td>
-				<td>{0} Gb</td>
+				<td>terabit</td>
+				<td>{0} Tb</td>
 			</tr>
 			<tr>
 				<td><em>digital</em></td>
@@ -1520,13 +1453,13 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>digital</em></td>
-				<td>kilobit</td>
-				<td>{0} kb</td>
+				<td>gigabit</td>
+				<td>{0} Gb</td>
 			</tr>
 			<tr>
 				<td><em>digital</em></td>
-				<td>kilobyte</td>
-				<td>{0} kB</td>
+				<td>megabyte</td>
+				<td>{0} MB</td>
 			</tr>
 			<tr>
 				<td><em>digital</em></td>
@@ -1535,12 +1468,67 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>digital</em></td>
-				<td>megabyte</td>
-				<td>{0} MB</td>
+				<td>kilobyte</td>
+				<td>{0} kB</td>
+			</tr>
+			<tr>
+				<td><em>digital</em></td>
+				<td>kilobit</td>
+				<td>{0} kb</td>
+			</tr>
+			<tr>
+				<td><em>digital</em></td>
+				<td>byte</td>
+				<td>{0} byte</td>
+			</tr>
+			<tr>
+				<td><em>digital</em></td>
+				<td>bit</td>
+				<td>{0} bit</td>
+			</tr>
+			<tr>
+				<td><em>duration</em></td>
+				<td>century</td>
+				<td>{0} c</td>
+			</tr>
+			<tr>
+				<td><em>duration</em></td>
+				<td>year</td>
+				<td>{0} y</td>
+			</tr>
+			<tr>
+				<td><em>duration</em></td>
+				<td>year-person</td>
+				<td>{0} y</td>
+			</tr>
+			<tr>
+				<td><em>duration</em></td>
+				<td>month</td>
+				<td>{0} m</td>
+			</tr>
+			<tr>
+				<td><em>duration</em></td>
+				<td>month-person</td>
+				<td>{0} m</td>
+			</tr>
+			<tr>
+				<td><em>duration</em></td>
+				<td>week</td>
+				<td>{0} w</td>
+			</tr>
+			<tr>
+				<td><em>duration</em></td>
+				<td>week-person</td>
+				<td>{0} w</td>
 			</tr>
 			<tr>
 				<td><em>duration</em></td>
 				<td>day</td>
+				<td>{0} d</td>
+			</tr>
+			<tr>
+				<td><em>duration</em></td>
+				<td>day-person</td>
 				<td>{0} d</td>
 			</tr>
 			<tr>
@@ -1550,18 +1538,8 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>duration</em></td>
-				<td>millisecond</td>
-				<td>{0} ms</td>
-			</tr>
-			<tr>
-				<td><em>duration</em></td>
 				<td>minute</td>
 				<td>{0} min</td>
-			</tr>
-			<tr>
-				<td><em>duration</em></td>
-				<td>month</td>
-				<td>{0} m</td>
 			</tr>
 			<tr>
 				<td><em>duration</em></td>
@@ -1570,13 +1548,18 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>duration</em></td>
-				<td>week</td>
-				<td>{0} w</td>
+				<td>millisecond</td>
+				<td>{0} ms</td>
 			</tr>
 			<tr>
 				<td><em>duration</em></td>
-				<td>year</td>
-				<td>{0} y</td>
+				<td>microsecond</td>
+				<td>{0} μs</td>
+			</tr>
+			<tr>
+				<td><em>duration</em></td>
+				<td>nanosecond</td>
+				<td>{0} ns</td>
 			</tr>
 			<tr>
 				<td><em>electric</em></td>
@@ -1600,6 +1583,11 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>energy</em></td>
+				<td>kilocalorie</td>
+				<td>{0} kcal</td>
+			</tr>
+			<tr>
+				<td><em>energy</em></td>
 				<td>calorie</td>
 				<td>{0} cal</td>
 			</tr>
@@ -1610,18 +1598,13 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>energy</em></td>
-				<td>joule</td>
-				<td>{0} J</td>
-			</tr>
-			<tr>
-				<td><em>energy</em></td>
-				<td>kilocalorie</td>
-				<td>{0} kcal</td>
-			</tr>
-			<tr>
-				<td><em>energy</em></td>
 				<td>kilojoule</td>
 				<td>{0} kJ</td>
+			</tr>
+			<tr>
+				<td><em>energy</em></td>
+				<td>joule</td>
+				<td>{0} J</td>
 			</tr>
 			<tr>
 				<td><em>energy</em></td>
@@ -1635,8 +1618,8 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>frequency</em></td>
-				<td>hertz</td>
-				<td>{0} Hz</td>
+				<td>megahertz</td>
+				<td>{0} MHz</td>
 			</tr>
 			<tr>
 				<td><em>frequency</em></td>
@@ -1645,13 +1628,58 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>frequency</em></td>
-				<td>megahertz</td>
-				<td>{0} MHz</td>
+				<td>hertz</td>
+				<td>{0} Hz</td>
+			</tr>
+			<tr>
+				<td><em>length</em></td>
+				<td>kilometer</td>
+				<td>{0} km</td>
+			</tr>
+			<tr>
+				<td><em>length</em></td>
+				<td>meter</td>
+				<td>{0} m</td>
+			</tr>
+			<tr>
+				<td><em>length</em></td>
+				<td>decimeter</td>
+				<td>{0} dm</td>
 			</tr>
 			<tr>
 				<td><em>length</em></td>
 				<td>centimeter</td>
 				<td>{0} cm</td>
+			</tr>
+			<tr>
+				<td><em>length</em></td>
+				<td>millimeter</td>
+				<td>{0} mm</td>
+			</tr>
+			<tr>
+				<td><em>length</em></td>
+				<td>micrometer</td>
+				<td>{0} µm</td>
+			</tr>
+			<tr>
+				<td><em>length</em></td>
+				<td>nanometer</td>
+				<td>{0} nm</td>
+			</tr>
+			<tr>
+				<td><em>length</em></td>
+				<td>picometer</td>
+				<td>{0} pm</td>
+			</tr>
+			<tr>
+				<td><em>length</em></td>
+				<td>mile</td>
+				<td>{0} mi</td>
+			</tr>
+			<tr>
+				<td><em>length</em></td>
+				<td>yard</td>
+				<td>{0} yd</td>
 			</tr>
 			<tr>
 				<td><em>length</em></td>
@@ -1665,8 +1693,8 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>length</em></td>
-				<td>kilometer</td>
-				<td>{0} km</td>
+				<td>parsec</td>
+				<td>{0} pc</td>
 			</tr>
 			<tr>
 				<td><em>length</em></td>
@@ -1675,28 +1703,28 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>length</em></td>
-				<td>meter</td>
-				<td>{0} m</td>
+				<td>astronomical-unit</td>
+				<td>{0} au</td>
 			</tr>
 			<tr>
 				<td><em>length</em></td>
-				<td>mile</td>
-				<td>{0} mi</td>
+				<td>furlong</td>
+				<td>{0} fur</td>
 			</tr>
 			<tr>
 				<td><em>length</em></td>
-				<td>millimeter</td>
-				<td>{0} mm</td>
+				<td>fathom</td>
+				<td>{0} fm</td>
 			</tr>
 			<tr>
 				<td><em>length</em></td>
-				<td>picometer</td>
-				<td>{0} pm</td>
+				<td>nautical-mile</td>
+				<td>{0} nmi</td>
 			</tr>
 			<tr>
 				<td><em>length</em></td>
-				<td>yard</td>
-				<td>{0} yd</td>
+				<td>mile-scandinavian</td>
+				<td>{0} smi</td>
 			</tr>
 			<tr>
 				<td><em>light</em></td>
@@ -1705,13 +1733,8 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>mass</em></td>
-				<td>carat</td>
-				<td>{0} CD</td>
-			</tr>
-			<tr>
-				<td><em>mass</em></td>
-				<td>gram</td>
-				<td>{0} g</td>
+				<td>metric-ton</td>
+				<td>{0} t</td>
 			</tr>
 			<tr>
 				<td><em>mass</em></td>
@@ -1720,8 +1743,8 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>mass</em></td>
-				<td>metric-ton</td>
-				<td>{0} t</td>
+				<td>gram</td>
+				<td>{0} g</td>
 			</tr>
 			<tr>
 				<td><em>mass</em></td>
@@ -1730,13 +1753,13 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>mass</em></td>
-				<td>ounce</td>
-				<td>{0} oz</td>
+				<td>microgram</td>
+				<td>{0} µg</td>
 			</tr>
 			<tr>
 				<td><em>mass</em></td>
-				<td>pound</td>
-				<td>{0} lb</td>
+				<td>ton</td>
+				<td>{0} tn</td>
 			</tr>
 			<tr>
 				<td><em>mass</em></td>
@@ -1745,18 +1768,28 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>mass</em></td>
-				<td>ton</td>
-				<td>{0} tn</td>
+				<td>pound</td>
+				<td>{0} lb</td>
+			</tr>
+			<tr>
+				<td><em>mass</em></td>
+				<td>ounce</td>
+				<td>{0} oz</td>
+			</tr>
+			<tr>
+				<td><em>mass</em></td>
+				<td>ounce-troy</td>
+				<td>{0} oz t</td>
+			</tr>
+			<tr>
+				<td><em>mass</em></td>
+				<td>carat</td>
+				<td>{0} CD</td>
 			</tr>
 			<tr>
 				<td><em>power</em></td>
-				<td>horsepower</td>
-				<td>{0} hp</td>
-			</tr>
-			<tr>
-				<td><em>power</em></td>
-				<td>kilowatt</td>
-				<td>{0} kW</td>
+				<td>gigawatt</td>
+				<td>{0} GW</td>
 			</tr>
 			<tr>
 				<td><em>power</em></td>
@@ -1765,8 +1798,8 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>power</em></td>
-				<td>milliwatt</td>
-				<td>{0} mW</td>
+				<td>kilowatt</td>
+				<td>{0} kW</td>
 			</tr>
 			<tr>
 				<td><em>power</em></td>
@@ -1774,9 +1807,29 @@ h2, h3, h4, table {
 				<td>{0} W</td>
 			</tr>
 			<tr>
+				<td><em>power</em></td>
+				<td>milliwatt</td>
+				<td>{0} mW</td>
+			</tr>
+			<tr>
+				<td><em>power</em></td>
+				<td>horsepower</td>
+				<td>{0} hp</td>
+			</tr>
+			<tr>
 				<td><em>pressure</em></td>
 				<td>hectopascal</td>
 				<td>{0} hPa</td>
+			</tr>
+			<tr>
+				<td><em>pressure</em></td>
+				<td>millimeter-of-mercury</td>
+				<td>{0} mm Hg</td>
+			</tr>
+			<tr>
+				<td><em>pressure</em></td>
+				<td>pound-per-square-inch</td>
+				<td>{0} psi</td>
 			</tr>
 			<tr>
 				<td><em>pressure</em></td>
@@ -1787,11 +1840,6 @@ h2, h3, h4, table {
 				<td><em>pressure</em></td>
 				<td>millibar</td>
 				<td>{0} mbar</td>
-			</tr>
-			<tr>
-				<td><em>pressure</em></td>
-				<td>millimeter-of-mercury</td>
-				<td>{0} mm Hg</td>
 			</tr>
 			<tr>
 				<td><em>proportion</em></td>
@@ -1814,6 +1862,16 @@ h2, h3, h4, table {
 				<td>{0} mi/h</td>
 			</tr>
 			<tr>
+				<td><em>speed</em></td>
+				<td>knot</td>
+				<td>{0} kn</td>
+			</tr>
+			<tr>
+				<td><em>temperature</em></td>
+				<td>generic</td>
+				<td>{0}°</td>
+			</tr>
+			<tr>
 				<td><em>temperature</em></td>
 				<td>celsius</td>
 				<td>{0}°C</td>
@@ -1825,23 +1883,8 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>temperature</em></td>
-				<td>generic</td>
-				<td>{0}°</td>
-			</tr>
-			<tr>
-				<td><em>volume</em></td>
-				<td>acre-foot</td>
-				<td>{0} ac ft</td>
-			</tr>
-			<tr>
-				<td><em>volume</em></td>
-				<td>cubic-centimeter</td>
-				<td>{0} cm³</td>
-			</tr>
-			<tr>
-				<td><em>volume</em></td>
-				<td>cubic-inch</td>
-				<td>{0} in³</td>
+				<td>kelvin</td>
+				<td>{0} K</td>
 			</tr>
 			<tr>
 				<td><em>volume</em></td>
@@ -1855,8 +1898,93 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td><em>volume</em></td>
+				<td>cubic-centimeter</td>
+				<td>{0} cm³</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
 				<td>cubic-mile</td>
 				<td>{0} mi³</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>cubic-yard</td>
+				<td>{0} yd³</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>cubic-foot</td>
+				<td>{0} ft³</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>cubic-inch</td>
+				<td>{0} in³</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>megaliter</td>
+				<td>{0} ML</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>hectoliter</td>
+				<td>{0} hL</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>liter</td>
+				<td>{0} L</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>deciliter</td>
+				<td>{0} dL</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>centiliter</td>
+				<td>{0} cL</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>milliliter</td>
+				<td>{0} mL</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>pint-metric</td>
+				<td>{0} mpt</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>cup-metric</td>
+				<td>{0} mc</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>acre-foot</td>
+				<td>{0} ac ft</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>bushel</td>
+				<td>{0} bu</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>gallon</td>
+				<td>{0} gal</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>quart</td>
+				<td>{0} qt</td>
+			</tr>
+			<tr>
+				<td><em>volume</em></td>
+				<td>pint</td>
+				<td>{0} pt</td>
 			</tr>
 			<tr>
 				<td><em>volume</em></td>
@@ -1867,26 +1995,6 @@ h2, h3, h4, table {
 				<td><em>volume</em></td>
 				<td>fluid-ounce</td>
 				<td>{0} fl oz</td>
-			</tr>
-			<tr>
-				<td><em>volume</em></td>
-				<td>gallon</td>
-				<td>{0} gal</td>
-			</tr>
-			<tr>
-				<td><em>volume</em></td>
-				<td>liter</td>
-				<td>{0} l</td>
-			</tr>
-			<tr>
-				<td><em>volume</em></td>
-				<td>milliliter</td>
-				<td>{0} mL</td>
-			</tr>
-			<tr>
-				<td><em>volume</em></td>
-				<td>pint</td>
-				<td>{0} pt</td>
 			</tr>
 			<tr>
 				<td><em>volume</em></td>
@@ -1920,9 +2028,15 @@ h2, h3, h4, table {
 			or inches in Germany. This is to account for use by travelers and
 			specialized domains, such as the German “̌Fernseher von 32 bis 55
 			Zoll (80 bis 140 cm)” for TV screen size in inches and centimeters.</p>
-		<p>There is a special unit &lt;unit
+		<p>For temperature, there is a special unit &lt;unit
 			type=&quot;temperature-generic&quot;&gt;, which is used when it is
 			clear from context whether Celcius or Fahrenheit is implied.</p>
+		<p>For duration, there are special units such as &lt;unit
+			type=&quot;duration-year-person&quot;&gt; and &lt;unit
+			type=&quot;duration-year-week&quot;&gt; for indicating the age of a person,
+			which requires special forms in some languages. For example, in "zh",
+			references to a person being 3 days old or 30 years old would use the forms
+			“他3天大” and “他30岁” respectively.</p>
 		<h3>
 			6.1 <a name="perUnitPatterns" href="#perUnitPatterns">per Unit
 				patterns</a><a name="compoundUnitPattern" href="#compoundUnitPattern"></a>
@@ -2014,6 +2128,29 @@ h2, h3, h4, table {
 			for minutes, and 's' for sections. These are the same symbols used in
 			availableFormats, except that there is no need to distinguish
 			different forms of the hour.</p>
+
+		<h3>
+			6.4 <a name="coordinateUnit" href="#coordinateUnit">coordinateUnit</a>
+		</h3>
+		<p>
+			The <strong>coordinateUnitPattern</strong> is a special type of
+			pattern used for composing degrees of latitude and longitude, with an
+			indicator of the quadrant. There are exactly 4 type values. An angle
+			is composed using the appropriate combination of the <strong>angle-degrees</strong>,
+			<strong>angle-arc-minute</strong> and <strong>angle-arc-second</strong>
+			values. It is then substituted for the placeholder field {0} in the
+			appropriate <strong>coordinateUnit</strong> pattern.
+		</p>
+		<p class="xmlExample">
+			&lt;coordinateUnitPattern
+				type=&quot;east&quot;&gt;{0}E&lt;/coordinateUnitPattern&gt;<br>
+				&lt;coordinateUnitPattern
+				type=&quot;north&quot;&gt;{0}N&lt;/coordinateUnitPattern&gt;<br>
+				&lt;coordinateUnitPattern
+				type=&quot;south&quot;&gt;{0}S&lt;/coordinateUnitPattern&gt;<br>
+				&lt;coordinateUnitPattern
+				type=&quot;west&quot;&gt;{0}W&lt;/coordinateUnitPattern&gt;
+			</p>
 		<h2>
 			7 <a name="POSIX_Elements" href="#POSIX_Elements">POSIX Elements</a>
 		</h2>
@@ -2750,12 +2887,9 @@ h2, h3, h4, table {
 			</tr>
 		</table>
 
-		<p>
-			The “\u” and “\x” hex notations can be
-			used instead of any letter. For instance, instead of using the Greek
-			π, one could write either of the
-			following:
-		</p>
+		<p>The “\u” and “\x” hex notations can be used instead of any
+			letter. For instance, instead of using the Greek π, one could write
+			either of the following:</p>
 
 		<table cellspacing="0" cellpadding="8" border="1">
 			<tr>
@@ -2802,32 +2936,28 @@ h2, h3, h4, table {
 			10.3.2 <a name="Context" href="#Context">Context</a>
 		</h4>
 
-		<p>
-			Context can be used to have the results of a transformation be
+		<p>Context can be used to have the results of a transformation be
 			different depending on the characters before or after. The following
 			rule removes hyphens, but only when they follow lowercase characters:
 		</p>
 
 		<table cellspacing="0" cellpadding="8" border="1">
 			<tr>
-				<td valign="top" bgcolor="#eeeeee"><code>
-						[:Lowercase:] {
-						'-' → ;
-					</code></td>
+				<td valign="top" bgcolor="#eeeeee"><code> [:Lowercase:]
+						{ '-' → ; </code></td>
 			</tr>
 		</table>
 
-		<p>Contexts can be before or after or both, such
-			as in a rule to remove hyphens between lowercase and uppercase
-			letters:</p>
+		<p>Contexts can be before or after or both, such as in a rule to
+			remove hyphens between lowercase and uppercase letters:</p>
 		<table cellspacing="0" cellpadding="8" border="1">
 			<tr>
-				<td valign="top" bgcolor="#eeeeee"><code>[:Lowercase:]
-						{ '-' } [:Uppercase:] → ;</code></td>
+				<td valign="top" bgcolor="#eeeeee"><code>[:Lowercase:] {
+						'-' } [:Uppercase:] → ;</code></td>
 			</tr>
 		</table>
-		<p>Each context is optional and may be empty; the
-			following two rules are equivalent:</p>
+		<p>Each context is optional and may be empty; the following two
+			rules are equivalent:</p>
 		<table cellspacing="0" cellpadding="8" border="1">
 			<tr>
 				<td valign="top" bgcolor="#eeeeee"><code>
@@ -2837,9 +2967,7 @@ h2, h3, h4, table {
 		</table>
 		<p>
 			The context itself ([:
-			<code>
-				Lowercase
-			</code>
+			<code> Lowercase </code>
 			:]) is unaffected by the replacement; only the text within braces is
 			changed.
 		</p>
@@ -2870,8 +2998,7 @@ h2, h3, h4, table {
 						{'-' → ;</code></td>
 			</tr>
 		</table>
-		<p>It will thus convert “-B A-B a-b” to “B AB
-			a-b”.</p>
+		<p>It will thus convert “-B A-B a-b” to “B AB a-b”.</p>
 		<h4>
 			10.3.3 <a name="Revisiting" href="#Revisiting">Revisiting</a>
 		</h4>
@@ -2937,8 +3064,7 @@ h2, h3, h4, table {
 					</code></td>
 			</tr>
 		</table>
-		<p>There is an online demo where the rules can be
-			tested, at:</p>
+		<p>There is an online demo where the rules can be tested, at:</p>
 		<p>
 			<a target="demo" href="http://unicode.org/cldr/utility/transform.jsp">http://unicode.org/cldr/utility/transform.jsp</a>
 		</p>
@@ -3477,25 +3603,21 @@ h2, h3, h4, table {
 			a category of data from the table below; the element includes one or
 			more &lt;contextTransform&gt; elements that specify how to perform
 			capitalization of this category of data in different contexts. The
-			&lt;contextTransform&gt; elements are needed
-				primarily for cases in which the capitalization is other than the
-			default form used in the middle of running text. However, it is also useful to mark cases in
-				which it is <em>known</em> that no transformation from this default
-				form is needed; this may be necessary, for example, to override the
-				transformation specified by a parent locale. The following values
-				are
+			&lt;contextTransform&gt; elements are needed primarily for cases in
+			which the capitalization is other than the default form used in the
+			middle of running text. However, it is also useful to mark cases in
+			which it is <em>known</em> that no transformation from this default
+			form is needed; this may be necessary, for example, to override the
+			transformation specified by a parent locale. The following values are
 			currently defined for the &lt;contextTransform&gt; element:
 		</p>
 
 		<ul>
-			<li>"titlecase-firstword" designates
-			the case in which raw CLDR text that is
-				in middle-of-sentence form, typically
-					lowercase, needs to have its first word titlecased.
-			</li>
-			<li>"no-change" designates the case in which it
-				is known that no change from the raw CLDR text (middle-of-sentence
-				form) is needed.</li>
+			<li>"titlecase-firstword" designates the case in which raw CLDR
+				text that is in middle-of-sentence form, typically lowercase, needs
+				to have its first word titlecased.</li>
+			<li>"no-change" designates the case in which it is known that no
+				change from the raw CLDR text (middle-of-sentence form) is needed.</li>
 		</ul>
 
 		<p>Four contexts for capitalization behavior are currently
@@ -3746,48 +3868,36 @@ h2, h3, h4, table {
 		<h2>
 			14 <a name="Annotations" href="#Annotations">Annotations</a>
 		</h2>
-		<p>Annotations provide information about
-			characters, typically used in input. For example, on a mobile
-			keyboard they can be used to do completion. They are typically used
-			for symbols, especially emoji characters.</p>
+		<p>Annotations provide information about characters, typically
+			used in input. For example, on a mobile keyboard they can be used to
+			do completion. They are typically used for symbols, especially emoji
+			characters.</p>
 
-		<p class="dtd">
-			&lt;!ELEMENT annotations ( annotation* )
-				&gt;
-		</p>
-		<p class="dtd">
-			&lt;!ELEMENT annotation ( #PCDATA ) &gt;
-		</p>
-		<p class="dtd">
-			&lt;!ATTLIST annotation cp CDATA
-				#REQUIRED &gt;
-		</p>
-		<p class="dtd">
-			&lt;!ATTLIST annotation tts CDATA
-				#IMPLIED &gt;
-		</p>
+		<p class="dtd">&lt;!ELEMENT annotations ( annotation* ) &gt;</p>
+		<p class="dtd">&lt;!ELEMENT annotation ( #PCDATA ) &gt;</p>
+		<p class="dtd">&lt;!ATTLIST annotation cp CDATA #REQUIRED &gt;</p>
+		<p class="dtd">&lt;!ATTLIST annotation tts CDATA #IMPLIED &gt;</p>
 
-		<p>The value of an annotation element is a
-			semicolon-delimited list, such as the following for English and
-			German respectively.</p>
+		<p>The value of an annotation element is a semicolon-delimited
+			list, such as the following for English and German respectively.</p>
 
 		<pre class="example">
 			&lt;annotation cp='[👎]'&gt;-1; thumbs down&lt;/annotation&gt;
 &lt;annotation cp='[👎]' tts='Daumen runter'&gt;Hand; Daumen&lt;/annotation&gt;
 		</pre>
 
-		<p>The values do not have to match between
-			different languages; they should be the most common values that
-			people using that language would associated with those characters.
-			The tts attribute value, if present, is a value that can be used for
-			text-to-speech, when reading text. It should be treated as one of the
-			element values for other purposes. The Unicode character name can be
-			used for English, when the tts value is not present.</p>
+		<p>The values do not have to match between different languages;
+			they should be the most common values that people using that language
+			would associated with those characters. The tts attribute value, if
+			present, is a value that can be used for text-to-speech, when reading
+			text. It should be treated as one of the element values for other
+			purposes. The Unicode character name can be used for English, when
+			the tts value is not present.</p>
 
-		<p>The cp attribute value is a UnicodeSet, and can
-			thus contain multiple code points. A code point can occur in multiple
-			annotation element cp values, such as the following, which also
-			contains the &quot;thumbs down&quot; character.</p>
+		<p>The cp attribute value is a UnicodeSet, and can thus contain
+			multiple code points. A code point can occur in multiple annotation
+			element cp values, such as the following, which also contains the
+			&quot;thumbs down&quot; character.</p>
 
 		<pre class="example">
 			&lt;annotation cp='[☝✊-✍👆-👐👫-👭💁🖐🖕🖖🙅🙆🙋🙌🙏🤘]'&gt;hand&lt;/annotation&gt;
@@ -3800,14 +3910,13 @@ h2, h3, h4, table {
 
 		<hr>
 		<p class="copyright">
-			Copyright © 2001–2015 Unicode, Inc. All
-			Rights Reserved. The Unicode Consortium makes no expressed or implied
-			warranty of any kind, and assumes no liability for errors or
-			omissions. No liability is assumed for incidental and consequential
-			damages in connection with or arising out of the use of the
-			information or programs contained or accompanying this technical
-			report. The Unicode <a href="http://unicode.org/copyright.html">Terms
-				of Use</a> apply.
+			Copyright © 2001–2015 Unicode, Inc. All Rights Reserved. The Unicode
+			Consortium makes no expressed or implied warranty of any kind, and
+			assumes no liability for errors or omissions. No liability is assumed
+			for incidental and consequential damages in connection with or
+			arising out of the use of the information or programs contained or
+			accompanying this technical report. The Unicode <a
+				href="http://unicode.org/copyright.html">Terms of Use</a> apply.
 		</p>
 		<p class="copyright">Unicode and the Unicode logo are trademarks
 			of Unicode, Inc., and are registered in some jurisdictions.</p>
