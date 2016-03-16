@@ -161,7 +161,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="AE" draft="unconfirmed">የተባበሩት አረብ ኤምሬትስ</territory>
 			<territory type="AL" draft="unconfirmed">አልባኒያ</territory>
 			<territory type="AM" draft="unconfirmed">አርሜኒያ</territory>
-			<territory type="AN" draft="unconfirmed">ኔዘርላንድስ አንቲልስ</territory>
 			<territory type="AR" draft="unconfirmed">አርጀንቲና</territory>
 			<territory type="AT" draft="unconfirmed">ኦስትሪያ</territory>
 			<territory type="AU" draft="unconfirmed">አውስትሬሊያ</territory>
@@ -403,6 +402,10 @@ For terms of use, see http://www.unicode.org/copyright.html
 				</days>
 				<dayPeriods>
 					<dayPeriodContext type="format">
+						<dayPeriodWidth type="abbreviated">
+							<dayPeriod type="am" draft="unconfirmed">ፋዱስ ጃብ</dayPeriod>
+							<dayPeriod type="pm" draft="unconfirmed">ፋዱስ ደምቢ</dayPeriod>
+						</dayPeriodWidth>
 						<dayPeriodWidth type="wide">
 							<dayPeriod type="am" draft="unconfirmed">ፋዱስ ጃብ</dayPeriod>
 							<dayPeriod type="pm" draft="unconfirmed">ፋዱስ ደምቢ</dayPeriod>
@@ -509,3 +512,4 @@ For terms of use, see http://www.unicode.org/copyright.html
 		</currencies>
 	</numbers>
 </ldml>
+

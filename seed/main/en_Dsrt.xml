@@ -256,7 +256,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="AI">𐐈𐑍𐑀𐐶𐐮𐑊𐐲</territory>
 			<territory type="AL">𐐈𐑊𐐺𐐩𐑌𐐨𐐲</territory>
 			<territory type="AM">𐐂𐑉𐑋𐐨𐑌𐐨𐐲</territory>
-			<territory type="AN">𐐤𐐯𐑄𐐲𐑉𐑊𐐲𐑌𐐼𐑆 𐐈𐑌𐐻𐐮𐑊𐐨𐑆</territory>
 			<territory type="AO">𐐈𐑌𐑀𐐬𐑊𐐲</territory>
 			<territory type="AQ">𐐈𐑌𐐻𐐪𐑉𐐿𐐻𐐮𐐿𐐲</territory>
 			<territory type="AR">𐐂𐑉𐐾𐐲𐑌𐐻𐐨𐑌𐐲</territory>
@@ -666,6 +665,12 @@ For terms of use, see http://www.unicode.org/copyright.html
 				</quarters>
 				<dayPeriods>
 					<dayPeriodContext type="format">
+						<dayPeriodWidth type="abbreviated">
+							<dayPeriod type="am">𐐈𐐣</dayPeriod>
+							<dayPeriod type="am" alt="variant">𐐰𐑋</dayPeriod>
+							<dayPeriod type="pm">𐐑𐐣</dayPeriod>
+							<dayPeriod type="pm" alt="variant">𐐹𐑋</dayPeriod>
+						</dayPeriodWidth>
 						<dayPeriodWidth type="wide">
 							<dayPeriod type="am">𐐈𐐣</dayPeriod>
 							<dayPeriod type="am" alt="variant">𐐰𐑋</dayPeriod>

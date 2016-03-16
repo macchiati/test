@@ -8,13 +8,14 @@ For terms of use, see http://www.unicode.org/copyright.html
 <supplementalData>
 	<version number="$Revision$"/>
 	<transforms>
-		<transform source="Malayalam" target="Gurmukhi" direction="forward">
-			<tRule>::[ം-ഃഅ-ഌഎ-ഐഒ-നപ-ഹാ-ൃെ-ൈൊ-്ൗൠ-ൡ൦-൯];</tRule>
-			<tRule>::NFD;</tRule>
-			<tRule>::Malayalam-InterIndic;</tRule>
-			<tRule>::InterIndic-Gurmukhi;</tRule>
-			<tRule>::NFC;</tRule>
+		<transform source="Mlym" target="Guru" direction="forward" alias="Malayalam-Gurmukhi und-Guru-t-und-mlym">
+			<tRule>
+::[ം-ഃഅ-ഌഎ-ഐഒ-നപ-ഹാ-ൃെ-ൈൊ-്ൗൠ-ൡ൦-൯];
+::NFD;
+::Malayalam-InterIndic;
+::InterIndic-Gurmukhi;
+::NFC;
+			</tRule>
 		</transform>
 	</transforms>
 </supplementalData>
-

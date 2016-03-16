@@ -47,6 +47,7 @@ public class MailSender implements Runnable {
     private static final String COUNTLEFTSQL = "select count(*) from " + CLDR_MAIL + " where sent_date is NULL and try_count < 3";
 
     public final boolean DEBUG = CLDRConfig.getInstance().getProperty("CLDR_DEBUG_MAIL", false) || (SurveyMain.isUnofficial() && SurveyLog.isDebug());
+    public final boolean CLDR_SENDMAIL = CLDRConfig.getInstance().getProperty("CLDR_SENDMAIL", true);
 
     private UserRegistry.User getUser(int user) {
         if (user < 1) user = 1;
@@ -164,7 +165,9 @@ public class MailSender implements Runnable {
                 System.out.println("MailSender:  reaped " + countDeleted + " expired messages");
             }
 
-            if (DBUtils.db_Derby) {
+            if (!CLDR_SENDMAIL) {
+                SurveyLog.warnOnce("*** Mail processing disabled per cldr.properties. To enable, set CLDR_SENDMAIL=true ***");
+            } else if (DBUtils.db_Derby) {
                 SurveyLog.warnOnce("************* mail processing disabled for derby. Sorry. **************");
             } else {
                 int firstTime = SurveyMain.isUnofficial() ? 5 : 60; // for official use, give some time for ST to settle before starting on mail s ending.
@@ -327,9 +330,14 @@ public class MailSender implements Runnable {
         return env;
     }
 
-    private int lastIdProcessed = -1; // spinner 
+    private int lastIdProcessed = -1; // spinner
 
     public void run() {
+        if (!CLDR_SENDMAIL) {
+            SurveyLog.warnOnce("*** Mail processing disabled per cldr.properties. To enable, set CLDR_SENDMAIL=true ***");
+            return;
+        }
+
         if (DBUtils.db_Derby) {
             SurveyLog.warnOnce("************* mail processing disabled for derby. Sorry. **************");
             return;
@@ -346,11 +354,11 @@ public class MailSender implements Runnable {
             int countLeft = DBUtils.sqlCount(COUNTLEFTSQL);
             Thread.currentThread().setName("SurveyTool MailSender: waiting count=" + countLeft);
 //            if (SurveyMain.isUnofficial()) {
-                if (countLeft > 0) {
-                    if (DEBUG) System.err.println("MailSender: waiting mails: " + countLeft);
-                } else {
-                    //if(DEBUG) System.err.println("Countleft: 0");
-                }
+            if (countLeft > 0) {
+                if (DEBUG) System.err.println("MailSender: waiting mails: " + countLeft);
+            } else {
+                //if(DEBUG) System.err.println("Countleft: 0");
+            }
 //            }
 
             Connection conn = null;
@@ -398,7 +406,7 @@ public class MailSender implements Runnable {
                     UserRegistry.User fromUser = getUser(from);
 
                     String all_from = env.getProperty("CLDR_FROM", "set_CLDR_FROM_in_cldr.properties@example.com");
-                    
+
                     if (false && from > 1) { // ticket:6334 - don't use individualized From: messages
                         ourMessage.setFrom(new InternetAddress(fromUser.email, fromUser.name + " (SurveyTool)"));
                     } else {
@@ -408,18 +416,18 @@ public class MailSender implements Runnable {
                     // date
                     final Timestamp queue_date = rs.getTimestamp("queue_date");
                     ourMessage.setSentDate(queue_date); // slices
-                    
+
                     // to
                     Integer to = rs.getInt("user");
                     UserRegistry.User toUser = getUser(to);
-                    if(toUser == null) {
+                    if (toUser == null) {
                         String why;
                         int badCount;
                         UserRegistry.User u = CookieSession.sm.reg.getInfo(to);
-                        if(u != null && UserRegistry.userIsLocked(u)) {
-                            why = "user "+ u +" is locked";
+                        if (u != null && UserRegistry.userIsLocked(u)) {
+                            why = "user " + u + " is locked";
                         } else {
-                            why = "user (#"+to+") does not exist";
+                            why = "user (#" + to + ") does not exist";
                         }
                         rs.updateInt("try_count", (badCount = (rs.getInt("try_count") + 999))); // Don't retry.
                         rs.updateString("audit", why);
@@ -472,10 +480,10 @@ public class MailSender implements Runnable {
                     if (DEBUG) System.out.println("Mail: do updated: #id " + lastIdProcessed + " to " + toUser);
                     conn.commit();
                     if (DEBUG) System.out.println("Mail: committed: #id " + lastIdProcessed + " to " + toUser);
-                    
+
                     // do more?
                     countLeft = DBUtils.sqlCount(COUNTLEFTSQL);
-                    if(countLeft > 0) {
+                    if (countLeft > 0) {
                         processMail();
                     }
                 } catch (MessagingException mx) {

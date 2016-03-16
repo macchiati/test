@@ -633,7 +633,6 @@ For terms of use, see http://www.unicode.org/copyright.html
 			<territory type="AI" draft="unconfirmed">Anguilla</territory>
 			<territory type="AL" draft="unconfirmed">Albanien</territory>
 			<territory type="AM" draft="unconfirmed">Armenien</territory>
-			<territory type="AN" draft="unconfirmed">Nedderlandsche Antillen</territory>
 			<territory type="AO" draft="unconfirmed">Angola</territory>
 			<territory type="AQ" draft="unconfirmed">Antarktis</territory>
 			<territory type="AR" draft="unconfirmed">Argentinien</territory>
@@ -1285,6 +1284,10 @@ For terms of use, see http://www.unicode.org/copyright.html
 				</quarters>
 				<dayPeriods>
 					<dayPeriodContext type="format">
+						<dayPeriodWidth type="abbreviated">
+							<dayPeriod type="am" draft="unconfirmed">vm</dayPeriod>
+							<dayPeriod type="pm" draft="unconfirmed">nm</dayPeriod>
+						</dayPeriodWidth>
 						<dayPeriodWidth type="wide">
 							<dayPeriod type="am" draft="unconfirmed">vm</dayPeriod>
 							<dayPeriod type="pm" draft="unconfirmed">nm</dayPeriod>
