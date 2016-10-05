@@ -501,7 +501,19 @@ public class TestSTFactory extends TestFmwk {
 
                     xpp2.clear();
                     Status xpathStatus;
-                    if (fullXpath == null) {
+                    CLDRFile.Status newPath = new CLDRFile.Status();
+                    CLDRLocale newLocale = CLDRLocale.getInstance(cf.getSourceLocaleID(fullXpath, newPath));
+                    final boolean localeChanged = newLocale != null && !newLocale.equals(locale);
+                    final boolean pathChanged = newPath.pathWhereFound!=null && !newPath.pathWhereFound.equals(xpath);
+                    final boolean itMoved = localeChanged || pathChanged;
+                    if(localeChanged && pathChanged) {
+                        logln("Aliased(locale+path): "+locale+"->"+newLocale+" and "+xpath+"->"+newPath.pathWhereFound);
+                    } else if(localeChanged) {
+                        logln("Aliased(locale): "+locale+"->"+newLocale);
+                    } else if(pathChanged) {
+                        logln("Aliased(path): "+xpath+"->"+newPath.pathWhereFound);
+                    }
+                    if ((fullXpath == null) || itMoved) {
                         xpathStatus = Status.missing;
                     } else {
                         xpp2.set(fullXpath);
@@ -512,7 +524,10 @@ public class TestSTFactory extends TestFmwk {
                         }
                         xpathStatus = Status.fromString(statusFromXpath);
                     }
-                    if (xpathStatus == expStatus) {
+                    if (xpathStatus != winStatus) {
+                        logln("Warning: Winning Status=" + winStatus + " but xpath status is " + xpathStatus + " " + locale + ":"
+                            + fullXpath + " Resolver=" + box.getResolver(xpath));
+                    } else if (xpathStatus == expStatus) {
                         logln("OK from fullxpath: Status=" + xpathStatus + " " + locale + ":" + fullXpath + " Resolver="
                             + box.getResolver(xpath));
                     } else {
@@ -549,7 +564,7 @@ public class TestSTFactory extends TestFmwk {
                     xpp2.clear();
                     String fullXpathBack = readBack.getFullXPath(xpath);
                     Status xpathStatusBack;
-                    if (fullXpathBack == null) {
+                    if (fullXpathBack == null || itMoved) {
                         xpathStatusBack = Status.missing;
                     } else {
                         xpp2.set(fullXpathBack);
@@ -573,6 +588,9 @@ public class TestSTFactory extends TestFmwk {
                     if (xpathStatusBack == expStatus) {
                         logln("OK from XML: Status=" + xpathStatusBack + " " + locale + ":" + fullXpathBack + " Resolver="
                             + box.getResolver(xpath));
+                    } else if(xpathStatusBack != winStatus) {
+                        logln("Warning: Problem from XML: Winning Status=" + winStatus + " got " + xpathStatusBack + " " + locale + ":"
+                            + fullXpathBack + " Resolver=" + box.getResolver(xpath));
                     } else {
                         errln("Expected from XML: Status=" + expStatus + " got " + xpathStatusBack + " " + locale + ":"
                             + fullXpathBack + " Resolver=" + box.getResolver(xpath));

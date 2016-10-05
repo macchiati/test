@@ -98,7 +98,7 @@ h5 {
 		<table border="1" cellpadding="2" cellspacing="0" class="wide">
 			<tr>
 				<td>Version</td>
-				<td>29</td>
+				<td>30</td>
 			</tr>
 			<tr>
 				<td>Editors</td>
@@ -110,19 +110,19 @@ h5 {
 			</tr>
 			<tr>
 				<td>Date</td>
-				<td>2016-03-15</td>
+				<td>2016-10-05</td>
 			</tr>
 			<tr>
 				<!-- This link must be made live when posting the final version but is disabled during proposed update stage. -->
 				<td>This Version</td>
-				<td><a
-					href="http://www.unicode.org/reports/tr35/tr35-43/tr35.html">
-						http://www.unicode.org/reports/tr35/tr35-43/tr35.html</a></td>
+				<td>
+				<a href="http://www.unicode.org/reports/tr35/tr35-45/tr35.html">
+				http://www.unicode.org/reports/tr35/tr35-45/tr35.html</a></td>
 			</tr>
 			<tr>
 				<td>Previous Version</td>
-				<td><a
-					href="http://www.unicode.org/reports/tr35/tr35-41/tr35.html">http://www.unicode.org/reports/tr35/tr35-41/tr35.html</a></td>
+				<td>
+				<a href="http://www.unicode.org/reports/tr35/tr35-44/tr35.html">http://www.unicode.org/reports/tr35/tr35-44/tr35.html</a></td>
 			</tr>
 			<tr>
 				<td>Latest Version</td>
@@ -142,12 +142,12 @@ h5 {
 			</tr>
 			<tr>
 				<td>DTDs</td>
-				<td><a href="http://unicode.org/cldr/dtd/29/">
-						http://unicode.org/cldr/dtd/29/</a></td>
+				<td><a href="http://unicode.org/cldr/dtd/30/">
+						http://unicode.org/cldr/dtd/30/</a></td>
 			</tr>
 			<tr>
 				<td>Revision</td>
-				<td><a href="#Modifications">43</a></td>
+				<td><a href="#Modifications">45</a></td>
 			</tr>
 		</table>
 		<h3>
@@ -164,7 +164,7 @@ h5 {
 			<i>Status</i>
 		</h3>
 
-		<!-- NOT YET APPROVED 
+		<!-- NOT YET APPROVED
 		<p>
 			<i class="changed">This is a<b><font color="#ff3333">
 						draft </font></b>document which may be updated, replaced, or superseded by
@@ -453,9 +453,16 @@ h5 {
 							<li>5.6.3 <a href="#Comments">Comments</a></li>
 						</ul>
 					</li>
+                    	<li>5.7 <a href="#DTD_Annotations">DTD Annotations</a></li>
+
 				</ul>
 			</li>
-			<li>6 <a href="#Property_Data">Property Data</a></li>
+			<li>6 <a href="#Property_Data">Property Data</a>
+				<ul class="toc">
+					<li>6.1 <a href="#Script_Metadata">Script Metadata</a></li>
+					<li>6.2 <a href="#Extended_Pictographic">Extended Pictographic</a></li>
+				</ul>
+			</li>
 			<li>7 <a href="#Format_Parse_Issues">Issues in Formatting
 					and Parsing</a>
 				<ul class="toc">
@@ -1411,7 +1418,7 @@ h5 {
 						</tr>
 					</table>
 					<p>
-						Unicode identifiers give specific semantics to six Unicode Script values [<a
+						Unicode identifiers give specific semantics to six Unicode Script values. For more information, see also [<a
 							href="http://www.unicode.org/reports/tr41/#UAX24">UAX24</a>]:
 					</p>
 					<table cellspacing="0" cellpadding="2" border="1"
@@ -1419,40 +1426,69 @@ h5 {
 						<tr>
 							<td><code>Qaai</code></td>
 							<td>Inherited</td>
-							<td><strong>deprecated</strong>: the <em>canonicalized</em>
+							<td colspan="2"><strong>deprecated</strong>: the <em>canonicalized</em>
 								form is Zinh</td>
 						</tr>
 						<tr>
 							<td><code>Zinh</code></td>
 							<td>Inherited</td>
-							<td>&nbsp;</td>
+							<td colspan="2">&nbsp;</td>
 						</tr>
 						<tr>
 							<td><code>Zsye</code></td>
 							<td>Emoji Style</td>
-							<td>Prefer emoji style for characters that have both text
+							<td colspan="2">Prefer emoji style for characters that have both text
 								and emoji styles available.</td>
 						</tr>
 						<tr>
 							<td><code>Zsym</code></td>
 							<td>Text Style</td>
-							<td>Prefer text style for characters that have both text and
+							<td colspan="2">Prefer text style for characters that have both text and
 								emoji styles available.</td>
 						</tr>
 						<tr>
+						  <td rowspan="7"><code>Zxxx</code></td>
+						  <td rowspan="7">Unwritten</td>
+						  <td colspan="2">Indicates spoken or otherwise unwritten content. For example:</td>
+					  </tr>
+						<tr>
+						  <th>Sample(s)</th>
+						  <th>Description</th>
+				      </tr>
+						<tr>
+						  <td>uz</td>
+						  <td>either written or spoken content</td>
+				      </tr>
+						<tr>
+						  <td>uz-Latn <em>or</em> uz-Arab</td>
+						  <td>written-only content (particular script)</td>
+				      </tr>
+						<tr>
+						  <td>uz-Zyyy</td>
+						  <td>written-only content (unspecified script)</td>
+				      </tr>
+						<tr>
+						  <td>uz-Zxxx</td>
+						  <td>spoken-only content</td>
+				      </tr>
+						<tr>
+						  <td>uz-Latn, uz-Zxxx</td>
+						  <td>both specific written and spoken content (using a <em>language list</em>)</td>
+				      </tr>
+						<tr>
 							<td><code>Zyyy</code></td>
 							<td>Common</td>
-							<td>&nbsp;</td>
+							<td colspan="2">&nbsp;</td>
 						</tr>
 						<tr>
 							<td><code>Zzzz</code></td>
 							<td>Unknown</td>
-							<td>&nbsp;</td>
+							<td colspan="2">&nbsp;</td>
 						</tr>
 					</table>
 					<p>The private use subtags from Qaaq..Qabx will never be given
 						specific semantics in Unicode identifiers, and are thus safe for
-						use for other purposes by other applications.</p></td>
+			  use for other purposes by other applications.</p></td>
 			</tr>
 			<tr>
 				<td><a href="#unicode_region_subtag_validity"
@@ -2092,6 +2128,34 @@ zh-Hant-HK</pre>
 						The XXX code is given a broader interpretation as <em>Unknown
 							or Invalid Currency</em>.
 					</p></td>
+			</tr>
+
+			<tr>
+				<td colspan="4"><strong>A <a
+						href="#UnicodeEmojiPresentationStyleIdentifier" name="UnicodeEmojiPresentationStyleIdentifier">Unicode
+							Emoji Presentation Style Identifier</a> specifies a request for
+						the preferred emoji presentation style. This can be used as part of
+						the value for an HTML lang attribute, for example
+						<code>&lt;html lang=&quot;sr-Latn-u-em-emoji&quot;&gt;</code>.
+						The valid values are those <em>name</em> attribute values
+						in the <em>type</em> elements of key name="em" in bcp47/<a
+						target="_blank"
+						href="http://www.unicode.org/repos/cldr/tags/latest/common/bcp47/variant.xml">variant.xml</a></strong>.</td>
+			</tr>
+			<tr>
+				<td rowspan="3">"em"</td>
+				<td rowspan="3">Emoji presentation style</td>
+				<td>"emoji"</td>
+				<td>Use an emoji presentation for emoji characters if possible.</td>
+			</tr>
+			<tr>
+				<td>"text"</td>
+				<td>Use a text presentation for emoji characters if possible.</td>
+			</tr>
+			<tr>
+				<td>"default"</td>
+				<td>Use the default presentation for emoji characters as specified in UTR #51 Section 4,
+					<a href="http://www.unicode.org/reports/tr51/#Presentation_Style">Presentation Style</a>.</td>
 			</tr>
 
 			<tr>
@@ -3023,7 +3087,7 @@ zh-Hant-HK</pre>
 				of them). Any indirect type names are
 					listed in 3.6.4 <a href="#Unicode_Locale_Extension_Data_Files">U
 						Extension Data Files</a>.
-				</dd>
+		  </dd>
 			<dt>
 				<b>description</b>
 			</dt>
@@ -4196,7 +4260,7 @@ root</pre>
 			the structure of LDML, including that it does not allow mixed
 			content.) The ordering is the ordering that the element chains are
 			found in the file, and thus determined by the DTD.
-		</p>
+	  </p>
 		<p>For example, some of those pairs would be the following. Notice
 			that the first has the null string as element contents.</p>
 		<ul>
@@ -6445,6 +6509,49 @@ decimal?, group?, special*)) &gt;</pre>
 		and needs to be improved in the future --&gt;
 	&lt;zone type=&quot;Asia/Jerusalem&quot;&gt;</pre>
 
+    <h3>
+			<a name="DTD_Annotations" href="#DTD_Annotations">5.7 DTD Annotations</a>
+	  </h3>
+				<p>The information in a standard DTD is insufficient for use in CLDR. To make up for that, DTD annotations are added. These are of the form<br>
+				&lt;!--@...--&gt;<br>
+				and are included below the !ELEMENT or !ATTLIST line that they apply to. The current annotations are:</p>
+				<table>
+                <tr><th>Type</th><th>Description</th></tr>
+                <tr>
+                  <td>&lt;!--@VALUE--&gt;</td>
+                  <td>The attribute is not distinguishing, and is treated like an element value</td></tr>
+                <tr>
+                  <td>&lt;!--@METADATA--&gt;</td>
+                  <td>The attribute is a “comment” on the data, like the draft status. It is not typically used in implementations.</td>
+                </tr>
+                <tr>
+                  <td>&lt;!--@ORDERED--&gt;</td>
+                  <td>The element's children are ordered, and do not inherit.</td>
+                </tr>
+                <tr>
+                  <td>&lt;!--@DEPRECATED--&gt;</td>
+                  <td>The element or attribute is deprecated, and should not be used.</td>
+                </tr>
+                <tr>
+                  <td>&lt;!--@DEPRECATED: attribute-value1, attribute-value2--&gt;</td>
+                  <td>The attribute values are deprecated, and should not be used. Spaces
+                  	between tokens are not significant.</td>
+                </tr>
+                </table>
+
+				<p> There is additional information in the attributeValueValidity.xml
+					file that is used internally for testing. For example, the following
+					line indicates that the 'currency' element in the ldml dtd must have
+					values from the bcp47 'cu' type.</p>
+				<p class='example'> &lt;attributeValues dtds='ldml' elements='currency'
+					attributes='type'&gt;$_bcp47_cu&lt;/attributeValues&gt;</p>
+				<p>The element values may be literals, regular expressions, or variables
+					(some of which are set programmatically according to other CLDR data,
+					such as the above. However, the information as this point does not
+					cover all attribute values, is used only for testing, and should not
+					be used in implementations since the structure may change without
+					notice.</p>
+
 		<h2>
 			<a name="Property_Data" href="#Property_Data">6 Property Data</a>
 		</h2>
@@ -6455,7 +6562,22 @@ decimal?, group?, special*)) &gt;</pre>
 			in the common/properties directory.</p>
 		<p>Each file has a header that explains the format and usage of
 			the data.</p>
-		<h2>
+		<h3><a name="Script_Metadata" href="#Script_Metadata">6.1 Script Metadata</a></h3>
+		<p><code>scriptMetadata.txt</code>: This file provides general information about scripts that may be useful to implementations processing text. The information is the best currently available, and may change between versions of CLDR.</p>
+		<h3><a name="Extended_Pictographic" href="#Extended_Pictographic">6.2 Extended Pictographic</a></h3>
+        <p><code>ExtendedPictographic.txt</code>: This file defines the Extended_Pictographic (EP) property,  a binary code point property for characters that are pictographic  (or otherwise similar in kind to characters with the Emoji property) and used to customize segmentation so that possible future emoji zwj sequences will not break grapheme clusters, words, or lines. It also includes unassigned codepoints that are in blocks intended for use for emoji characters, added to the Unicode 9.0 Linebreak property.</p>
+        <p>It is used in the following customized rules for  UAX #29 and UAX #14: </p>
+        <blockquote>
+          <p>Let Extended_Pictographic be defined as in <strong>ExtendedPictographic.txt</strong> </p>
+          <p>Let EmojiRK = [\p{GCB=Regional_Indicator}[*#0-9©®™〰〽]]</p>
+          <p>Let EmojiNRK = [\p{Emoji=Yes}-EmojiRK]</p>
+        </blockquote>
+<p>The customized rules replacing GB11, WB3c, and LB8a are:</p>
+<p> </p>
+<p>GB11′  (Extended_Pictographic | EmojiNRK) ZWJ × (Extended_Pictographic |EmojiNRK)</p>
+        <p>WB3c′  ZWJ × (Extended_Pictographic | EmojiNRK)</p>
+        <p>LB8a′ ZWJ × (ID | Extended_Pictographic | EmojiNRK)        </p>
+        <h2>
 			<a name="Format_Parse_Issues" href="#Format_Parse_Issues">7
 				Issues in Formatting and Parsing</a>
 		</h2>
@@ -6490,8 +6612,8 @@ decimal?, group?, special*)) &gt;</pre>
 						decimal digit</li>
 				</ul>
 			</li>
-			<li>Ignore all format characters: in particular, ignore the RLM
-				and LRM used to control BIDI formatting.</li>
+			<li>Ignore all format characters: in particular, ignore any
+				RLM, LRM or ALM used to control BIDI formatting.</li>
 			<li>Ignore all characters in [:Zs:] unless they occur between
 				letters. (In the heuristics below, even those between letters are
 				ignored except to delimit fields)</li>
@@ -8195,7 +8317,7 @@ decimal?, group?, special*)) &gt;</pre>
 		<h2>
 			<a name="Modifications" href="#Modifications">Modifications</a>
 		</h2>
-		<p>
+	  <p>
 			The following summarizes modifications from the previous version of
 			this document. Some of the modification notes have an associated bug
 			ticket number, which may be used to look up additional information
@@ -8206,236 +8328,152 @@ decimal?, group?, special*)) &gt;</pre>
 		<ul>
 			<li><strong>Part 1: <a href="#Contents">Core</a></strong>
 				<ul>
-					<li><em>General</em>
-						<ul>
-							<li>Modified terminology for clarity:
-								<ul>
-									<li>subdivision_attribute → unicode_subdivision_id</li>
-									<li>unicode_subdivision_subtag →
-										unicode_subdivision_suffix</li>
-								</ul>
-							</li>
-						</ul></li>
-					<li><em>Section 3 <a href="#Identifiers">Unicode
-								Language and Locale Identifiers</a></em>
-						<ul>
-							<li>Added direct links to validity data (latest version).</li>
-						</ul></li>
-					<li><em>Section 3.4 <a href="#Field_Definitions">Language
-								Identifier Field Definitions</a></em>
-						<ul>
-							<li>Documented script tags Zsye, Zsym. [<a
-								href="http://unicode.org/cldr/trac/ticket/9279"
-								title="View ticket">#9279</a>]
-							</li>
-						</ul></li>
-					<li><em>Section 3.6.1 <a
-							href="#Key_And_Type_Definitions_">Key And Type Definitions</a>
-					</em>
-						<ul>
-							<li>Added new Region Override key rg. [<a
-								href="http://unicode.org/cldr/trac/ticket/7999"
-								title="View ticket">#7999</a>]
-							</li>
-						</ul></li>
-					<li><em>Section 3.6.4<a
-							href="#Unicode_Locale_Extension_Data_Files"> U Extension Data
-								FIles</a></em>
-						<ul>
-							<li>Added new special type name RG_KEY_VALUE. [<a
-								href="http://unicode.org/cldr/trac/ticket/7999"
-								title="View ticket">#7999</a>]
-							</li>
-							<li>Added SUBDIVISION_CODE, and described the new valueType
-								attribute. [<a href="http://unicode.org/cldr/trac/ticket/9226"
-								title="View ticket">#9226</a>]
-							</li>
-							<li>Made it clear that the indirect type names cannot have
-								any lowercase letters, and the literal type names must have at
-								least one. [<a
-								href="http://unicode.org/cldr/trac/ticket/[#9226] "
-								title="View ticket">#9226</a>]
-							</li>
-						</ul></li>
-					<li>Section 3.6.5 <a href="#Unicode_Subdivision_Codes">Subdivision
-							Codes</a></li>
-					<li>Section 3.11 <a href="#Validity_Data">Validity Data</a>
-						<ul>
-							<li>Changed the format of the subdivision validity data to
-								use BCP47-style (lowercase, no hyphen)</li>
-						</ul>
-					</li>
+				  <li><strong>Table: <a href="#Language_Locale_Field_Definitions">Language
+				  Identifier Field Definitions</a></strong>
+				    <ul>
+				      <li>Added Zxxx (spoken content) [<a
+								href="http://unicode.org/cldr/trac/ticket/9595">#9595</a>]</li>
+			        </ul>
+				  </li>
 
-					<li>Section 7.2 <a href="#Invalid_Patterns">Handling
-							Invalid Patterns</a>
-						<ul>
-							<li>Add new section with recommendations for handling
-								invalid number/date pattern fields in formatting and parsing. [<a
-								href="http://unicode.org/cldr/trac/ticket/8955"
-								title="View ticket">#8955</a>]
-							</li>
-						</ul>
-					</li>
+				  <li><strong>Table: <a href="#Key_Type_Definitions">Key/Type
+				  Definitions</a></strong>
+				    <ul>
+				      <li>Added "em" (emoji presentation) [<a
+								href="http://unicode.org/cldr/trac/ticket/9383">#9383</a>]</li>
+			        </ul>
+				  </li>
 
-				</ul></li>
+				  <li><strong>Section 5.7 <a href="#DTD_Annotations">DTD Annotations</a> 
+			      </strong>
+				    <ul>
+				      <li>Added description of the DTD annotations used in CLDR. [<a href="http://unicode.org/cldr/trac/ticket/9723">#9723</a>]</li>
+			        </ul>
+				  </li>
+				  <li><strong>Section 6 <a href="#Property_Data">Property_Data</a>
+			      </strong>
+				    <ul>
+				      <li>Described the new property ExtendedPictographic for customizing UAX #14 and #29 [<a
+								href="http://unicode.org/cldr/trac/ticket/9438">#9438</a>]</li>
+			        </ul>
+			      </li>
+		      </ul>
+			</li>
 			<li><strong>Part 2: <a
 					href="tr35-general.html#Contents">General</a></strong>
 				<ul>
-					<li><em><i>Section 1 <a
-								href="tr35-general.html#Display_Name_Elements">Display Name
-									Elements</a></i></em>
-						<ul>
-							<li>Added a note that people should have no expectation that
-								all language names be translated, and pointed to the language
-								subtag registry for English fallback names. [<a
-								href="http://unicode.org/cldr/trac/ticket/9137"
-								title="View ticket">#9137</a>]
-							</li>
-						</ul></li>
-					<li><em><i>Section 3.2 <a
-								href="#Unicode_locale_identifier">Unicode
-									Locale Identifier</a></i></em>
-						<ul>
-							<li>Modified -u- extension keys to disallow final digit.
-								That makes them disjoint with -t- keys, allowing for simpler
-								tooling. Also some minor cleanups to the BNF for clarity. [<a
-								href="http://unicode.org/cldr/trac/ticket/9130">#9130</a>]
-							</li>
-						</ul></li>
-					<li><em>Section 6 <a
-							href="tr35-general.html#Unit_Elements">Unit Elements</a></em>
-						<ul>
-							<li>Added general units new in CLDR 29 to the table of
-								units. [<a href="http://unicode.org/cldr/trac/ticket/9161">#9161</a>,
-								<a href="http://unicode.org/cldr/trac/ticket/9162">#9162</a>]
-							</li>
-							<li>Changed unit "proportion-karat" to "concentr-karat". [<a
-								href="http://unicode.org/cldr/trac/ticket/9170">#9170</a>]
-							</li>
-						</ul></li>
-					<li>Section 10.1.1 <a href="tr35-general.html#Pivots">Pivots</a>
-						<ul>
-							<li>New section on pivots with transforms. [<a
-								href="http://unicode.org/cldr/trac/ticket/9280">#9280</a>]
-							</li>
-						</ul>
-					</li>
-					<li>Section 10.3 <a
-						href="tr35-general.html#Transform_Rules_Syntax">Transform
-							Rules Syntax</a>
-						<ul>
-							<li>Documented the alias and backwardAlias attributes. Also
-								noted that the fine-grained XML structure is no longer used. [<a
-								href="http://unicode.org/cldr/trac/ticket/9294">#9294</a>]
-							</li>
-						</ul>
-					</li>
-				</ul></li>
+				  <li><strong>Section 1</strong> <a href="tr35-general.html#Display_Name_Elements">Display Name Elements</a>
+				    <ul>
+				      <li>Deprecated &lt;transformNames&gt;.</li>
+			        </ul>
+				  </li>
+
+				  <li><strong>Section 14</strong> <a href="tr35-general.html#Annotations">Annotations</a>
+				    <ul>
+				      <li>Added clarifications for the differences between the short name annotations and the keyword annotations. [<a
+								href="http://unicode.org/cldr/trac/ticket/9534">#9534</a>]</li>
+				      <li>Added descriptions for the new character labels and label patterns. [<a
+								href="http://unicode.org/cldr/trac/ticket/9534">#9534</a>]</li>
+			        </ul>
+				  </li>
+			  </ul>
+			</li>
 			<li><strong>Part 3: <a
 					href="tr35-numbers.html#Contents">Numbers</a></strong>
 				<ul>
-					<li>Section 2.4.1 <a href="tr35-numbers.html#Compact_Number_Formats">Compact
-							Number Formats</a>
-						<ul>
-							<li>Clarified behavior with 0 value, &amp;c. [<a
-								href="http://unicode.org/cldr/trac/ticket/9298">#9298</a>]
-							</li>
-						</ul>
-					</li>
-					<li>Section 3.2 <a
-						href="tr35-numbers.html#Special_Pattern_Characters">Special
-							Pattern Characters</a>
-						<ul>
-							<li>For handling invalid special character sequences, point
-								to <a href="#Invalid_Patterns">Handling Invalid Patterns</a>. [<a
-								href="http://unicode.org/cldr/trac/ticket/8955">#8955</a>]
-							</li>
-						</ul>
-					</li>
-					<li>Section 5 <a
-						href="tr35-numbers.html#Language_Plural_Rules">Language Plural
-							Rules</a>
-						<ul>
-							<li>Clarified behavior for negative numbers, and that
-								visible decimal fractions are important. [<a
-								href="http://unicode.org/cldr/trac/ticket/9219">#9219</a>]
-							</li>
-							<li>Clarified the semantics of the relations, especially the
-								ranges as in n=3..5. [<a
-								href="http://unicode.org/cldr/trac/ticket/9022">#9022</a>]
-							</li>
-						</ul>
-					</li>
-				</ul></li>
+				  <li><strong>Section 2.3 <a href="tr35-numbers.html#Number_Symbols">Number
+				  	Symbols</a></strong>
+				    <ul>
+				      <li>Un-deprecated the currencyGroup symbol. [<a
+								href="http://unicode.org/cldr/trac/ticket/9644">#9644</a>]</li>
+			        </ul>
+				  </li>
+
+				  <li><strong>Section 3.1 <a href="tr35-numbers.html#Number_Patterns">Number
+				  	Patterns</a></strong>
+				    <ul>
+				      <li>Noted that number patterns may contain bidi controls. [<a
+								href="http://unicode.org/cldr/trac/ticket/9319">#9319</a>]</li>
+			        </ul>
+				  </li>
+
+				  <li><strong>Section 5 <a href="tr35-numbers.html#Language_Plural_Rules">
+				Language Plural Rules</a>
+                  </strong>
+				    <ul>
+                      <li>Described some limitations of the plural and ordinal rules. [<a
+								href="http://unicode.org/cldr/trac/ticket/9658">#9658</a>]</li>
+                    </ul>
+				  </li>
+			    </ul>
+			</li>
 			<li><strong>Part 4: <a href="tr35-dates.html#Contents">Dates</a></strong>
 				<ul>
-					<li><em>Section 4.5.1 <a
-							href="tr35-dates.html#Day_Period_Rules">Day Period Rules</a></em>
+				  <li><strong>Section 2.6.2.1 <a href="tr35-dates.html#Matching_Skeletons">Matching
+				  	Skeletons</a></strong>
+				    <ul>
+				      <li>Described how to handle fractional seconds S when matching skeletons
+				      	and adjusting corresponding patterns. [<a
+								href="http://unicode.org/cldr/trac/ticket/9352">#9352</a>]</li>
+			        </ul>
+				  </li>
+
+					<li><strong>Section 3 <a
+							href="tr35-dates.html#Calendar_Fields">Calendar Fields</a></strong>
 						<ul>
-							<li>Documented how midnight is to be used. [<a
-								href="http://unicode.org/cldr/trac/ticket/9310">#9310</a>]
+							<li>Add &lt;relativeTime&gt; entries for sun..sat;
+								add &lt;relative type="0"&gt; entries for hour, min. [<a
+								href="http://unicode.org/cldr/trac/ticket/9165">#9165</a>]
+							</li>
+							<li>Described new &lt;relativePeriod&gt; element. [<a
+								href="http://unicode.org/cldr/trac/ticket/9792">#9792</a>, <a
+								href="http://unicode.org/cldr/trac/ticket/8330">#8330</a>]
 							</li>
 						</ul>
+					</li>
+
+					<li><strong>Section 4.3 <a
+							href="tr35-dates.html#Week_Data">Week Data</a></strong>
 						<ul>
-							<li>Clarified in guideline 1 that a locale need not have any
-								variable dayPeriodRules, in which case behavior should use the
-								fixed rules. [<a href="http://unicode.org/cldr/trac/ticket/9112">#9112</a>]
+							<li>Described new &lt;weekOfPreference&gt; element and related week
+								designation types. [<a
+								href="http://unicode.org/cldr/trac/ticket/9792">#9792</a>, <a
+								href="http://unicode.org/cldr/trac/ticket/9391">#9391</a>]
 							</li>
-							<li>Added restriction that no two rules in the same set can
-								have the same type, and clarified that they can span midnight. [<a
-								href="http://unicode.org/cldr/trac/ticket/9209">#9209</a>, <a
-								href="http://unicode.org/cldr/trac/ticket/9116">#9116</a>]
-							</li>
-							<li>Added clarifications for parsing, and a new subheading.</li>
-						</ul></li>
-					<li><em>Section 8 <a
-							href="tr35-dates.html#Date_Format_Patterns">Date Format
-								Patterns</a>
-					</em>
-						<ul>
-							<li>For handling invalid special character sequences, point
-								to <a href="#Invalid_Patterns">Handling Invalid Patterns</a>. [<a
-								href="http://unicode.org/cldr/trac/ticket/8955">#8955</a>]
-							</li>
-							<li>The date field symbol 'C' was misdescribed as being a <em>dayperiod</em>
-								symbol, when it is actually an <em>hour</em> symbol. Clarified
-								the usage, and added the widths to each of 'j', 'J', and 'C'.
-							</li>
-						</ul></li>
-				</ul></li>
-			<li><strong>Part 6: <a href="tr35-info.html#Contents">Supplemental</a></strong>
+						</ul>
+					</li>
+
+					<li><strong>Table <a href="tr35-dates.html#Date_Field_Symbol_Table">Date Field Symbol Table</a>
+				    </strong>
+					  <ul>
+					    <li>Added &quot;double links&quot; to the fields, so that people can easily get links to a section of the table. [<a
+								href="http://unicode.org/cldr/trac/ticket/9359">#9359</a>]</li>
+				      </ul>
+					</li>
+				</ul>
+			</li>
+			<li><strong>Part 6: <a
+					href="tr35-info.html#Contents">Supplemental</a></strong>
 				<ul>
-					<li><em>Section 2.4 <a
-							href="tr35-info.html#Territory_Based_Preferences">Territory-Based
-								Preferences</a></em>
-						<ul>
-							<li>Added new section to document territory-based
-								preferences in general, and specifically new structure
-								specifying <a href="tr35-info.html#Preferred_Units_For_Usage">Preferred
-									Units for Specific Usages</a>. Link to it from <a
-								href="#Locale_Inheritance">Locale Inheritance and Matching</a>
-								and from another new section <a
-								href="tr35-general.html#Territory_Based_Unit_Preferences">Territory-Based
-									Unit Preferences</a>. [<a
-								href="http://unicode.org/cldr/trac/ticket/8346">#8346</a>, <a
-								href="http://unicode.org/cldr/trac/ticket/9177">#9177</a>]
-							</li>
-						</ul></li>
-					<li><em>Section 2.5 <a href="tr35-info.html#rgScope">&lt;rgScope&gt;:
-								Scope of the “rg” Locale Key</a></em>
-						<ul>
-							<li>Added new section to document this element, though the
-								path format used is still provisional. [<a
-								href="http://unicode.org/cldr/trac/ticket/9224">#9224</a>, <a
-								href="http://unicode.org/cldr/trac/ticket/9295">#9295</a>]
-							</li>
-						</ul></li>
-				</ul></li>
+				  <li><strong>Section 9.2 <a href="tr35-info.html#Supplemental_Deprecated_Information">Supplemental
+				  	Deprecated Information</a></strong>
+				    <ul>
+				      <li>Deprecated the &lt;deprecated&gt; element and its subelements in
+				      	favor of <a href="#DTD_Annotations">DTD Annotations</a>.</li>
+			        </ul>
+				  </li>
+				</ul>
+			</li>
 		</ul>
 		<p>Modifications in previous versions are listed in those
 			respective versions:</p>
 		<table style='margin-left: 5em' border="1" cellspacing="0"
 			cellpadding="0">
+			<tr>
+				<td><a
+					href='http://www.unicode.org/reports/tr35/tr35-43/tr35.html#Modifications'>Version
+						29</a></td>
+			</tr>
 			<tr>
 				<td><a
 					href='http://www.unicode.org/reports/tr35/tr35-41/tr35.html#Modifications'>Version

@@ -40,6 +40,7 @@ import org.unicode.cldr.util.CLDRFile.DraftStatus;
 import org.unicode.cldr.util.CLDRLocale;
 import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.LDMLUtilities;
+import org.unicode.cldr.util.LocaleIDParser;
 import org.unicode.cldr.util.LruMap;
 import org.unicode.cldr.util.Pair;
 import org.unicode.cldr.util.PathHeader;
@@ -136,6 +137,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
      * If true: run EVERY xpath through the resolver.
      */
     public static final boolean RESOLVE_ALL_XPATHS = false;
+    public static final boolean RE_RESOLVE_ALL_XPATHS = true;
 
     public class DataBackedSource extends DelegateXMLSource {
         PerLocaleData ballotBox;
@@ -400,10 +402,12 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                  * What is this user's override strength?
                  */
                 Integer override = null;
+                Date when = null;
 
                 public PerUserData(String value, Integer voteOverride, Date when) {
                     this.vote = value;
                     this.override = voteOverride;
+                    this.when = when;
                     if (lastModDate == null || lastModDate.before(when)) {
                         lastModDate = when;
                     }
@@ -419,6 +423,10 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
 
                 public String getValue() {
                     return vote;
+                }
+                
+                public Date getWhen(){
+                    return when;
                 }
             };
 
@@ -565,14 +573,32 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
 //        private Map<Integer, Set<String>> xpathToOtherValues = new HashMap<Integer, Set<String>>();
         private boolean oldFileMissing;
         private XMLSource resolvedXmlsource = null;
+        /**
+         * Parent locale - or null.
+         */
+        private final String nextParent;
+        /**
+         * CLDR file for loading Bailey value
+         */
+        private final CLDRFile fallbackParent;
 
         PerLocaleData(CLDRLocale locale) {
             this.locale = locale;
+            this.nextParent = LocaleIDParser.getParent(locale.getBaseName());
             readonly = isReadOnlyLocale(locale);
             diskData = (XMLSource) sm.getDiskFactory().makeSource(locale.getBaseName()).freeze();
             sm.xpt.loadXPaths(diskData);
             diskFile = sm.getDiskFactory().make(locale.getBaseName(), true).freeze();
             pathsForFile = phf.pathsForFile(diskFile);
+            
+            if(nextParent == null) {
+                fallbackParent =  null; // no fallback parent
+            } else {
+                /**
+                 * This will cause a load of the parent before the child.
+                 */
+                fallbackParent = get(nextParent).getFile(true);
+            }
 
 //            if (checkHadVotesSometimeThisRelease) {
 //                votesSometimeThisRelease = loadVotesSometimeThisRelease(locale);
@@ -590,6 +616,15 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             return xpathToData.isEmpty();
         }
 
+        /**
+         * Get all of the PerXPathData paths
+         * @return
+         */
+        public Set<String> allPXDPaths() {
+            return xpathToData.keySet();
+        }
+        
+        
         public final Stamp getStamp() {
             return stamp;
         }
@@ -738,6 +773,15 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                     }
                     SurveyLog.debug(et + " - RESOLVE_ALL_XPATHS  - resolved " + j + " additional items, " + n + " total.");
                 }
+                if (RE_RESOLVE_ALL_XPATHS) {                    
+                    et = (SurveyLog.DEBUG) ? new ElapsedTimer("Re-resolver loading for xpaths in " + locale) : null;
+                    int j = 0;
+                    for (String xp : allPXDPaths()) {
+                        resolver = dataBackedSource.setValueFromResolver(xp, resolver);
+                        j++;
+                    }
+                    SurveyLog.debug(et + " - Re-resolver  - resolved " + j + " additional items, " + n + " total.");
+                }
             }
             stamp.next();
             dataBackedSource.addListener(gTestCache);
@@ -872,6 +916,31 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                 r.clear(); // reuse
             }
 
+            // Workaround
+            CLDRFile.Status status = new CLDRFile.Status();
+            diskFile.getSourceLocaleID(path, status); // ask disk file
+            String baileyValue = null;
+            if (status.pathWhereFound.equals(path)) {
+              // we found it on the same path, so no aliasing
+              // for that case, it is safe to use the parent's value
+              if(fallbackParent == null) {
+                  // we are in root. 
+                  baileyValue = diskData.getBaileyValue(path, null, null);
+              } else {
+                  baileyValue = fallbackParent.getStringValue(path);
+              }
+            } else {
+              // the path changed, so use that path to get the right value
+              // from the *current* file (not the parent)
+//              System.out.println("≥≥@@@>>" + path +" << " + status.pathWhereFound);
+              r = getResolverInternal(peekXpathData(status.pathWhereFound), status.pathWhereFound, r);
+              // Issue- "status.pathWhereFound"'s votes may not have been counted yet.
+              baileyValue = r.getWinningValue();
+//              System.out.println("≥≥@@@>>" + path +" << " + status.pathWhereFound + " == " + baileyValue);
+//              baileyValue = currentFile.getStringValue(status.pathWhereFound);
+               r.clear(); // clear it again
+            }
+
             final ValueChecker vc = ERRORS_ALLOWED_IN_VETTING ? null : new ValueChecker(path);
 
             // Set established locale
@@ -898,6 +967,8 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                 r.setTrunk(currentValue, currentStatus);
                 r.add(currentValue);
             }
+            
+            r.setBaileyValue(baileyValue); 
 
             // add each vote
             if (perXPathData != null && !perXPathData.isEmpty()) {
@@ -906,7 +977,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
 
                     if (ERRORS_ALLOWED_IN_VETTING || vc.canUseValue(v.getValue())) {
                         r.add(v.getValue(), // user's vote
-                            e.getKey().id, v.getOverride()); // user's id
+                            e.getKey().id, v.getOverride(), v.getWhen()); // user's id
                     }
                 }
             }
@@ -1568,6 +1639,9 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
      */
     public STFactory(SurveyMain sm) {
         super();
+        if(sm == null) {
+            throw new IllegalArgumentException("sm must not be null");
+        }
         this.sm = sm;
         try (CLDRProgressTask progress = sm.openProgress("STFactory")) {
             progress.update("setup supplemental data");

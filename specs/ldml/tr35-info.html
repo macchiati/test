@@ -95,7 +95,7 @@ h2, h3, h4, table {
 		<table border="1" cellpadding="2" cellspacing="0" class="wide">
 			<tr>
 				<td>Version</td>
-				<td>29</td>
+				<td>30</td>
 			</tr>
 			<tr>
 				<td>Editors</td>
@@ -261,7 +261,7 @@ h2, h3, h4, table {
 						</ul>
 					</li>
 					<li>9.2 <a href="#Supplemental_Deprecated_Information">Supplemental
-							Deprecated Information</a>
+							Deprecated Information (Deprecated)</a>
 						<ul class="toc">
 							<li>Table: <a href="#Deprecated_Items">Deprecated Items</a></li>
 						</ul>
@@ -1623,55 +1623,22 @@ LY MA OM PS QA SA SD SY TN YE&quot;/&gt;
 		<h3>
 			9.2 <a name="Supplemental_Deprecated_Information"
 				href="#Supplemental_Deprecated_Information">Supplemental
-				Deprecated Information</a>
+				Deprecated Information (Deprecated)</a>
 		</h3>
 		<pre class="dtd">&lt;!ELEMENT deprecated ( deprecatedItems* ) &gt;
 &lt;!ATTLIST deprecated draft ( approved | contributed | provisional | unconfirmed | true | false ) #IMPLIED &gt; &lt;!-- true and false are deprecated. --&gt;
 
 &lt;!ELEMENT deprecatedItems EMPTY &gt;
-&lt;!ATTLIST deprecatedItems draft ( approved | contributed | provisional | unconfirmed | true | false ) #IMPLIED &gt; &lt;!-- true and false are deprecated. --&gt;
 &lt;!ATTLIST deprecatedItems type ( standard | supplemental | ldml | supplementalData | ldmlBCP47 ) #IMPLIED &gt; &lt;!-- standard | supplemental are deprecated --&gt;
 &lt;!ATTLIST deprecatedItems elements NMTOKENS #IMPLIED &gt;
 &lt;!ATTLIST deprecatedItems attributes NMTOKENS #IMPLIED &gt;
 &lt;!ATTLIST deprecatedItems values CDATA #IMPLIED &gt;</pre>
-		<p>The deprecated items can be used to indicate elements,
+		<p>The deprecated items element was used to indicate elements,
 			attributes, and attribute values that are deprecated. This means that
 			the items are valid, but that their usage is strongly discouraged.
-			When the same deprecatedItems element contains combinations of
-			elements, attributes, and values, then the &quot;least
-			significant&quot; items are only deprecated if they occur with the
-			&quot;more significant&quot; items. For example:</p>
-		<table border="1" cellpadding="0" cellspacing="1"
-			style="margin-top: 1.5em; margin-bottom: 0.5em" id="table23">
-			<caption>
-				<a name="Deprecated_Items" href="#Deprecated_Items">Deprecated
-					Items</a>
-			</caption>
-			<tr>
-				<td width="50%"><code>&lt;deprecatedItems
-						elements=&quot;A B&quot;&gt;</code></td>
-				<td width="50%">A and B are deprecated</td>
-			</tr>
-			<tr>
-				<td width="50%"><code>&lt;deprecatedItems
-						attributes=&quot;C D&quot;&gt;</code></td>
-				<td width="50%">C and D are deprecated on all elements</td>
-			</tr>
-			<tr>
-				<td width="50%"><code>&lt;deprecatedItems
-						elements=&quot;A B&quot; attributes=&quot;C D&quot;&gt;</code></td>
-				<td width="50%">C and D are deprecated, but only if they occur
-					on elements A or B.</td>
-			</tr>
-			<tr>
-				<td width="50%"><code>&lt;deprecatedItems
-						elements=&quot;A B&quot; attributes=&quot;C D&quot;
-						values=&quot;E&quot;&gt;</code></td>
-				<td width="50%">E is deprecated, but only if it is a value of C
-					in an element A or B</td>
-			</tr>
-		</table>
-		<p>In each case, multiple items are space-delimited.</p>
+			This element and its subelements have been deprecated
+			in favor of <a href="tr35.html#DTD_Annotations">DTD Annotations</a>.</p>
+
 		<p>Where particular values are deprecated (such as territory codes
 			like SU for Soviet Union), the names for such codes may be removed
 			from the common/main translated data after some period of time.

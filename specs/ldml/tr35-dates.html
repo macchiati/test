@@ -94,7 +94,7 @@ h2, h3, h4, table {
 		<table border="1" cellpadding="2" cellspacing="0" class="wide">
 			<tr>
 				<td>Version</td>
-				<td>29</td>
+				<td>30</td>
 			</tr>
 			<tr>
 				<td>Editors</td>
@@ -1276,8 +1276,15 @@ h2, h3, h4, table {
 
 				</ol>
 			</li>
-			<li>Missing or extra fields cause a match to fail. (But see <strong>Missing
-					Skeleton Fields</strong>).
+			<li>A requested skeleton that includes both seconds and fractional seconds
+				(e.g. “mmssSSS”) is allowed to match a dateFormatItem skeleton that
+				includes seconds but not fractional seconds (e.g. “ms”). In this case
+				the requested sequence of ‘S’ characters (or its length) should be retained
+				separately and used when adjusting the pattern, as described below.
+			</li>
+			<li>Otherwise, missing or extra fields cause a match to fail. (But see
+				<strong><a href="#Missing_Skeleton_Fields">Missing Skeleton Fields</a></strong>
+				below).
 			</li>
 		</ol>
 		<p>Once a skeleton match is found, the corresponding pattern is
@@ -1294,6 +1301,13 @@ h2, h3, h4, table {
 		</p>
 		<pre>    &lt;dateFormatItem id="yMMMMd"&gt;<span
 				style="color: blue">d 'de' MMMM 'de' y</span>&lt;/dateFormatItem&gt;</pre>
+		<p>
+			If the requested skeleton included both seconds and fractional seconds and
+			the dateFormatItem skeleton included seconds but not fractional seconds, then
+			the seconds field of the corresponding pattern should be adjusted by appending
+			the locale’s decimal separator, followed by the sequence of ‘S’ characters from
+			the requested skeleton.
+		</p>
 		<h5>
 			<a name="Missing_Skeleton_Fields" href="#Missing_Skeleton_Fields">2.6.2.2
 				Missing Skeleton Fields</a>
@@ -1455,7 +1469,8 @@ h2, h3, h4, table {
 		<p class="dtd">
 			&lt;!ELEMENT fields ( alias | (field*, special*)) &gt;<br>
 			&lt;!ELEMENT field ( alias | (displayName*, relative*, relativeTime*,
-			special*)) &gt;<br> &lt;!ATTLIST field type ( era | year |
+			relativePeriod*, special*)) &gt;<br>
+			&lt;!ATTLIST field type ( era | year |
 			year-short | year-narrow | quarter | quarter-short | quarter-narrow |
 			month | month-short | month-narrow | week | week-short | week-narrow
 			| day | day-short | day-narrow | weekday | sun | sun-short |
@@ -1479,11 +1494,14 @@ h2, h3, h4, table {
 			&lt;!ATTLIST relativeTimePattern count ( zero | one | two | few |
 			many | other ) #REQUIRED &gt;
 		</p>
+		<p class="dtd">
+			&lt;!ELEMENT relativePeriod (#PCDATA) &gt;
+		</p>
 
 		<p>Translations may be supplied for names of calendar fields
 			(elements of a calendar, such as Day, Month, Year, Hour, and so on),
 			and for relative values for those fields (for example, the day with
-			relative value -1 is &quot;Yesterday&quot;). There are three types of
+			relative value -1 is &quot;Yesterday&quot;). There are four types of
 			translations; some are only relevant or useful for certain types of
 			fields:</p>
 		<ul>
@@ -1494,13 +1512,23 @@ h2, h3, h4, table {
 				intended as labels in a UI.</li>
 			<li>&lt;relative&gt; Display names for the current instance of
 				the field, and one or two past and future instances. In English,
-				this is only used for year, month, week, day, and specific days of
-				the week (sun, mon, tue, …).</li>
+				data is provided for year,
+				quarter, month, week, day, specific days
+				of the week (sun, mon, tue, …), and—with offset
+				0 only—for hour, minute, and second.</li>
 			<li>&lt;relativeTime&gt; Display names for an instance of the
 				field that is a counted number of units in the past or the future
 				relative to the current instance; this needs plural forms. In
-				English, this is only used for year, month, week, day, hour, minute,
+				English, data is provided for year,
+				quarter, month, week, day, 
+				specific days of the week, ,hour, minute,
 				and second.</li>
+			<li>&lt;relativePeriod&gt; Pattern for designating an
+				instance of the specified field in relation to some other date
+				reference. This is currently only used for weeks, and provides a
+				pattern such as “the week of {0}” which can be used to generate
+				designations such as “the week of April 11, 2016” or
+				“the week of April 11–15”.</li>
 		</ul>
 		<p>Where there is not a convenient, customary word or phrase in a
 			particular language for a particular type of relative value, it
@@ -1530,10 +1558,19 @@ h2, h3, h4, table {
       &lt;relative type="-1"&gt;last Sunday&lt;/relative&gt;
       &lt;relative type="0"&gt;this Sunday&lt;/relative&gt;
       &lt;relative type="1"&gt;next Sunday&lt;/relative&gt;
+      &lt;relativeTime type="future"&gt;
+        &lt;relativeTimePattern count="one"&gt;in {0} Sunday&lt;/relativeTimePattern&gt;
+        &lt;relativeTimePattern count="other"&gt;in {0} Sundays&lt;/relativeTimePattern&gt;
+      &lt;/relativeTime&gt;
+      &lt;relativeTime type="past"&gt;
+        &lt;relativeTimePattern count="one"&gt;{0} Sunday ago&lt;/relativeTimePattern&gt;
+        &lt;relativeTimePattern count="other"&gt;{0} Sundays ago&lt;/relativeTimePattern&gt;
+      &lt;/relativeTime&gt;
     &lt;/field&gt;
     …
     &lt;field type="hour"&gt;
       &lt;displayName&gt;Hour&lt;/displayName&gt;
+      &lt;relative type="0"&gt;now&lt;/relative&gt;
       &lt;relativeTime type="future"&gt;
         &lt;relativeTimePattern count="one"&gt;in {0} hour&lt;/relativeTimePattern&gt;
         &lt;relativeTimePattern count="other"&gt;in {0} hours&lt;/relativeTimePattern&gt;
@@ -1682,7 +1719,7 @@ h2, h3, h4, table {
 		</h3>
 
 		<p class="dtd">&lt;!ELEMENT weekData ( minDays*, firstDay*,
-			weekendStart*, weekendEnd* )&gt;</p>
+			weekendStart*, weekendEnd*, weekOfPreference* )&gt;</p>
 		<p class="dtd">
 			&lt;!ELEMENT minDays EMPTY&gt;<br> &lt;!ATTLIST minDays count (1
 			| 2 | 3 | 4 | 5 | 6 | 7) #REQUIRED&gt;<br> &lt;!ATTLIST minDays
@@ -1704,12 +1741,20 @@ h2, h3, h4, table {
 			day (sun | mon | tue | wed | thu | fri | sat) #REQUIRED&gt;<br>
 			&lt;!ATTLIST weekendEnd territories NMTOKENS #REQUIRED&gt;
 		</p>
+		<p class="dtd">
+			&lt;!ELEMENT weekOfPreference EMPTY&gt;<br>
+			&lt;!ATTLIST weekOfPreference locales NMTOKENS #REQUIRED&gt;<br>
+			&lt;!ATTLIST weekOfPreference ordering NMTOKENS #REQUIRED&gt;
+		</p>
 
 		<p>These values provide territory-specific information needed for
 			week-of-year and week-of-month calculations, as well as information
-			on conventions for first day of the week and for weekends. In each
-			case, the default is provided by the element with
-			territories=&quot;001&quot;.</p>
+			on conventions for first day of the week, for weekends,
+			and for week designations. For most elements,
+			the default is provided by the element with
+			territories=&quot;001&quot;; for weekOfPreference
+			elements the default is provided by the element with
+			locales=&quot;und&quot;.</p>
 
 		<pre>&lt;weekData&gt;
   &lt;minDays count=&quot;1&quot; territories=&quot;001&quot;/&gt;
@@ -1722,6 +1767,11 @@ h2, h3, h4, table {
   &lt;weekendStart day=&quot;sun&quot; territories=&quot;IN&quot;/&gt;
   &lt;weekendStart day=&quot;thu&quot; territories=&quot;AF DZ IR OM SA YE&quot;/&gt;
   &lt;weekendStart day=&quot;fri&quot; territories=&quot;AE BH EG IL IQ JO KW …&quot;/&gt;
+  …
+  &lt;weekOfPreference ordering=&quot;weekOfYear&quot; locales=&quot;und&quot;/&gt;
+  &lt;weekOfPreference ordering=&quot;weekOfYear weekOfMonth&quot; locales=&quot;am az bs cs cy da el et hi ky lt mk sk ta th&quot;/&gt;
+  &lt;weekOfPreference ordering=&quot;weekOfYear weekOfMonth weekOfInterval&quot; locales=&quot;is mn no sv vi&quot;/&gt;
+  &lt;weekOfPreference ordering=&quot;weekOfYear weekOfDate weekOfMonth&quot; locales=&quot;fi zh-TW&quot;/&gt;
   …
 </pre>
 
@@ -1748,6 +1798,53 @@ h2, h3, h4, table {
 			defaults to &quot;sun&quot;. For more information, see <i><a
 				href="tr35.html#Date_Ranges">Dates and Date Ranges</a></i>.
 		</p>
+
+		<p>
+			Each weekOfPreference element provides, for its specified locales, an
+			ordered list of the preferred types of week designations for that set
+			of locales. There are four types of week designations, each of which
+			makes use of date patterns available in the locale, as follows:
+		</p>
+
+		<table cellspacing="0" cellpadding="4" border="1">
+			<caption>
+				<a name="Week_Designation_Types"
+					href="#Week_Designation_Types">Week Designation Types</a>
+			</caption>
+			<tr>
+				<th width="10%">Type</th>
+				<th width="20%">Examples</th>
+				<th width="30%">Date Pattern</th>
+				<th width="40%">Comments</th>
+			</tr>
+			<tr>
+				<td width="10">weekOfYear</td>
+				<td width="20%">week 15 of 2016</td>
+				<td width="30%">&lt;dateFormatItem id='yw'&gt;<br>
+					e.g. "'week' w 'of' y"</td>
+				<td width="40%"></td>
+			</tr>
+			<tr>
+				<td width="10%">weekOfMonth</td>
+				<td width="20%">week 2 of April<br>2nd week of April</td>
+				<td width="30%">&lt;dateFormatItem id='MMMMW'&gt;<br>
+					e.g. "'week' W 'of' MMM"</td>
+				<td width="40%"></td>
+			</tr>
+			<tr>
+				<td width="10%">weekOfDate</td>
+				<td width="20%">the week of April 11, 2016</td>
+				<td width="30%" rowspan="2">&lt;field type="week"&gt;&lt;relativePeriod&gt;<br>
+					e.g. "the week of {0}"</td>
+				<td width="40%" rowspan="2">The date pattern that replaces {0} is determined
+					separately and may use the first day or workday of the week,
+					the range of the full week or work week, etc.</td>
+			</tr>
+			<tr>
+				<td width="10%">weekOfInterval</td>
+				<td width="20%">the week of April 11–15</td>
+			</tr>
+		</table>
 
 		<h3>
 			4.4 <a name="Time_Data" href="#Time_Data">Time Data</a>
@@ -3410,7 +3507,8 @@ h2, h3, h4, table {
 				<th colspan="2">Description</th>
 			</tr>
 			<tr>
-				<th rowspan="3" style="vertical-align: top; text-align: left">era</th>
+				<th rowspan="3" style="vertical-align: top; text-align: left"><a name='dfst-era' href='#dfst-era'>era</a>
+                </th>
 				<td style="text-align: center; vertical-align: top" rowspan="3">G</td>
 				<td style="text-align: center; vertical-align: top">1..3</td>
 				<td style="vertical-align: top; text-align: left">AD (variant:
@@ -3431,7 +3529,7 @@ h2, h3, h4, table {
 				<td style="vertical-align: top; text-align: left">A</td>
 			</tr>
 			<tr>
-				<th rowspan="7">year</th>
+				<th rowspan="7"><a name='dfst-year' href='#dfst-year'>year</a></th>
 				<td style="text-align: center">y</td>
 				<td style="text-align: center">1..n</td>
 				<td>1996</td>
@@ -3566,7 +3664,7 @@ h2, h3, h4, table {
 					year is the same as the 'u' year.</td>
 			</tr>
 			<tr>
-				<th rowspan="8" style="vertical-align: top; text-align: left">quarter</th>
+				<th rowspan="8" style="vertical-align: top; text-align: left"><a name='dfst-quarter' href='#dfst-quarter'>quarter</a></th>
 				<td style="text-align: center; vertical-align: top" rowspan="4">Q</td>
 				<td style="text-align: center; vertical-align: top">1..2</td>
 				<td style="vertical-align: top; text-align: left">02</td>
@@ -3608,7 +3706,7 @@ h2, h3, h4, table {
 				<td style="vertical-align: top; text-align: left">2</td>
 			</tr>
 			<tr>
-				<th rowspan="9" style="vertical-align: top; text-align: left">month</th>
+				<th rowspan="9" style="vertical-align: top; text-align: left"><a name='dfst-month' href='#dfst-month'>month</a></th>
 				<td rowspan="4" style="text-align: center; vertical-align: top">M</td>
 				<td style="text-align: center; vertical-align: top">1..2</td>
 				<td style="vertical-align: top; text-align: left">09</td>
@@ -3664,7 +3762,7 @@ h2, h3, h4, table {
 					supporting the regular M and L pattern characters.</td>
 			</tr>
 			<tr>
-				<th rowspan="2">week</th>
+				<th rowspan="2"><a name='dfst-week' href='#dfst-week'>week</a></th>
 				<td style="text-align: center">w</td>
 				<td style="text-align: center">1..2</td>
 				<td>27</td>
@@ -3679,7 +3777,7 @@ h2, h3, h4, table {
 				<td colspan="2">Week of Month</td>
 			</tr>
 			<tr>
-				<th rowspan="4">day</th>
+				<th rowspan="4"><a name='dfst-day' href='#dfst-day'>day</a></th>
 				<td style="text-align: center">d</td>
 				<td style="text-align: center">1..2</td>
 				<td>1</td>
@@ -3712,8 +3810,8 @@ h2, h3, h4, table {
 					fields.</td>
 			</tr>
 			<tr>
-				<th rowspan="14" style="vertical-align: top; text-align: left">week<br>
-					day
+				<th rowspan="14" style="vertical-align: top; text-align: left"><a name='dfst-weekday' href='#dfst-weekday'>week<br>
+					day</a>
 				</th>
 				<td rowspan="4" style="text-align: center; vertical-align: top">E</td>
 				<td style="text-align: center; vertical-align: top">1..3</td>
@@ -3786,7 +3884,7 @@ h2, h3, h4, table {
 				<td style="vertical-align: top; text-align: left">Tu</td>
 			</tr>
 			<tr>
-				<th rowspan="9">period</th>
+				<th rowspan="9"><a name='dfst-period' href='#dfst-period'>period</a></th>
 				<td rowspan="3" style="text-align: center">a</td>
 				<td style="text-align: center">1-3</td>
 				<td>12 <strong>am.</strong></td>
@@ -3852,7 +3950,7 @@ h2, h3, h4, table {
 			</tr>
 
 			<tr>
-				<th rowspan="13">hour</th>
+				<th rowspan="13"><a name='dfst-hour' href='#dfst-hour'>hour</a></th>
 				<td style="text-align: center">h</td>
 				<td style="text-align: center">1..2</td>
 				<td>11</td>
@@ -3971,7 +4069,7 @@ h2, h3, h4, table {
 			</tr>
 
 			<tr>
-				<th>minute</th>
+				<th><a name='dfst-minute' href='#dfst-minute'>minute</a></th>
 				<td style="text-align: center">m</td>
 				<td style="text-align: center">1..2</td>
 				<td>59</td>
@@ -3980,7 +4078,7 @@ h2, h3, h4, table {
 					necessary, e.g. "08").</td>
 			</tr>
 			<tr>
-				<th rowspan="3">second</th>
+				<th rowspan="3"><a name='dfst-second' href='#dfst-second'>second</a></th>
 				<td style="text-align: center">s</td>
 				<td style="text-align: center">1..2</td>
 				<td>12</td>
@@ -4010,7 +4108,7 @@ h2, h3, h4, table {
 				</td>
 			</tr>
 			<tr>
-				<th>sep.</th>
+				<th><a name='dfst-sep' href='#dfst-sep'>sep.</a></th>
 				<td>(none def., see note)</td>
 				<td style="text-align: center">1</td>
 				<td></td>
@@ -4030,7 +4128,7 @@ h2, h3, h4, table {
 				</td>
 			</tr>
 			<tr>
-				<th rowspan="23">zone</th>
+				<th rowspan="23"><a name='dfst-zone' href='#dfst-zone'>zone</a></th>
 				<td rowspan="2" style="text-align: center">z</td>
 				<td style="text-align: center">1..3</td>
 				<td>PDT</td>

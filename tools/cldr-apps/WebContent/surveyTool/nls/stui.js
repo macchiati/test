@@ -14,6 +14,7 @@ define({
 		voting: "Voting",
 		checking: "Checking",
 
+		emailHidden: "(hidden)",
 		itemCount: "Items: ${itemCount}",
 		itemCountHidden: "Items shown: ${itemCount}; Items hidden at ${coverage} coverage level: ${skippedDueToCoverage}",
 		itemCountAllHidden: "No items visible due to coverage level.",
@@ -40,6 +41,7 @@ define({
 
 		possibleProblems: "Possible problems with this locale:",
 
+		flyoveradd: "Add another value",
 		flyoverst: "Status Icon",
 		flyoverdraft: "Approval Status",
 		flyovervoted: "Shows a checkmark if you voted",
@@ -151,6 +153,7 @@ define({
 		pClass_loser: "This is a proposed item which is not currently winning.",
 		pClass_fallback: "This item is inherited.", //  ${inheritFromDisplay}.", - removed in r8801
 		pClassExplain_desc: "This area shows the item's status.",
+		followAlias: "Jump to Original ⇒",
 		
 		override_explain_msg: "You have voted for this item with ${overrideVotes} votes instead of the usual ${votes}",
 		voteInfo_overrideExplain_desc: "",
@@ -199,6 +202,7 @@ define({
 		voteInfo_perValue_desc: "This shows the state and voters for a particular item.",
 		voteInfo_moreInfo: "Click here for a full explanation of the icons and their meanings.",
 		voteInfo_acceptInherited: "[Accept Inherited Value]",
+		voteInfo_baileyVoteList: "These votes are for the inherited value. They are also listed under the specific value below.",
 		// CheckCLDR.StatusAction 
 		StatusAction_msg:              "Not submitted: ${0}",
 		StatusAction_popupmsg:         "Sorry, your vote for '${1}' could not be submitted: ${0}", // same as StatusAction_msg but with context

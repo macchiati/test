@@ -31,7 +31,8 @@
     <user name="D" org="guest" level="street" locales="*"/>
     <user name="E" org="afrigen" level="tc" locales="*"/>
     
-    	
+
+
 	<!--  Vote for an item. We choose und to avoid other conflicting data.  --> 
 	<vote name="A" locale="und" xpath="//ldml/localeDisplayNames/keys/key[@type='calendar']">a</vote>  
 	<vote name="B" locale="und" xpath="//ldml/localeDisplayNames/keys/key[@type='calendar']">b</vote>  
@@ -106,4 +107,48 @@
     <vote name="E" locale="zh_Hant" xpath="//ldml/localeDisplayNames/localeDisplayPattern/localeSeparator">{1} na {0}</vote>
     <verify status="approved" locale="zh_Hant" xpath="//ldml/localeDisplayNames/localeDisplayPattern/localeSeparator">{1} na {0}</verify>
  -->
+ 
+  	<!--  testing vote for inherited ↑↑↑ -->
+    <!--  first switch und to AAA -->
+    <vote name="A" locale="und" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']">AAA</vote>
+    <vote name="B" locale="und" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']">AAA</vote>
+    <vote name="C" locale="und" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']">AAA</vote>
+	<verify status="approved" locale="und" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']" >AAA</verify>
+	<verify status="missing" locale="und_ZZ" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']" >AAA</verify>
+	<!--  Now, sublocale vetting. -->
+	<vote name="A" locale="und_ZZ" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']">↑↑↑</vote> <!--  inherited -->
+    <vote name="B" locale="und_ZZ" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']">AAA</vote> <!--  explicit agree -->
+    <vote name="C" locale="und_ZZ" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']">CCC</vote> <!--  (dissenter) -->
+	<verify status="approved" locale="und_ZZ" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']" >AAA</verify> <!-- ↑↑↑ and AAA should be the same, not split.  -->
+	
+    <!--  now switch und to BBB -->
+    <vote name="A" locale="und" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']">BBB</vote>
+    <vote name="B" locale="und" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']">BBB</vote>
+    <vote name="C" locale="und" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']">BBB</vote>
+	<verify status="approved" locale="und" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']" >BBB</verify>
+	<verify status="provisional" locale="und_ZZ" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']" >AAA</verify> <!-- split vote. AAA wins -->
+	
+    <vote name="B" locale="und_ZZ" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']">BBB</vote> <!--  explicit agree -->
+	<verify status="approved" locale="und_ZZ" xpath="//ldml/localeDisplayNames/languages/language[@type='ko']" >BBB</verify> <!-- BBB wins. -->
+ 
+ 	<echo>More ↑↑↑ tests</echo>
+    
+    <!--  Vote in cross item -->
+    <vote name="E" locale="und_ZZ" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/eras/eraAbbr/era[@type='0']">AAA</vote>
+
+ 	<verify status="approved" locale="und_ZZ" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/eras/eraAbbr/era[@type='0']">AAA</verify> <!--  direct -->
+ 	<verify status="missing" locale="und_ZZ" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/eras/eraNarrow/era[@type='0']">AAA</verify> <!--  verify inheritance -->
+    
+    <!--  Put in initial non-split vote for ↑↑↑ -->
+    <vote name="A" locale="und_ZZ" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/eras/eraNarrow/era[@type='0']">↑↑↑</vote>
+    <vote name="B" locale="und_ZZ" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/eras/eraNarrow/era[@type='0']">BBB</vote>
+    <vote name="C" locale="und_ZZ" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/eras/eraNarrow/era[@type='0']">AAA</vote>
+
+ 	<verify status="approved" locale="und_ZZ" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/eras/eraNarrow/era[@type='0']">AAA</verify> <!--  not split- inheritance goes w/ AAA -->
+    <vote name="C" locale="und_ZZ" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/eras/eraNarrow/era[@type='0']">BBB</vote>
+ 	<verify status="approved" locale="und_ZZ" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/eras/eraNarrow/era[@type='0']">BBB</verify> <!--  only one vote for AAA now -->
+    <vote name="E" locale="und_ZZ" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/eras/eraNarrow/era[@type='0']">↑↑↑</vote> <!--  effective vote for AAA -->
+ 	<verify status="approved" locale="und_ZZ" xpath="//ldml/dates/calendars/calendar[@type='gregorian']/eras/eraNarrow/era[@type='0']">AAA</verify> <!--  not split- inheritance goes w/ AAA -->
+	
+ 
 </TestSTFactory>

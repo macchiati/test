@@ -1,4 +1,4 @@
-// survey.js  -Copyright (C) 2012-2014 IBM Corporation and Others. All Rights Reserved.
+// survey.js  -Copyright (C) 2012,2016 IBM Corporation and Others. All Rights Reserved.
 // move anything that's not dynamically generated here.
 
 // These need to be available @ bootstrap time.
@@ -655,9 +655,13 @@ function createGravitar(user) {
  * @return {Object} new DOM object
  */
 function createUser(user) {
+	var userLevelLc = user.userlevelName.toLowerCase();
+	var userLevelClass = "userlevel_"+userLevelLc;
+	var userLevelStr = stui_str(userLevelClass);
 	var div = createChunk(null,"div","adminUserUser");
 	div.appendChild(createGravitar(user));
-	div.appendChild(div.userLevel = createChunk(stui_str("userlevel_"+user.userlevelName.toLowerCase(0)),"i","userlevel_"+user.userlevelName.toLowerCase()));
+	div.userLevel = createChunk(userLevelStr,"i",userLevelClass);
+	div.appendChild(div.userLevel);
 	div.appendChild(div.userName = createChunk(user.name,"span","adminUserName"));
 	if(!user.orgName) {
 	   user.orgName = user.org;
@@ -1309,6 +1313,10 @@ function ariRetry() {
  * @param what - what we were doing
  */
 function handleDisconnect(why, json, word, what) {
+	if(json && (json.err_code === 'E_NOT_LOGGED_IN')) {
+		window.location = 'login.jsp?operationFailed'+window.location.hash;
+		return;
+	}
 	if(!what) {
 		what = "unknown";
 	}
@@ -1749,18 +1757,20 @@ function cloneAnon(i) {
  * @param o
  */
 function localizeAnon(o) {
-	if(o&&o.childNodes) for(var i=0;i<o.childNodes.length;i++) {
-		var k = o.childNodes[i];
-		if(k.id && k.id.indexOf("stui-html")==0) {
-			var key = k.id.slice(5);
-			if(stui[key]) {
-				k.innerHTML=stui[key];
+	loadStui(null, function(stui) {
+		if(o&&o.childNodes) for(var i=0;i<o.childNodes.length;i++) {
+			var k = o.childNodes[i];
+			if(k.id && k.id.indexOf("stui-html")==0) {
+				var key = k.id.slice(5);
+				if(stui.str(key)) {
+					k.innerHTML=stui.str(key);
+				}
+				k.id=null;
+			} else {
+				localizeAnon(k);
 			}
-			k.id=null;
-		} else {
-			localizeAnon(k);
 		}
-	}
+	});
 }
 
 /**
@@ -1773,8 +1783,8 @@ function localizeFlyover(o) {
 		var k = o.childNodes[i];
 		if(k.title && k.title.indexOf("$")==0) {
 			var key = k.title.slice(1);
-			if(stui[key]) {
-				k.title=stui[key];
+			if(stui.str(key)) {
+				k.title=stui.str(key);
 			} else {
 				k.title=null;
 			}
@@ -2498,9 +2508,14 @@ dojo.ready(function() {
 		//for the voter
 		 $('.voteInfo_voterInfo').hover(function() {
 			 	var email = $(this).data('email').replace(' (at) ', '@');
-		    	$(this).html('<a href="mailto:'+email+'" title="'+email+'" style="color:black"><span class="glyphicon glyphicon-envelope"></span></a>');
-		    	$(this).closest('td').css('text-align','center');
-		    	$(this).children('a').tooltip().tooltip('show');
+			 	if(email !== '') {
+			    	$(this).html('<a href="mailto:'+email+'" title="'+email+'" style="color:black"><span class="glyphicon glyphicon-envelope"></span></a>');
+			    	$(this).closest('td').css('text-align','center');
+			    	$(this).children('a').tooltip().tooltip('show');
+			 	} else {
+			    	$(this).html($(this).data('name'));
+			    	$(this).closest('td').css('text-align','left');
+			 	}
 		    }, function() {
 		    	$(this).html($(this).data('name'));
 		    	$(this).closest('td').css('text-align','left');
@@ -2763,12 +2778,14 @@ function showProposedItem(inTd,tr,theRow,value,tests, json) {
 function showItemInfoFn(theRow, item, vHash, newButton, div) {
 	return function(td) {
 		//div.className = 'd-item-selected';
-
+		var isInherited = false;
 		var h3 = document.createElement("div");
 		var displayValue = item.value;
 		if (item.value == '\u2191\u2191\u2191') {
 			displayValue = theRow.inheritedValue;
+			isInherited = true;
 		}
+		
 		var span = appendItem(h3, displayValue, item.pClass); /* no need to pass in 'tr' - clicking this span would have no effect. */
 		setLang(span);
 		h3.className="span";
@@ -2785,7 +2802,20 @@ function showItemInfoFn(theRow, item, vHash, newButton, div) {
 		
 		if ( item.value) {
                h3.appendChild(createChunk(stui.sub("pClass_"+item.pClass, item ),"p","pClassExplain"));
-		 }
+		}
+		if (   item.pClass === 'alias' 
+			|| item.pClass === 'fallback'
+		    || item.pClass === 'fallback_root' ) { 
+			isInherited = true;
+		}
+		
+		if ( isInherited && (theRow.inheritedLocale || theRow.inheritedXpid )) {
+//            h3.appendChild(document.createTextNode(  "Loc:" + ( theRow.inheritedLocale || "none") + ", X:" + ( theRow.inheritedXpid || "none?" ) ));
+			var clickyLink = createChunk(stui.str('followAlias'), "a", 'followAlias');
+			clickyLink.href = '#/'+ ( theRow.inheritedLocale || surveyCurrentLocale )+ 
+				'//'+ ( theRow.inheritedXpid || theRow.xpstrid ); //linkToLocale(subLoc);
+			h3.appendChild(clickyLink);
+		}
         
 		var newDiv = document.createElement("div");
 		td.appendChild(newDiv);
@@ -2920,8 +2950,31 @@ function updateRow(tr, theRow) {
 		if(item.value) {
 			tr.valueToItem[item.value] = item; // back link by value
 			tr.rawValueToItem[item.rawValue] = item; // back link by value
+			if(item.rawValue === '↑↑↑') { // This is a vote for Bailey.
+				item.isVoteForBailey = true;
+				tr.voteForBaileyItem = item;
+			}
+		}
+		if(item.isBailey) {
+			tr.baileyItem = item; // This is the actual Bailey item (target of the votes)
 		}
 	}
+	
+	if(tr.voteForBaileyItem) {
+		// Some people voted for Bailey. Move those votes over to the actual target.
+		if(!tr.baileyItem) {
+			console.error('For ' + theRow.xpstrid + ' - there is no Bailey Target item!');
+			// don't delete the item
+		} else {
+			tr.baileyItem.votes = tr.baileyItem.votes || {};
+			for(var k in tr.voteForBaileyItem.votes) {
+				tr.baileyItem.votes[k] = tr.voteForBaileyItem.votes[k]; //  move vote from ↑↑↑ to explicit item
+				tr.baileyItem.votes[k].isVoteForBailey = true;
+				// no need to remove - will be handled specially below.
+			}
+		}
+	}
+	
 	
 	// update the vote info
 	if(theRow.voteResolver) {
@@ -2984,7 +3037,7 @@ function updateRow(tr, theRow) {
 					//var valueExtra = (value==vr.winningValue)?(" voteInfo_iconValue voteInfo_winningItem d-dr-"+theRow.voteResolver.winningStatus):"";
 					//var voteExtra = (value==vr.lastReleaseValue)?(" voteInfo_lastRelease"):"";
 					var vrow = createChunk(null, "tr", "voteInfo_tr voteInfo_tr_heading");
-					if(!item.votes || Object.keys(item.votes).length==0) {
+					if(!item.isVoteForBailey && (!item.votes || Object.keys(item.votes).length==0)) {
 						//vrow.appendChild(createChunk("","div","voteInfo_orgColumn voteInfo_td"));
 					} else {
 						vrow.appendChild(createChunk(stui.str("voteInfo_orgColumn"),"td","voteInfo_orgColumn voteInfo_td"));
@@ -3009,6 +3062,7 @@ function updateRow(tr, theRow) {
 					setLang(valdiv);
 					if (value == '\u2191\u2191\u2191') {
 						appendItem(valdiv, stui.str("voteInfo_acceptInherited"), "fallback", tr);
+						valdiv.appendChild(createChunk(stui.str('voteInfo_baileyVoteList'), 'p'));
 					} else {
 					    appendItem(valdiv, value, calcPClass(value, vr.winningValue), tr);
 					}
@@ -3023,11 +3077,11 @@ function updateRow(tr, theRow) {
 				
 				var createVoter = function(v) {
 					if(v==null) {
-						return createChunk("(NULL)!","i","stopText");
+						return createChunk("(missing information)!","i","stopText");
 					}
-					var div = createChunk(v.name,"td","voteInfo_voterInfo voteInfo_td");
-					div.setAttribute('data-name',v.name);
-					div.setAttribute('data-email',v.email);
+					var div = createChunk(v.name || stui.str('emailHidden'),"td","voteInfo_voterInfo voteInfo_td");
+					div.setAttribute('data-name', v.name || stui.str('emailHidden'));
+					div.setAttribute('data-email', v.email || '');
 					return div;
 				};
 				
@@ -3040,19 +3094,53 @@ function updateRow(tr, theRow) {
 					vrow.appendChild(createChunk(null, "td","voteInfo_noVotes voteInfo_td"));
 					vdiv.appendChild(vrow);
 					
+				} else if(item.isVoteForBailey) {
+					// show the raw votes.
+					for(var kk in item.votes) {
+						var thevote = item.votes[kk];
+						var vrow = createChunk(null, "tr", "voteInfo_tr voteInfo_orgHeading fallback");
+						vrow.appendChild(createChunk(thevote.org,"td","voteInfo_orgColumn voteInfo_td"));
+						vrow.appendChild(createVoter(thevote)); // voteInfo_td
+//						if(orgsVote) {
+//							var cell = createChunk(null,"td","voteInfo_orgsVote voteInfo_voteCount voteInfo_td");
+//							cell.appendChild(createChunk(orgVoteValue, "span", "badge"));
+//							vrow.appendChild(cell);
+//						}else
+//							vrow.appendChild(createChunk(orgVoteValue,"td","voteInfo_orgsNonVote voteInfo_voteCount voteInfo_td"));
+						vdiv.appendChild(vrow);
+					}
 				} else {
 					for(org in theRow.voteResolver.orgs) {
 						var theOrg = vr.orgs[org];
+						var vrRaw = {};
+												
+						//console.log(vr);
 						var orgVoteValue = theOrg.votes[value];
-						if(orgVoteValue) { // someone in the org actually voted for it
+						if(orgVoteValue !== undefined) { // someone in the org actually voted for it
 							var topVoter = null; // top voter for this item
 							var orgsVote = (theOrg.orgVote == value);
+							var topVoterTime = 0; // Calculating the latest time for a user from same org
+							
 							if(orgsVote) {
 								// find a top-ranking voter to use for the top line
 								for(var voter in item.votes) {
 									if(item.votes[voter].org==org && item.votes[voter].votes==theOrg.votes[value]) {
-										topVoter = voter;
-										break;
+										if(topVoterTime != 0){
+											// Get the latest time vote only
+											if(vr.nameTime[item.votes[topVoter].name] < vr.nameTime[item.votes[voter].name]){
+												topVoter = voter;
+												console.log(item);
+												console.log(vr.nameTime[item.votes[topVoter].name]);
+												topVoterTime = vr.nameTime[item.votes[topVoter].name];
+											}
+										}
+										else{
+											topVoter = voter;
+											console.log(item);
+											console.log(vr.nameTime[item.votes[topVoter].name]);
+											topVoterTime = vr.nameTime[item.votes[topVoter].name];
+										}
+										//break;
 									}
 								}
 							} else {
@@ -3065,20 +3153,25 @@ function updateRow(tr, theRow) {
 								}
 							}
 							
-							
+							//console.log(org);
+							//console.log(orgsVote);
+							//console.log(theOrg);
+							//console.log(value);
+							//console.log(topVoter);
 							// ORG SUBHEADING row
 							{
+								var baileyClass = (item.votes[topVoter].isVoteForBailey)?" fallback":"";
 								var vrow = createChunk(null, "tr", "voteInfo_tr voteInfo_orgHeading");
 								vrow.appendChild(createChunk(org,"td","voteInfo_orgColumn voteInfo_td"));
 								//var isection = createChunk(null, "td", "voteInfo_iconBar");
 								//vrow.appendChild(isection);
 								vrow.appendChild(createVoter(item.votes[topVoter])); // voteInfo_td
 								if(orgsVote) {
-									var cell = createChunk(null,"td","voteInfo_orgsVote voteInfo_voteCount voteInfo_td");
+									var cell = createChunk(null,"td","voteInfo_orgsVote voteInfo_voteCount voteInfo_td"+baileyClass);
 									cell.appendChild(createChunk(orgVoteValue, "span", "badge"));
 									vrow.appendChild(cell);
 								}else
-									vrow.appendChild(createChunk(orgVoteValue,"td","voteInfo_orgsNonVote voteInfo_voteCount voteInfo_td"));
+									vrow.appendChild(createChunk(orgVoteValue,"td","voteInfo_orgsNonVote voteInfo_voteCount voteInfo_td"+baileyClass));
 								vdiv.appendChild(vrow);
 							}
 							
@@ -3090,12 +3183,13 @@ function updateRow(tr, theRow) {
 								}
 								// OTHER VOTER row
 								{
+									var baileyClass = (item.votes[voter].isVoteForBailey)?" fallback":"";
 									var vrow = createChunk(null, "tr", "voteInfo_tr");
 									vrow.appendChild(createChunk("","td","voteInfo_orgColumn voteInfo_td")); // spacer
 									//var isection = createChunk(null, "td", "voteInfo_iconBar");
 									//vrow.appendChild(isection);
 									vrow.appendChild(createVoter(item.votes[voter])); // voteInfo_td
-									vrow.appendChild(createChunk(item.votes[voter].votes,"td","voteInfo_orgsNonVote voteInfo_voteCount voteInfo_td"));
+									vrow.appendChild(createChunk(item.votes[voter].votes,"td","voteInfo_orgsNonVote voteInfo_voteCount voteInfo_td"+baileyClass));
 									vdiv.appendChild(vrow);
 								}
 							}
@@ -3343,7 +3437,7 @@ function updateRow(tr, theRow) {
 		// find the fallback value
 		var theFallbackValue = null;
 		for(var k in theRow.items) {
-			if(theRow.items[k].isFallback) {
+			if(theRow.items[k].isFallback || theRow.winningValue == "") {
 				theFallbackValue = k;
 			}
 		}
@@ -3472,9 +3566,10 @@ function updateRow(tr, theRow) {
 	
 	//add the other vote info
 	for(k in theRow.items) {
-		if(k == theRow.winningVhash) {
-			continue; // skip the winner
-		}
+		if((k === theRow.winningVhash) // skip vote for winner
+		   || (theRow.items[k].isVoteForBailey)) { // skip vote for ↑↑↑
+					continue;
+				}
 		hadOtherItems=true;
 		addVitem(children[config.othercell],tr,theRow,theRow.items[k],cloneAnon(protoButton));
 		children[config.othercell].appendChild(document.createElement("hr"));
@@ -3909,19 +4004,22 @@ function insertRows(theDiv,xpath,session,json) {
 	//wrapRadios();
 }
 
-function loadStui(loc) {
+function loadStui(loc, cb) {
 	if(!stui.ready) {
 		require(["dojo/i18n!./surveyTool/nls/stui.js"], function(stuibundle){
-		if(!stuidebug_enabled) {
-			stui.str = function(x) { if(stuibundle[x]) return stuibundle[x]; else return x; };
-			stui.sub = function(x,y) { return dojo.string.substitute(stui.str(x), y);};
-		} else {
-			stui.str = stui_str; // debug
-			stui.sub = function(x,y) { return stui_str(x) + '{' +  Object.keys(y) + '}'; };
-		}
-		stui.htmlbaseline = BASELINE_LANGUAGE_NAME;
-		stui.ready=true;
+			if(!stuidebug_enabled) {
+				stui.str = function(x) { if(stuibundle[x]) return stuibundle[x]; else return x; };
+				stui.sub = function(x,y) { return dojo.string.substitute(stui.str(x), y);};
+			} else {
+				stui.str = stui_str; // debug
+				stui.sub = function(x,y) { return stui_str(x) + '{' +  Object.keys(y) + '}'; };
+			}
+			stuibundle.htmlbaseline = stui.htmlbaseline = BASELINE_LANGUAGE_NAME;
+			stui.ready=true;
+			if(cb) cb(stui);
 		});
+	} else {
+		if(cb) cb(stui);
 	}
 	return stui;
 }
@@ -4124,7 +4222,7 @@ function showV() {
 	        		 domConstruct,
 	        		 dojoNumber
 	         ) {
-
+		loadStui(null, function(/*stui*/) {
 
 		var appendLocaleLink = function appendLocaleLink(subLocDiv, subLoc, subInfo, fullTitle) {
 			var name = locmap.getRegionAndOrVariantName(subLoc);
@@ -6259,7 +6357,7 @@ function showV() {
 				}
 		});
 		});
-
+		}); // end stui  load
 	});  // end require()
 } // end showV
 
@@ -7113,8 +7211,7 @@ function loadAdminPanel() {
  * @param {String} hname the name of the element to draw into
  */
 function showstats(hname) {
-	dojo.ready(function() {
-		loadStui();
+	dojo.ready(loadStui(null, function(/*stui*/) {
 		var ourUrl = contextPath + "/SurveyAjax?what=stats_byday";
 		var errorHandler = function(err, ioArgs) {
 			handleDisconnect('Error in showstats: ' + err + ' response '
@@ -7200,7 +7297,7 @@ function showstats(hname) {
 		error : errorHandler
 	};
 	queueXhr(xhrArgs);
-	});
+	}));
 }
 /**
  * @method refreshCounterVetting
@@ -7563,6 +7660,7 @@ function showRecent(divName, locale, user) {
 
 // for the admin page
 function showUserActivity(list, tableRef) {
+	loadStui(null, function(/*stui*/) {
 	require([
 	         "dojo/ready",
 	         "dojo/dom",
@@ -7580,7 +7678,6 @@ function showUserActivity(list, tableRef) {
 	        		 dojoNumber
 	        ) { ready(function(){
 	        	
-	        	loadStui();
 	        	
 	        	window._userlist = list; // DEBUG
 	        	var table = dom.byId(tableRef);
@@ -7731,4 +7828,5 @@ function showUserActivity(list, tableRef) {
 */	        
 	        });
 		});
+	});
 }

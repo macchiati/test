@@ -94,7 +94,7 @@ h2, h3, h4, table {
 		<table border="1" cellpadding="2" cellspacing="0" class="wide">
 			<tr>
 				<td>Version</td>
-				<td>29</td>
+				<td>30</td>
 			</tr>
 			<tr>
 				<td>Editors</td>
@@ -290,7 +290,7 @@ h2, h3, h4, table {
 				</ul>
 			</li>
 			<li>13 <a href="#Choice_Patterns">Choice Patterns</a></li>
-			<li>14 <a href="#Annotations">Annotations</a></li>
+			<li>14 <a href="#Annotations">Annotations and Labels</a></li>
 		</ul>
 		<!-- END Generated TOC: CheckHtmlFiles -->
 		<h2>
@@ -609,9 +609,7 @@ h2, h3, h4, table {
 
 		<p class="element2">&lt;transformNames&gt;</p>
 
-		<p>This contains a list of elements that provide the
-			user-translated names for transforms that are not script or
-			locale-based, such as FULLWIDTH.</p>
+		<p>&nbsp; </p>
 
 		<blockquote>
 			<pre>&lt;transformName type="<span style="color: blue">Numeric</span>"&gt;<span
@@ -4066,7 +4064,7 @@ h2, h3, h4, table {
 		<p>Quoting is done using ' characters, as in date or number
 			formats.</p>
 		<h2>
-			14 <a name="Annotations" href="#Annotations">Annotations</a>
+			14 <a name="Annotations" href="#Annotations">Annotations and Labels</a>
 		</h2>
 		<p>Annotations provide information about characters, typically
 			used in input. For example, on a mobile keyboard they can be used to
@@ -4076,39 +4074,328 @@ h2, h3, h4, table {
 		<p class="dtd">&lt;!ELEMENT annotations ( annotation* ) &gt;</p>
 		<p class="dtd">&lt;!ELEMENT annotation ( #PCDATA ) &gt;</p>
 		<p class="dtd">&lt;!ATTLIST annotation cp CDATA #REQUIRED &gt;</p>
-		<p class="dtd">&lt;!ATTLIST annotation tts CDATA #IMPLIED &gt;</p>
+		<p class="dtd">&lt;!ATTLIST annotation type (tts) #IMPLIED &gt;</p>
 
-		<p>The value of an annotation element is a semicolon-delimited
-			list, such as the following for English and German respectively.</p>
+		<p>There are two kinds of annotations: <strong>short names</strong>, and <strong>keywords</strong>.</p>
+      <p>With an attribute <strong>type="tts"</strong>, the value is  a <strong>short name</strong>, such as one that can be used for text-to-speech. It should be treated as one of the element values for other
+          purposes.</p>
+        <p>When there is no<strong> type </strong>attribute, the value is a set of <strong>keywords</strong>, delimited by |. Spaces around each element are to be trimmed. The <strong>keywords</strong> are  words associated with the character(s) that might be used in searching for the character, or in predictive typing on keyboards. The short name itself can be used as a keyword.</p>
+        <p>Here is an example from German:</p>
 
 		<pre class="example">
-			&lt;annotation cp='[👎]'&gt;-1; thumbs down&lt;/annotation&gt;
-&lt;annotation cp='[👎]' tts='Daumen runter'&gt;Hand; Daumen&lt;/annotation&gt;
-		</pre>
+&lt;annotation cp="👎"&gt;schlecht | Hand | Daumen | nach unten&lt;/annotation&gt;
+&lt;annotation cp="👎" type="tts"&gt;Daumen runter&lt;/annotation&gt;
+</pre>
 
-		<p>The values do not have to match between different languages;
-			they should be the most common values that people using that language
-			would associated with those characters. The tts attribute value, if
-			present, is a value that can be used for text-to-speech, when reading
-			text. It should be treated as one of the element values for other
-			purposes. The Unicode character name can be used for English, when
-			the tts value is not present.</p>
-
-		<p>The cp attribute value is a UnicodeSet, and can thus contain
-			multiple code points. A code point can occur in multiple annotation
-			element cp values, such as the following, which also contains the
+		<p>The cp attribute value has two formats: either a single string, or if contained within […] a UnicodeSet. The latter format can contain 
+			multiple code points or strings. A code point pr string can occur in multiple annotation
+			element <strong>cp</strong> values, such as the following, which also contains the
 			&quot;thumbs down&quot; character.</p>
+		<pre class="example"><span >&lt;annotation cp='[☝✊-✍👆-👐👫-👭💁🖐🖕🖖🙅🙆🙋🙌🙏🤘]'&gt;hand&lt;/annotation&gt;</span></pre>
+		<p>Both for short names and keywords, values do not have to match between different languages. They should be the most common values that people using <em>that</em> language
+			would associated with those characters. For example, a &quot;black heart&quot; might
+			have the association of &quot;wicked&quot; in English, but not in some other languages.</p>
+		<p>The cp value may contain sequences, but does not contain any Emoji or Text
+  		Variant (VS15 &amp; VS16) characters. All such characters should be removed before looking up any short names and keywords.</p>
+		<h3>
+			14.1 <a name="SynthesizingNames" href="#SynthesizingNames">Synthesizing Sequence Names</a>
+		</h3>
+		<p>Many emoji are represented by sequences of characters. When there are no annotation
+			elements for that string, the short name can be synthesized as follows.
+			<strong>Note:</strong> The process details may change after the release of this
+			specification, and may further change in the future if other sequences are added.
+			Please see the <a href='https://sites.google.com/site/cldr/index/downloads/cldr-30#TOC-Known-Issues'>Known
+			Issues</a> section of the CLDR download page for any updates.</p>
+		<ol>
+		  <li>If  <strong>sequence</strong> is an emoji flag sequence, look up the territory name in CLDR for the
+		  		corresponding ASCII characters and return as the short name. For example, the regional
+		  		indicator symbols P+F would map to “Französisch-Polynesien” in German.</li>
+		  <li>If  <strong>sequence</strong> is a keycap sequence or 🔟, use the characterLabel for &quot;keycap&quot;
+		  		as the <strong>prefixName</strong> and  set the <strong>suffix</strong> to be the sequence (or &quot;10&quot; in the case of 🔟), then go to step 8.</li>
+		  <li>Let<strong> suffix</strong> be &quot;&quot;.</li>
+		  <li>If  <strong>sequence</strong> contains any emoji modifiers, move them (in order) into <strong>suffix</strong>, removing them from  <strong>sequence</strong>.		  </li>
+		  <li>If  <strong>sequence</strong> is a &quot;KISS&quot;, &quot;HEART&quot; or &quot;FAMILY&quot; emoji
+		  		ZWJ sequence, move the characters in  <strong>sequence</strong> to the front of <strong>suffix</strong>, and set the <strong>sequence</strong> to be  &quot;💏&quot;, &quot;💑&quot;, or &quot;👪&quot;
+		  		respectively, and go to step 7.
+		        <ol>
+		      <li>A KISS sequence contains ZWJ, &quot;💋&quot;,  and &quot;❤&quot;, which are skipped in moving to <strong>suffix</strong>.</li>
+		      <li>A HEART sequence contains ZWJ and &quot;❤&quot;, which are skipped in moving to <strong>suffix</strong>.</li>
+		      <li>A FAMILY sequence contains only characters from the set {👦, 👧, 👨, 👩, 👴, 👵, 👶}.
+		      		Nothing is skipped in  moving to <strong>suffix</strong>, except ZWJ.</li>
+	        </ol>
+		  </li>
+		  <li>If   <strong>sequence</strong> ends with ♂ or ♀, and does not have a name, remove the ♂ or ♀  and move &quot;👨&quot; or
+	      &quot;👩&quot; respectively to the start of <strong>suffix</strong>.</li>
+		  <li>Transform   <strong>sequence</strong> into <strong>prefixName</strong>, by successively getting  names for the longest subsequences, skipping any singleton ZWJ characters. If there is more than one name,  use the listPattern for unit-short, type=2 to link them.</li>
+		  <li>Transform <strong>suffix</strong> into <strong>suffixName</strong> in the same manner.</li>
+		  <li>If both the <strong>prefixName</strong> and <strong>suffixName</strong> are non-empty, form the name by joining them with the  &quot;category-list&quot; characterLabelPattern and return it. Otherwise return whichever of them is non-empty.</li>
+	    </ol>
+		<p>The synthesized keywords can follow a similar process.</p>
+		<ol>
+		  <li>For flag sequences, use &quot;flag&quot;.</li>
+		  <li>For keycap sequences, use &quot;keycap&quot;.</li>
+		  <li>For other sequences, add the keywords for the subsequences used to get the short names for <strong>prefixName</strong>, and the short names used for <strong>suffixName</strong>.</li>
+	    </ol>
+		<p>Some examples for   English data (v30) are given in the following table.</p>
+	  <table cellspacing="0" cellpadding="2" border="1">
+        <caption>Synthesized Emoji Sequence Names</caption>
+		  <tbody>
+		    <tr>
+		      <th>Sequence</th>
+		      <th>Short Name</th>
+		      <th>Keywords</th>
+	        </tr>
+		    <tr>
+		      <td>🇪🇺</td>
+		      <td>European Union</td>
+		      <td>flag</td>
+	        </tr>
+		    <tr>
+		      <td>#️⃣</td>
+		      <td>keycap: #</td>
+		      <td>keycap</td>
+	        </tr>
+		    <tr>
+		      <td>9️⃣</td>
+		      <td>keycap: 9</td>
+		      <td>keycap</td>
+	        </tr>
+		    <tr>
+		      <td>💏</td>
+		      <td>kiss</td>
+		      <td>couple</td>
+	        </tr>
+		    <tr>
+		      <td>👩‍❤️‍💋‍👩</td>
+		      <td>kiss: woman, woman</td>
+		      <td>couple, woman</td>
+	        </tr>
+		    <tr>
+		      <td>💑</td>
+		      <td>couple with heart</td>
+		      <td>love, couple</td>
+	        </tr>
+		    <tr>
+		      <td>👩‍❤️‍👩</td>
+		      <td>couple with heart: woman, woman</td>
+		      <td>love, couple, woman</td>
+	        </tr>
+		    <tr>
+		      <td>👪</td>
+		      <td>family</td>
+		      <td>family</td>
+	        </tr>
+		    <tr>
+		      <td>👩‍👩‍👧</td>
+		      <td>family: woman, woman, girl</td>
+		      <td>woman, family, girl</td>
+	        </tr>
+		    <tr>
+		      <td>👦🏻</td>
+		      <td>boy: light skin tone</td>
+		      <td>young, light skin tone, boy</td>
+	        </tr>
+		    <tr>
+		      <td>👩🏿</td>
+		      <td>woman: dark skin tone</td>
+		      <td>woman, dark skin tone</td>
+	        </tr>
+		    <tr>
+		      <td>👨‍⚖</td>
+		      <td>man judge</td>
+		      <td>scales, justice, man</td>
+	        </tr>
+		    <tr>
+		      <td>👨🏿‍⚖</td>
+		      <td>man judge: dark skin tone</td>
+		      <td>scales, justice, dark skin tone, man</td>
+	        </tr>
+		    <tr>
+		      <td>👩‍⚖</td>
+		      <td>woman judge</td>
+		      <td>woman, scales, judge</td>
+	        </tr>
+		    <tr>
+		      <td>👩🏼‍⚖</td>
+		      <td>woman judge: medium-light skin tone</td>
+		      <td>woman, scales, medium-light skin tone, judge</td>
+	        </tr>
+		    <tr>
+		      <td>👮</td>
+		      <td>police officer</td>
+		      <td>police, cop, officer</td>
+	        </tr>
+		    <tr>
+		      <td>👮🏿</td>
+		      <td>police officer: dark skin tone</td>
+		      <td>police, cop, officer, dark skin tone</td>
+	        </tr>
+		    <tr>
+		      <td>👮‍♂️</td>
+		      <td>man police officer</td>
+		      <td>police, cop, officer, man</td>
+	        </tr>
+		    <tr>
+		      <td>👮🏼‍♂️</td>
+		      <td>man police officer: medium-light skin tone</td>
+		      <td>police, cop, officer, medium-light skin tone, man</td>
+	        </tr>
+		    <tr>
+		      <td>👮‍♀️</td>
+		      <td>woman police officer</td>
+		      <td>police, woman, cop, officer</td>
+	        </tr>
+		    <tr>
+		      <td>👮🏿‍♀️</td>
+		      <td>woman police officer: dark skin tone</td>
+		      <td>police, woman, cop, officer, dark skin tone</td>
+	        </tr>
+		    <tr>
+		      <td>🚴</td>
+		      <td>person biking</td>
+		      <td>cyclist, bicycle, biking</td>
+	        </tr>
+		    <tr>
+		      <td>🚴🏿</td>
+		      <td>person biking: dark skin tone</td>
+		      <td>cyclist, bicycle, biking, dark skin tone</td>
+	        </tr>
+		    <tr>
+		      <td>🚴‍♂️</td>
+		      <td>man biking</td>
+		      <td>cyclist, bicycle, biking, man</td>
+	        </tr>
+		    <tr>
+		      <td>🚴🏿‍♂️</td>
+		      <td>man biking: dark skin tone</td>
+		      <td>cyclist, bicycle, biking, dark skin tone, man</td>
+	        </tr>
+		    <tr>
+		      <td>🚴‍♀️</td>
+		      <td>woman biking</td>
+		      <td>cyclist, woman, bicycle, biking</td>
+	        </tr>
+		    <tr>
+		      <td>🚴🏿‍♀️</td>
+		      <td>woman biking: dark skin tone</td>
+		      <td>cyclist, woman, bicycle, biking, dark skin tone</td>
+	        </tr>
+	      </tbody>
+	  </table>
 
-		<pre class="example">
-			&lt;annotation cp='[☝✊-✍👆-👐👫-👭💁🖐🖕🖖🙅🙆🙋🙌🙏🤘]'&gt;hand&lt;/annotation&gt;
-		</pre>
 
-		<p>
+	  <p>
 			For more information, see <a href='http://unicode.org/reports/tr51'>Unicode
 				Emoji</a>.
 		</p>
+	  		<h3>
+			14.1 <a name="Character_Labels" href="#Character_Labels">Annotations Character Labels</a>
+		</h3>
+	  		<p class="dtd">&lt;!ELEMENT characterLabels ( alias | ( characterLabelPattern*, characterLabel*, special* ) ) &gt; </p>
+	  		<p class="dtd">&lt;!ELEMENT characterLabelPattern ( #PCDATA ) &gt; </p>
+	  		<p class="dtd">&lt;!ATTLIST characterLabelPattern type NMTOKEN #REQUIRED &gt;</p>
+	  		<p class="dtd">&lt;!ATTLIST characterLabelPattern count (0 | 1 | zero | one | two | few | many | other) #IMPLIED &gt;     &lt;!-- count only used for certain patterns&quot; --&gt;</p>
+	  		<p class="dtd">&lt;!ELEMENT characterLabel ( #PCDATA ) &gt; </p>
+	  		<p class="dtd">&lt;!ATTLIST characterLabel type NMTOKEN #REQUIRED &gt;</p>
+            <p>The character labels can be used for categories or groups of characters in a character picker or keyboard palette. They have the above structure. Items with special meanings are explained below. Many of the categories are based on terms used in Unicode. Consult the <a href='http://www.unicode.org/glossary/'>Unicode Glossary</a> where the meaning is not clear.</p>
+<p>The following are special patterns used in composing labels.</p>
+<table>
+<caption>characterLabelPattern</caption>
+<tr>
+  <th>Type</th>
+  <th>English</th>
+  <th>Description of the group specified.</th>
+</tr>
+<tr><th>all</th><td>{0} — all</td>
+<td>Used where the title {0} is just a subset. For example, {0} might be &quot;Latin&quot;, and contain the most common Latin characters. Then &quot;Latin — all&quot; would be all of them.</td></tr>
+<tr><th>category-list</th><td>{0}: {1}</td>
+<td>Use for a name, where {0} is the main item like &quot;Family&quot;, and {1} is a list of one or more components or subcategories. The list is formatted using a list pattern.</td></tr>
+<tr><th>compatibility</th><td>{0} — compatibility</td>
+<td>For grouping Unicode compatibility characters separately, such as &quot;Arabic — compatibility&quot;.</td></tr>
+<tr><th>enclosed</th><td>{0} — enclosed</td>
+<td>For indicating enclosed forms, such as &quot;digits — enclosed&quot;</td></tr>
+<tr><th>extended</th><td>{0} — extended</td>
+<td>For indicating a group of &quot;extended&quot; characters (special use, technical, etc.)</td></tr>
+<tr><th>historic</th><td>{0} — historic</td>
+  <td>For indicating a group of &quot;historic&quot; characters (no longer in common use).</td></tr>
+<tr><th>miscellaneous</th><td>{0} — miscellaneous</td>
+  <td>For indicating a group of &quot;miscellaneous&quot; characters (typically that don't fall into a broader class).</td></tr>
+<tr><th>other</th><td>{0} — other</td>
+  <td>Used where the title {0} is just a subset. For example, {0} might be &quot;Latin&quot;, and contain the most common Latin characters. Then &quot;Latin — other&quot; would be the rest of them.</td></tr>
+<tr><th>scripts</th><td>scripts — {0}</td>
+<td>For indicating a group of &quot;scripts&quot; characters matching {0}. The value for {0} may be a geographic indicator, like &quot;Africa&quot; (although there are specific combinations listed below), or some other designation, like &quot;other&quot; (from below).</td></tr>
+<tr>
+  <th>strokes</th><td>{0} strokes</td>
+  <td>Used as an index title for CJK characters. It takes a &quot;count&quot; value, which allows the right plural form to be specified for the language.</td></tr>
+</table>
+<p>The following are character labels. Where the meaning of the label is fairly clear (like "animal") or is in the Unicode glossary, it is omitted.</p>
+<table>
+<caption>characterLabel</caption>
+<tr><th>activities</th><td>activity</td>
+<td>Human activities, such as running.</td></tr>
+<tr><th>african_scripts</th><td>African script</td>
+<td>Scripts associated with the continent of Africa.</td></tr>
+<tr><th>american_scripts</th><td>American script</td>
+<td>Scripts associated with the continents of North and South America.</td></tr>
+<tr><th>animals_nature</th><td>animal or nature</td>
+  <td>A broad category uses for </td></tr>
+<tr><th>arrows</th><td>arrow</td>
+<td>Arrow symbols</td></tr>
+<tr><th>body</th><td>body</td>
+<td>Symbols for body parts, such as an arm.</td></tr>
+<tr><th>box_drawing</th><td>box drawing</td>
+<td>Unicode box-drawing characters (geometric shapes)</td></tr>
+<tr><th>bullets_stars</th><td>bullet or star</td>
+<td>Unicode bullets (such as • or ‣ or ⁍) or stars (★✩✪✵...)</td></tr>
+<tr><th>consonantal_jamo</th><td>consonantal jamo</td>
+  <td>Korean Jamo consonants.</td></tr>
+<tr><th>currency_symbols</th><td>currency symbol</td>
+  <td>Symbols such as $, ¥, £</td></tr>
+<tr><th>dash_connector</th><td>dash or connector</td>
+  <td>Characters like _ or ⁓</td></tr>
+<tr><th>dingbats</th><td>dingbat</td>
+<td>Font dingbat characters, such as ❿ or ♜.</td></tr>
+<tr><th>downwards_upwards_arrows</th><td>downwards upwards arrow</td>
+  <td>⇕,...</td></tr>
+<tr><th>female</th><td>female</td>
+<td>Indicates that a character is female or feminine in appearance.</td></tr>
+<tr><th>format</th><td>format</td>
+<td>A Unicode format character.</td></tr>
+<tr><th>format_whitespace</th><td>format &amp; whitespace</td>
+  <td>A Unicode format character or whitespace.</td></tr>
+<tr><th>full_width_form_variant</th><td>full-width variant</td>
+  <td>Full width variant, such as a wide A.</td></tr>
+<tr><th>half_width_form_variant</th><td>half-width variant</td>
+<td>Narrow width variant, such as a half-width katakana character.</td></tr>
+<tr><th>han_characters</th><td>Han character</td>
+  <td>Han (aka CJK: Chinese, Japanese, or Korean) ideograph</td></tr>
+<tr><th>han_radicals</th><td>Han radical</td>
+  <td>Radical (component) used in Han characters.</td></tr>
+<tr><th>hanja</th><td>hanja</td>
+  <td>Korean name for Han character.</td></tr>
+<tr><th>hanzi_simplified</th><td>Hanzi (simplified)</td>
+  <td>Simplified Chinese ideograph</td></tr>
+<tr><th>hanzi_traditional</th><td>Hanzi (traditional)</td>
+  <td>Traditional Chinese ideograph</td></tr>
+<tr><th>historic_scripts</th><td>historic script</td>
+  <td>Script no longer in common modern usage, such as Runes or Hieroglyphs.</td></tr>
+<tr><th>ideographic_desc_characters</th><td>ideographic desc. character</td>
+  <td>Special Unicode characters (see the glossary).</td></tr>
+<tr><th>kanji</th><td>kanji</td>
+  <td>Japanese Han ideograph</td></tr>
+<tr><th>keycap</th><td>keycap</td>
+  <td>A key on a computer keyboard or phone. For example, the &quot;3&quot; key on a phone or laptop would be &quot;keycap: 3&quot;</td></tr>
+<tr><th>limited_use</th><td>limited-use</td>
+<td>Not in common modern use.</td></tr>
+<tr><th>male</th><td>male</td>
+  <td>Indicates that a character is male or masculine in appearance.</td></tr>
+<tr><th>modifier</th><td>modifier</td>
+<td>A Unicode modifier letter or symbol.</td></tr>
+<tr><th>nonspacing</th><td>nonspacing</td>
+  <td>Uses for characters that occupy no width by themselves, such as the ¨ over the a in ä.</td></tr>
+</table>
 
-		<hr>
+	  <hr>
 		<p class="copyright">
 			Copyright © 2001–2016 Unicode, Inc. All
 			Rights Reserved. The Unicode Consortium makes no expressed or implied
