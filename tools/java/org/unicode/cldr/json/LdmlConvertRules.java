@@ -24,6 +24,7 @@ class LdmlConvertRules {
     // common/main
     static final ImmutableSet<String> NAME_PART_DISTINGUISHING_ATTR_SET = ImmutableSet.of(
         "monthWidth:month:yeartype",
+        "characters:parseLenients:scope",
         "dateFormat:pattern:numbers",
         "currencyFormats:unitPattern:count",
         "currency:displayName:count",
@@ -40,6 +41,7 @@ class LdmlConvertRules {
         "field:relative:type",
         "field:relativeTime:type",
         "relativeTime:relativeTimePattern:count",
+        "availableFormats:dateFormatItem:count",
         "listPatterns:listPattern:type",
         "timeZoneNames:regionFormat:type",
         "units:durationUnit:type",
@@ -47,6 +49,8 @@ class LdmlConvertRules {
         "weekData:firstDay:territories",
         "weekData:weekendStart:territories",
         "weekData:weekendEnd:territories",
+        "unitPreferenceDataData:unitPreferences:category",
+        "measurementData:measurementSystem:category",
         "supplemental:plurals:type",
         "pluralRules:pluralRule:count",
         "languageMatches:languageMatch:desired");
@@ -257,12 +261,14 @@ class LdmlConvertRules {
         new SplittableAttributeSpec("weekendStart", "territories", "day"),
         new SplittableAttributeSpec("weekendEnd", "territories", "day"),
         new SplittableAttributeSpec("measurementSystem", "territories", "type"),
+        new SplittableAttributeSpec("measurementSystem-category-temperature", "territories", "type"),
         new SplittableAttributeSpec("paperSize", "territories", "type"),
         new SplittableAttributeSpec("parentLocale", "locales", "parent"),
         new SplittableAttributeSpec("hours", "regions", null),
         new SplittableAttributeSpec("dayPeriodRules", "locales", null),
         // new SplittableAttributeSpec("group", "contains", "group"),
-        new SplittableAttributeSpec("personList", "locales", "type")
+        new SplittableAttributeSpec("personList", "locales", "type"),
+        new SplittableAttributeSpec("unitPreference", "regions", null)
     };
 
     /**
@@ -291,7 +297,7 @@ class LdmlConvertRules {
     public static final String[] ELEMENT_NEED_SORT = {
         "zone", "timezone", "zoneItem", "typeMap", "dayPeriodRule",
         "pluralRules", "personList", "calendarPreferenceData", "character-fallback", "types", "timeData", "minDays",
-        "firstDay", "weekendStart", "weekendEnd"
+        "firstDay", "weekendStart", "weekendEnd", "measurementData", "measurementSystem"
     };
 
     /**
@@ -428,6 +434,8 @@ class LdmlConvertRules {
         new PathTransformSpec("(.*/transforms/transform[^/]*)/(.*)", "$1/tRules/$2"),
         new PathTransformSpec("(.*)\\[@territories=\"([^\"]*)\"\\](.*)\\[@alt=\"variant\"\\](.*)", "$1\\[@territories=\"$2-alt-variant\"\\]"),
         new PathTransformSpec("(.*)/weekData/(.*)\\[@alt=\"variant\"\\](.*)", "$1/weekData/$2$3"),
-        
+        new PathTransformSpec("(.*)/unitPreferenceData/unitPreferences\\[@category=\"([^\"]*)\"\\]\\[@usage=\"([^\"]*)\"\\](.*)",
+            "$1/unitPreferenceData/unitPreferences/$2/$3$4"),
+       
     };
 }
