@@ -1,5 +1,6 @@
 package org.unicode.cldr.unittest;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -26,6 +27,7 @@ import org.unicode.cldr.util.XPathParts;
 import com.ibm.icu.impl.Row.R2;
 
 public class TestSubdivisions extends TestFmwkPlus {
+    private static final String SUB_DIR = CLDRPaths.COMMON_DIRECTORY + "subdivisions/";
     static final SupplementalDataInfo SDI = CLDRConfig.getInstance().getSupplementalDataInfo();
 
     public static void main(String[] args) {
@@ -36,7 +38,7 @@ public class TestSubdivisions extends TestFmwkPlus {
         Set<String> containers = SDI.getContainersForSubdivisions();
         assertNotNull("subdivision containers", containers);
         Set<String> states = SDI.getContainedSubdivisions("US");
-        
+
         assertRelation("US contains CA", true, states, TestFmwkPlus.CONTAINS, "usca");
 
         /*
@@ -53,16 +55,32 @@ public class TestSubdivisions extends TestFmwkPlus {
     }
 
 
-    public void TestEnglishNames() {
+    public void TestNames() {
         final Map<String, R2<List<String>, String>> subdivisionAliases = SDI.getLocaleAliasInfo().get("subdivision");
+        // <subdivisionAlias type="CN-71" replacement="TW" reason="overlong"/>
+        //        R2<List<String>, String> region = subdivisionAliases.get(value);
         final Validity VALIDITY = Validity.getInstance();
-        Set<String> deprecated = VALIDITY.getStatusToCodes(LstrType.subdivision).get(Status.deprecated);
+        Map<String, Status> deprecated = VALIDITY.getCodeToStatus(LstrType.subdivision);
 
-        List<Pair<String, String>> data = new ArrayList<>();
-        XMLFileReader.loadPathValues(CLDRPaths.COMMON_DIRECTORY + "subdivisions/en.xml", data, true);
-        ChainedMap.M4<String, String, String, Boolean> countryToNameToSubdivisions = ChainedMap.of(
-            new TreeMap<String, Object>(), new TreeMap<String, Object>(), new TreeMap<String, Object>(), Boolean.class);
+        for (String file : new File(SUB_DIR).list()) {
+            if (!file.endsWith(".xml")) {
+                continue;
+            }
+            checkSubdivisionFile(file, subdivisionAliases, deprecated);
+        }
+    }
+
+    private void checkSubdivisionFile(String file, 
+        final Map<String, R2<List<String>, String>> subdivisionAliases, 
+        Map<String, Status> deprecated) {
+        String lang = file.replace(".xml", "");
         
+        List<Pair<String, String>> data = new ArrayList<>();
+        XMLFileReader.loadPathValues(SUB_DIR + file, data, true);
+        logln(file + "\t" + data.size());
+        ChainedMap.M4<String, String, String, Status> countryToNameToSubdivisions = ChainedMap.of(
+            new TreeMap<String, Object>(), new TreeMap<String, Object>(), new TreeMap<String, Object>(), Status.class);
+
         for (Pair<String, String> entry : data) {
             // <subdivision type="AD-02">Canillo</subdivision>
             XPathParts parts = XPathParts.getFrozenInstance(entry.getFirst());
@@ -72,7 +90,7 @@ public class TestSubdivisions extends TestFmwkPlus {
             String name = entry.getSecond();
             final String subdivision = parts.getAttributeValue(-1, "type");
             String country = subdivision.substring(0, 2);
-            
+
             // if there is an alias, we're ok, don't bother with it
             R2<List<String>, String> subdivisionAlias = subdivisionAliases.get(subdivision);
             if (subdivisionAlias != null) {
@@ -80,25 +98,25 @@ public class TestSubdivisions extends TestFmwkPlus {
                 // assertEquals("country " + country + " = subdivision " + subdivision, countryName, value);
                 continue;
             }
-            countryToNameToSubdivisions.put(country, name, subdivision, deprecated.contains(subdivision.replace("-","").toLowerCase(Locale.ROOT)));
+            countryToNameToSubdivisions.put(country, name, subdivision, deprecated.get(subdivision));
         }
         // now look for uniqueness
         LinkedHashSet<String> problemSet = new LinkedHashSet<>();
-        for (Entry<String, Map<String, Map<String, Boolean>>> entry1 : countryToNameToSubdivisions) {
-            String country = entry1.getKey();
-            for (Entry<String, Map<String, Boolean>> entry2 : entry1.getValue().entrySet()) {
+        for (Entry<String, Map<String, Map<String, Status>>> entry1 : countryToNameToSubdivisions) {
+            String country = entry1.getKey().toUpperCase(Locale.ROOT);
+            for (Entry<String, Map<String, Status>> entry2 : entry1.getValue().entrySet()) {
                 String name = entry2.getKey();
-                Map<String, Boolean> subdivisionMap = entry2.getValue();
+                Map<String, Status> subdivisionMap = entry2.getValue();
                 if (subdivisionMap.size() == 1) {
                     continue;
                 }
-                logln("Name «" + name + "» for "+ subdivisionMap.keySet());
+                logln(lang + "," + country + "Name «" + name + "» for "+ subdivisionMap.keySet());
                 // we have multiple names.
                 // remove the deprecated ones, but generate aliases
                 problemSet.clear();
-                for (Iterator<Entry<String, Boolean>> it = subdivisionMap.entrySet().iterator(); it.hasNext();) {
-                    Entry<String, Boolean> entry = it.next();
-                    if (!entry.getValue()) { // if not deprecated
+                for (Iterator<Entry<String, Status>> it = subdivisionMap.entrySet().iterator(); it.hasNext();) {
+                    Entry<String, Status> entry = it.next();
+                    if (entry.getValue() != Status.regular) { // if not deprecated
                         problemSet.add(entry.getKey());
                         it.remove();
                     }
@@ -107,20 +125,17 @@ public class TestSubdivisions extends TestFmwkPlus {
                     continue;
                 }
                 // warn about collisions
-                errln("Name collision for «" + name + "» in "+ problemSet);
+                errln(lang + "," + country + "Name collision for «" + name + "» in "+ problemSet);
 
                 // show the possible aliases to add
                 String first = problemSet.iterator().next();
                 for (String deprecatedItem : subdivisionMap.keySet()) {
-                    warnln("Consider adding: "
+                    warnln(lang + "," + country + "Consider adding: "
                         + "<subdivisionAlias type=\"" + deprecatedItem
                         + "\" replacement=\"" + first
                         + "\" reason=\"deprecated\"/>");
                 }
             }
         }
-        // <subdivisionAlias type="CN-71" replacement="TW" reason="overlong"/>
-//        R2<List<String>, String> region = subdivisionAliases.get(value);
-
     }
 }

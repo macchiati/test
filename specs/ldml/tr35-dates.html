@@ -94,7 +94,7 @@ h2, h3, h4, table {
 		<table border="1" cellpadding="2" cellspacing="0" class="wide">
 			<tr>
 				<td>Version</td>
-				<td>31</td>
+				<td>32</td>
 			</tr>
 			<tr>
 				<td>Editors</td>
@@ -129,7 +129,7 @@ h2, h3, h4, table {
 			<i>Status</i>
 		</h3>
 
-		<!-- NOT YET APPROVED 
+		<!-- NOT YET APPROVED
 		<p>
 				<i class="changed">This is a<b><font color="#ff3333">
 				draft </font></b>document which may be updated, replaced, or superseded by
@@ -996,8 +996,10 @@ h2, h3, h4, table {
 		<p>
 			The preference of 12 hour versus 24 hour for the locale can be
 			derived from the <a href="#Time_Data">Time Data</a>. If the hour
-			symbol is &quot;h&quot; or &quot;K&quot; then the format is 12 hour;
-			otherwise it is 24 hour.
+			symbol is 'h' or 'K' then the format is 12 hour;
+			otherwise it is 24 hour. Formats with 'h'
+			or 'K' must also include a field with one of the day period
+			pattern characters: 'a', 'b', or 'B'.
 		</p>
 		<p>
 			To account for customary usage in some countries, APIs should allow
@@ -1207,7 +1209,6 @@ h2, h3, h4, table {
 				that is, &quot;yM&quot; not &quot;My&quot;.</li>
 			<li>Only one field of each type is allowed; that is,
 				&quot;Hh&quot; is not valid.</li>
-			<li>The &#39;a&#39; field is not allowed in the skeleton.</li>
 		</ul>
 
 		<p>In order to support user overrides of default locale behavior,
@@ -1219,6 +1220,76 @@ h2, h3, h4, table {
 			h or K should have patterns that only use h or K for hours, while
 			skeletons using H or k should have patterns that only use H or k for
 			hours.</p>
+		
+		<p>The rules governing use of day period pattern characters
+			in patterns and skeletons are as follows:</p>
+		<ul>
+			<li>Patterns and skeletons for 24-hour-cycle time formats (using H or k)
+				currently <em>should not</em> include fields with day period characters
+				(a, b, or B); these pattern characters should be ignored if they appear
+				in skeletons. However, in the future, CLDR may allow use of B (but not
+				a or b) in 24-hour-cycle time formats.</li>
+			<li>Patterns for 12-hour-cycle time formats (using h or K) <em>must</em>
+				include a day period field using one of a, b, or B.</li>
+			<li>Skeletons for 12-hour-cycle time formats (using h or K) <em>may</em>
+				include a day period field using one of a, b, or B. If they do not,
+				the skeleton will be treated as implicitly containing a.</li>
+		</ul>
+		<p>Locales should generally provide availableFormats data for a
+			fairly complete set of time skeletons without B, typically the following:
+		</p>
+		<code>H, h, Hm, hm, Hms, hms, Hmv, hmv, Hmsv, hmsv</code>
+		<p>Locales that use 12-hour-cycle time formats with B may provide
+			availableFormats data for a smaller set of time skeletons with B, for example:
+		</p>
+		<code>Bh, Bhm, Bhms</code>
+		<p>When matching a requested skeleton containing b or B to the skeletons
+			actually available in the data, if there is no skeleton matching the specified
+			day period field, then find a match in which the b or B matches an
+			explicit or implicit 'a' in the skeleton, but replace the 'a' in the corresponding
+			pattern with the requested day period b or B. The following table illustrates
+			how requested skeletons map to patterns with different sets of availableFormats
+			data:
+		</p>
+
+		<table cellspacing="0" cellpadding="4" border="1">
+			<caption>
+				<a name="Mapping_Requested_Time_Skeletons_To_Patterns"
+					href="#Mapping_Requested_Time_Skeletons_To_Patterns">Mapping
+					Requested Time Skeletons To Patterns</a>
+			</caption>
+			<tr>
+				<th></th>
+				<th colspan="2">results for different availableFormats data sets</th>
+			</tr>
+			<tr>
+				<th>requested skeleton</th>
+				<th>set 1:<br>...id=&quot;H&quot;&gt;H&lt;/date...<br>...id=&quot;h&quot;&gt;h a&lt;/date...</th>
+				<th>set 2:<br>...id=&quot;H&quot;&gt;H&lt;/date...<br>...id=&quot;h&quot;&gt;h a&lt;/date...<br>...id=&quot;Bh&quot;&gt;B h&lt;/date...</th>
+			</tr>
+			<tr>
+				<td>&quot;h&quot; (or &quot;ah&quot;)</td>
+				<td>&quot;h a&quot;</td>
+				<td>&quot;h a&quot;</td>
+			</tr>
+			<tr>
+				<td>&quot;bh&quot;</td>
+				<td>&quot;h b&quot;</td>
+				<td>&quot;h b&quot;</td>
+			</tr>
+			<tr>
+				<td>&quot;Bh&quot;</td>
+				<td>&quot;h B&quot;</td>
+				<td>&quot;B h&quot;</td>
+			</tr>
+			<tr>
+				<td>&quot;H&quot; (or &quot;aH&quot;, &quot;bH&quot;, &quot;BH&quot;)</td>
+				<td>&quot;H&quot;</td>
+				<td>&quot;H&quot;</td>
+			</tr>
+		</table>
+		<br>
+
 		<p>The hour input skeleton symbols 'j', 'J', and
 			'C' can be used to select the best hour format (h, H, …) before
 			processing, and the appropriate dayperiod format (a, b, B) after a
@@ -1299,6 +1370,18 @@ h2, h3, h4, table {
 		</p>
 		<pre>    &lt;dateFormatItem id="yMMMMd"&gt;<span
 				style="color: blue">d 'de' MMMM 'de' y</span>&lt;/dateFormatItem&gt;</pre>
+		<p>
+			However, such automatic expansions should never convert a numeric element in
+			the pattern to an alphabetic element. Consider the following dateFormatItem:
+		</p>
+		<pre>    &lt;dateFormatItem id="yMMM"&gt;y年M月&lt;/dateFormatItem&gt;</pre>
+		<p>
+			If this is the best match for a requested skeleton yMMMM, automatic expansion
+			should not produce a corresponding pattern “y年MMMM月”; rather, since “y年M月”
+			specifies a numeric month M, automatic expansion should not modify the pattern,
+			and should produce “y年M月” as the match for requested skeleton yMMMM.
+			
+		</p>
 		<p>
 			If the requested skeleton included both seconds and fractional seconds and
 			the dateFormatItem skeleton included seconds but not fractional seconds, then
@@ -2675,28 +2758,32 @@ h2, h3, h4, table {
 		<p>
 			<b>Generic location format:</b> Reflects &quot;wall time&quot;: a
 			primary function of this format type is to represent a time zone in a
-			list or menu for user selection of time zone, since the naming is
-			more uniform than the generic non-location format and zones for the
-			same country will be grouped together (and could be organized
-			hierarchically by country if desired). It is also a fallback format
+			list or menu for user selection of time zone. It is also a fallback format
 			when there is no translation for the generic non-location format.
-		</p>
-		<ul>
-			<li>&quot;Los Angeles Time&quot;</li>
-			<li>&quot;Italy Time&quot;.</li>
-		</ul>
-		<blockquote>
-			<p class="note">Note: A generic location format is constructed by
+		Times can also  be organized
+		hierarchically by country for easier lookup. </p>
+<blockquote>
+			<p>France Time<br>
+			  Italy Time<br>
+			  Japan Time<br>
+			  United States<br>
+			        Chicago Time<br>
+			        Denver Time<br>
+			        Los Angeles Time<br>
+			        New York Time<br>
+		    United Kingdom Time</p>
+	  </blockquote>
+<p>Note: A generic location format is constructed by
 				a part of time zone ID representing an exemplar city name or its
 				country as the final fallback. However, there are Unicode time zones
 				which are not associated with any locations, such as "Etc/GMT+5" and
-				"PST8PDT". The date format pattern "vvvv" specifies the generic
-				location format, but it displays localized GMT format for them. Some
+	  "PST8PDT". Although the date format pattern
+	  "VVVV" specifies the generic location format,
+	  but it displays localized GMT format for these. Some
 				of these time zones observe daylight saving time, so the result
 				(localized GMT format) may change depending on input date. For
 				generating a list for user selection of time zone with format
-				"vvvv", these non-location zones should be excluded.</p>
-		</blockquote>
+	  "VVVV", these non-location zones should be excluded.</p>
 
 		<p>
 			<b>Specific non-location format:</b> Reflects a specific standard or
@@ -3550,7 +3637,7 @@ h2, h3, h4, table {
                 </th>
 				<td style="text-align: center; vertical-align: top" rowspan="3">G</td>
 				<td style="text-align: center; vertical-align: top" >G..GGG</td>
-				<td style="vertical-align: top; text-align: left">AD<br>(variant: CE)</td>
+				<td style="vertical-align: top; text-align: left">AD<br>[variant: CE]</td>
 				<td style="width:130px">Abbreviated</td>
 				<td rowspan="3"
 					style="vertical-align: top; text-align: left">Era name.
@@ -3559,7 +3646,7 @@ h2, h3, h4, table {
 			<tr>
 				<td style="text-align: center; vertical-align: top">GGGG</td>
 				<td style="vertical-align: top; text-align: left">Anno Domini<br>
-					(variant: Common Era)</td>
+					[variant: Common Era]</td>
 				<td>Wide</td>
 			</tr>
 			<tr>
@@ -3659,12 +3746,12 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td style="text-align: center; vertical-align: top">UUUU</td>
-				<td style="vertical-align: top; text-align: left">甲子 (for now)</td>
+				<td style="vertical-align: top; text-align: left">甲子 [for now]</td>
 				<td>Wide</td>
 			</tr>
 			<tr>
 				<td style="text-align: center; vertical-align: top">UUUUU</td>
-				<td style="vertical-align: top; text-align: left">甲子 (for now)</td>
+				<td style="vertical-align: top; text-align: left">甲子 [for now]</td>
 				<td>Narrow</td>
 			</tr>
 			<tr>
@@ -3805,7 +3892,7 @@ h2, h3, h4, table {
 			<tr>
 				<td style="text-align: center">l</td>
 				<td style="text-align: center">l</td>
-				<td>(nothing)</td>
+				<td>[nothing]</td>
 				<td colspan="2">This pattern character is deprecated, and
 					should be ignored in patterns. It was originally intended to be
 					used in combination with M to indicate placement of the symbol for
@@ -3970,7 +4057,7 @@ h2, h3, h4, table {
 				<th rowspan="9"><a name='dfst-period' href='#dfst-period'>period</a></th>
 				<td rowspan="3" style="text-align: center">a</td>
 				<td style="text-align: center">a..aaa</td>
-				<td>12 <strong>am.</strong></td>
+				<td>am. [e.g. 12 am.]</td>
 				<td>Abbreviated</td>
 				<td rowspan="3"><strong>AM, PM<br>
 				</strong>May be upper or lowercase depending on the locale and other options.
@@ -3982,18 +4069,18 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td style="text-align: center">aaaa</td>
-				<td>12 <strong>am.</strong></td>
+				<td>am. [e.g. 12 am.]</td>
 				<td>Wide</td>
 			</tr>
 			<tr>
 				<td style="text-align: center">aaaaa</td>
-				<td>12<strong>a</strong></td>
+				<td>a [e.g. 12a]</td>
 				<td>Narrow</td>
 			</tr>
 			<tr>
 				<td rowspan="3" style="text-align: center">b</td>
 				<td style="text-align: center">b..bbb</td>
-				<td>12 <strong>mid.</strong></td>
+				<td>mid. [e.g. 12 mid.]</td>
 				<td>Abbreviated</td>
 				<td rowspan="3"><strong>am, pm, noon, midnight</strong><br>
 					May be upper or lowercase depending on the locale and other
@@ -4004,18 +4091,18 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td style="text-align: center">bbbb</td>
-				<td>12 <strong>midnight</strong></td>
+				<td>midnight<br>[e.g. 12 midnight]</td>
 				<td>Wide</td>
 			</tr>
 			<tr>
 				<td style="text-align: center">bbbbb</td>
-				<td>12 <strong>md</strong></td>
+				<td>md [e.g. 12 md]</td>
 				<td>Narrow</td>
 			</tr>
 			<tr>
 				<td rowspan="3" style="text-align: center">B</td>
 				<td style="text-align: center">B..BBB</td>
-				<td>3:00<strong> at night</strong></td>
+				<td>at night<br>[e.g. 3:00 at night]</td>
 				<td>Abbreviated</td>
 				<td rowspan="3"><strong>flexible day periods</strong><br>
 					May be upper or lowercase depending on the locale and other
@@ -4023,12 +4110,12 @@ h2, h3, h4, table {
 			</tr>
 			<tr>
 				<td style="text-align: center">BBBB</td>
-				<td>3:00<strong> at night</strong></td>
+				<td>at night<br>[e.g. 3:00 at night]</td>
 				<td>Wide</td>
 			</tr>
 			<tr>
 				<td style="text-align: center">BBBBB</td>
-				<td>3:00<strong> at night</strong></td>
+				<td>at night<br>[e.g. 3:00 at night]</td>
 				<td>Narrow</td>
 			</tr>
 
@@ -4258,20 +4345,21 @@ h2, h3, h4, table {
 				<td>(none def., see note)</td>
 				<td style="text-align: center"></td>
 				<td></td>
-				<td colspan="2">Time separator. Like the use of "," in number
+				<td colspan="2">Time separator.<br>				  
+				  <span class="note"><b> <br>
+				  Note: </b>In CLDR 26 the time separator pattern character was
+						specified to be COLON. This was withdrawn in CLDR 28 due to
+						backward compatibility issues, and no time separator pattern
+						character is currently defined.</span><br>
+		          <br>
+		          Like the use of "," in number
 					formats, this character in a date pattern is replaced with the
 					corresponding number symbol which may depend on the numbering
 					system. For more information, see <em><strong>Part 3:
 							<a href="tr35-numbers.html#Contents">Numbers</a>
 					</strong>, Section 2.3 <a href="tr35-numbers.html#Number_Symbols">Number
 							Symbols</a></em>.
-					<p class="note">
-						<b>Note: </b>In CLDR 26 the time separator pattern character was
-						specified to be COLON. This was withdrawn in CLDR 28 due to
-						backward compatibility issues, and no time separator pattern
-						character is currently defined.
-					</p>
-				</td>
+			  </td>
 			</tr>
 			<tr>
 				<th rowspan="23"><a name='dfst-zone' href='#dfst-zone'>zone</a></th>

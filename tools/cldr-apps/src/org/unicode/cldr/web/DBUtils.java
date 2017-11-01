@@ -107,7 +107,8 @@ public class DBUtils {
     public static String DB_SQL_LAST_MOD = " last_mod TIMESTAMP NOT NULL WITH DEFAULT CURRENT_TIMESTAMP  ";
     public static String DB_SQL_ALLTABLES = "select tablename from SYS.SYSTABLES where tabletype='T'";
     public static String DB_SQL_BINCOLLATE = "";
-    public static String DB_SQL_BINTRODUCER = "";
+    public static String DB_SQL_ENGINE_INNO="";
+    public static String DB_SQL_MB4="";
     public static int db_number_open = 0;
     public static int db_number_used = 0;
     private static int db_UnicodeType = java.sql.Types.VARCHAR; /*
@@ -686,8 +687,8 @@ public class DBUtils {
             db_Mysql = true;
             DB_SQL_IDENTITY = "AUTO_INCREMENT PRIMARY KEY";
             DB_SQL_BINCOLLATE = " COLLATE latin1_bin ";
-            DB_SQL_VARCHARXPATH = "TEXT(1000) CHARACTER SET latin1 " + DB_SQL_BINCOLLATE;
-            DB_SQL_BINTRODUCER = "_latin1";
+            DB_SQL_MB4 = " CHARACTER SET utf8mb4 COLLATE utf8mb4_bin";
+            DB_SQL_VARCHARXPATH = "TEXT(1000)";
             DB_SQL_WITHDEFAULT = "DEFAULT";
             DB_SQL_TIMESTAMP0 = "DATETIME";
             DB_SQL_LAST_MOD_TYPE = "TIMESTAMP";
@@ -698,6 +699,8 @@ public class DBUtils {
             DB_SQL_UNICODE = "BLOB";
             db_UnicodeType = java.sql.Types.BLOB;
             DB_SQL_ALLTABLES = "show tables";
+            
+            DB_SQL_ENGINE_INNO = "ENGINE=InnoDB";
         } else {
             System.err.println("*** WARNING: Don't know what kind of database is " + dbInfo + " - don't know what kind of hacky nonportable SQL to use!");
         }

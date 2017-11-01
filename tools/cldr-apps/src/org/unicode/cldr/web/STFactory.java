@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -641,10 +642,17 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                 xpp.set(fullXPath);
                 String draft = xpp.getAttributeValue(-1, LDMLConstants.DRAFT);
                 lastStatus = draft == null ? Status.approved : VoteResolver.Status.fromString(draft);
+                
+                // reset to missing if it is inherited from root or code-fallback
                 final String srcid = anOldFile.getSourceLocaleID(path, null);
-                if (!srcid.equals(diskFile.getLocaleID())) {
+                if (srcid.equals(XMLSource.CODE_FALLBACK_ID)) {
                     lastStatus = Status.missing;
+                } else if (srcid.equals("root")) {
+                    if (!srcid.equals(diskFile.getLocaleID())) {
+                        lastStatus = Status.missing;
+                    }
                 }
+
                 if (false)
                     System.err.println(fullXPath + " : " + xpp.getAttributeValue(-1, LDMLConstants.DRAFT) + " == " + lastStatus
                         + " ('" + lastValue + "')");
@@ -1797,8 +1805,8 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
     }
 
     @Override
-    public File getSourceDirectoryForLocale(String localeID) {
-        return sm.getDiskFactory().getSourceDirectoryForLocale(localeID);
+    public List<File> getSourceDirectoriesForLocale(String localeID) {
+        return sm.getDiskFactory().getSourceDirectoriesForLocale(localeID);
     }
 
     /*

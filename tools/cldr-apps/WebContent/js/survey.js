@@ -2986,7 +2986,7 @@ function updateRow(tr, theRow) {
 		
 		
 		if(theRow.voteVhash && 
-				theRow.voteVhash!=='') {
+				theRow.voteVhash!=='' && surveyUser) {
 			var voteForItem = theRow.items[theRow.voteVhash];
 			if(voteForItem && voteForItem.votes && voteForItem.votes[surveyUser.id] && 
 					voteForItem.votes[surveyUser.id].overridedVotes) {
@@ -3116,7 +3116,7 @@ function updateRow(tr, theRow) {
 												
 						//console.log(vr);
 						var orgVoteValue = theOrg.votes[value];
-						if(orgVoteValue !== undefined) { // someone in the org actually voted for it
+						if(orgVoteValue !== undefined && orgVoteValue > 0) { // someone in the org actually voted for it
 							var topVoter = null; // top voter for this item
 							var orgsVote = (theOrg.orgVote == value);
 							var topVoterTime = 0; // Calculating the latest time for a user from same org
@@ -3160,12 +3160,16 @@ function updateRow(tr, theRow) {
 							//console.log(topVoter);
 							// ORG SUBHEADING row
 							{
-								var baileyClass = (item.votes[topVoter].isVoteForBailey)?" fallback":"";
+								var baileyClass = (item.votes[topVoter] && item.votes[topVoter].isVoteForBailey)?" fallback":"";
 								var vrow = createChunk(null, "tr", "voteInfo_tr voteInfo_orgHeading");
 								vrow.appendChild(createChunk(org,"td","voteInfo_orgColumn voteInfo_td"));
 								//var isection = createChunk(null, "td", "voteInfo_iconBar");
 								//vrow.appendChild(isection);
-								vrow.appendChild(createVoter(item.votes[topVoter])); // voteInfo_td
+								if (item.votes[topVoter]) {
+								     vrow.appendChild(createVoter(item.votes[topVoter])); // voteInfo_td
+								} else {
+									vrow.appendChild(createVoter(null));
+								}
 								if(orgsVote) {
 									var cell = createChunk(null,"td","voteInfo_orgsVote voteInfo_voteCount voteInfo_td"+baileyClass);
 									cell.appendChild(createChunk(orgVoteValue, "span", "badge"));

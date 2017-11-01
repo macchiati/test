@@ -580,6 +580,8 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
      * IP blacklist
      */
     static Hashtable<String, Object> BAD_IPS = new Hashtable<String, Object>();
+    public static String fileBaseA;
+    public static String fileBaseASeed;
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         CLDRConfigImpl.setUrls(request);
@@ -961,10 +963,31 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
             File base = survprops.getCldrBaseDirectory();
             fileBase = new File(base, "common/main").getAbsolutePath();
             fileBaseSeed = new File(base, "seed/main").getAbsolutePath();
+            File commonAnnotations = new File(base, "common/annotations");
+            fileBaseA = commonAnnotations.getAbsolutePath();
+            commonAnnotations.mkdirs(); // make sure this exists
+            File seedAnnotations = new File(base, "seed/annotations");
+            seedAnnotations.mkdirs(); // make sure this exists
+            fileBaseASeed = seedAnnotations.getAbsolutePath();
         }
         if (fileBase == null)
             throw new NullPointerException("fileBase==NULL");
         return fileBase;
+    }
+    
+    /**
+     * Get all of the file bases as an array
+     * @return
+     */
+    public static File[] getFileBases() {
+        getFileBase(); // load these
+        File files[] =
+            { new File(getFileBase()), 
+              new File(getFileBaseSeed()),
+              new File(fileBaseA),
+              new File(fileBaseASeed)
+        };
+        return files;
     }
 
     /**
@@ -1891,7 +1914,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
                 new_email = registeredUser.email.toLowerCase();
                 WebContext nuCtx = (WebContext) ctx.clone();
                 nuCtx.addQuery(QUERY_DO, "list");
-                nuCtx.addQuery(LIST_JUST, changeAtTo40(new_email));
+                nuCtx.addQuery(LIST_JUST, URLEncoder.encode(new_email));
                 ctx.println("" + "<form action='" + ctx.base() + "' method='POST'>");
                 ctx.print("<input name='s' type='hidden' value='" + ctx.session.id + "'/>"
                     + "<input name='justu' type='hidden' value='" + new_email + "'/>"
@@ -2038,7 +2061,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
                     String theirLocaleList = rs.getString(6);
 
                     String nameLink = "<a href='" + ctx.url() + ctx.urlConnector() + "do=list&" + LIST_JUST + "="
-                        + changeAtTo40(theirEmail) + "' title='More on this user...'>" + theirName + " </a>";
+                        + URLEncoder.encode(theirEmail) + "' title='More on this user...'>" + theirName + " </a>";
                     // setup
 
                     if (participation && (conn != null)) {
@@ -2467,14 +2490,6 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
 
     public static final String PREF_SHCOVERAGE = "showcov";
 
-    public static final String changeAtTo40(String s) {
-        return s.replaceAll("@", "%40");
-    }
-
-    public static final String change40ToAt(String s) {
-        return s.replaceAll("%40", "@");
-    }
-
     public void doUDump(WebContext ctx) {
         ctx.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
         // ctx.println("<!DOCTYPE ldml SYSTEM \"http://.../.../stusers.dtd\">");
@@ -2534,7 +2549,6 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
         if (just.length() == 0) {
             just = null;
         } else {
-            just = change40ToAt(just);
             justme = ctx.session.user.email.equals(just);
         }
         if (doWhat.equals("listu")) {
@@ -2887,13 +2901,14 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
                                         if (s0.length() > 0) {
                                             ctx.println("<p class='ferrbox'>Both fields must match.</p>");
                                         }
+                                        ctx.println("<p role='alert' style='font-size: 1.5em;'><em>PASSWORDS MAY BE VISIBLE AS PLAIN TEXT. USE OF A RANDOM PASSWORD (as suggested) IS STRONGLY RECOMMENDED.</em></p>");
                                         ctx.println("<label><b>New " + what + ":</b><input type='password' name='string0" + what
                                             + "' value='" + s0 + "'></label><br>");
                                         ctx.println("<label><b>New " + what + ":</b><input type='password' name='string1" + what
                                             + "'> (confirm)</label>");
 
                                         ctx.println("<br><br>");
-                                        ctx.println("(Suggested password: <tt>" + UserRegistry.makePassword(theirEmail)
+                                        ctx.println("(Suggested random password: <tt>" + UserRegistry.makePassword(theirEmail)
                                             + "</tt> )");
                                     }
                                 } else if (type != null) {
@@ -3199,7 +3214,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
                             + "</tt>");
                         if (!intlocs_change) {
                             ctx.print("<a href='" + ctx.url() + ctx.urlConnector() + "do=listu&" + LIST_JUST + "="
-                                + changeAtTo40(ctx.session.user.email) + "&intlocs_change=b' >[Change this]</a>");
+                                + URLEncoder.encode(ctx.session.user.email) + "&intlocs_change=b' >[Change this]</a>");
                         }
                         ctx.println("</ul>");
 
@@ -3247,7 +3262,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
      *            TODO
      */
     private void printUserZoomLink(WebContext ctx, String userEmail, String text) {
-        ctx.print("<a href='" + ctx.url() + ctx.urlConnector() + "do=list&" + LIST_JUST + "=" + changeAtTo40(userEmail) + "' >"
+        ctx.print("<a href='" + ctx.url() + ctx.urlConnector() + "do=list&" + LIST_JUST + "=" + URLEncoder.encode(userEmail) + "' >"
             + ctx.iconHtml("zoom", "More on this user..") + text + "</a>");
     }
 
@@ -4263,7 +4278,8 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
             // // DO NOT ESCAPE THIS AMPERSAND.
             "\n" + "Or you can visit\n   <" + defaultBase + ">\n    username: " + theirEmail
             + "\n    password: " + pass + "\n" + "\n" + " Please keep this link to yourself. Thanks.\n"
-            + " Follow the 'Instructions' link on the main page for more help.\n" + " \n";
+            + " Follow the 'Instructions' link on the main page for more help.\n" +
+            "As a reminder, please do not re-use this password on other web sites.\n\n";
         MailSender.getInstance().queue(fromId, u.id, subject, body);
     }
 
@@ -4462,6 +4478,7 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
      */
     public synchronized Factory getDiskFactory() {
         if (gFactory == null) {
+            final File list[] = getFileBases();
             CLDRConfig config = CLDRConfig.getInstance();
             // may fail at server startup time- should do this through setup mode
             ensureOrCheckout(null, "CLDR_DIR", config.getCldrBaseDirectory(), CLDR_DIR_REPOS);
@@ -4472,7 +4489,6 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
                     + " in cldr.properties.");
             }
 
-            final File list[] = { new File(getFileBase()), new File(getFileBaseSeed()) };
             gFactory = SimpleFactory.make(list, ".*");
         }
         return gFactory;
@@ -4676,7 +4692,12 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
                     throw new InternalError(msg);
                 }
             }
-            File roots[] = { oldCommon, oldSeed };
+            File oldCommonA = new File(oldBase, "common/main");
+            File oldSeedA = new File(oldBase, "seed/main");
+            oldCommonA.mkdirs(); // may not exist
+            oldSeedA.mkdirs(); // may not exist
+            
+            File roots[] = { oldCommon, oldSeed, oldCommonA, oldSeedA };
             gOldFactory = SimpleFactory.make(roots, ".*");
             gOldAvailable = Collections.unmodifiableSet(gOldFactory.getAvailableCLDRLocales());
         }
