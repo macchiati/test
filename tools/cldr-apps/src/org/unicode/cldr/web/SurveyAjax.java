@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ import org.unicode.cldr.util.CLDRInfo.UserInfo;
 import org.unicode.cldr.util.CLDRLocale;
 import org.unicode.cldr.util.CldrUtility;
 import org.unicode.cldr.util.CoverageInfo;
+import org.unicode.cldr.util.DtdData.IllegalByDtdException;
 import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.Level;
 import org.unicode.cldr.util.Organization;
@@ -121,6 +123,16 @@ public class SurveyAjax extends HttpServlet {
             };
         }
 
+        /**
+         * Wrap information about the given user into a JSONObject.
+         * 
+         * @param u the user
+         * @return the JSONObject
+         * @throws JSONException
+         * 
+         * This function threw NullPointerException for u == null from sm.reg.getInfo(poster),
+         * now fixed in SurveyForum.java. Maybe this function should check for u == null.
+         */
         public static JSONObject wrap(UserRegistry.User u) throws JSONException {
             return new JSONObject().put("id", u.id).put("email", u.email).put("name", u.name).put("userlevel", u.userlevel)
                 .put("emailHash", u.getEmailHash())
@@ -153,9 +165,9 @@ public class SurveyAjax extends HttpServlet {
 
         public static JSONObject wrap(final VoteResolver<String> r) throws JSONException {
             JSONObject ret = new JSONObject().put("raw", r.toString()).put("isDisputed", r.isDisputed())
-                /* .put("isEstablished", r.isEstablished()) NOTUSED */
                 .put("lastReleaseStatus", r.getLastReleaseStatus())
-                .put("winningValue", r.getWinningValue()).put("lastReleaseValue", r.getLastReleaseValue())
+                .put("winningValue", r.getWinningValue())
+                .put("lastReleaseValue", r.getLastReleaseValue())
                 .put("requiredVotes", r.getRequiredVotes())
                 .put("winningStatus", r.getWinningStatus());
 
@@ -239,22 +251,18 @@ public class SurveyAjax extends HttpServlet {
     public static final String WHAT_REPORT = "report";
     public static final String WHAT_SEARCH = "search";
     public static final String WHAT_REVIEW_HIDE = "review_hide";
-    public static final String WHAT_REVIEW_ADD_POST = "add_post";
-    public static final String WHAT_REVIEW_GET_POST = "get_post";
-    public static final String WHAT_PARTICIPATING_USERS = "participating_users";
-    public static final String WHAT_USER_INFO = "user_info";
-    public static final String WHAT_USER_LIST = "user_list";
-    public static final String WHAT_USER_OLDVOTES = "user_oldvotes";
-    public static final String WHAT_USER_XFEROLDVOTES = "user_xferoldvotes";
-    public static final String WHAT_FLAGGED = "flagged";
+    public static final String WHAT_PARTICIPATING_USERS = "participating_users"; // tc-emaillist.js
+    public static final String WHAT_USER_INFO = "user_info"; // usermap.js
+    public static final String WHAT_USER_LIST = "user_list"; // users.js
+    public static final String WHAT_USER_OLDVOTES = "user_oldvotes"; // users.js
+    public static final String WHAT_USER_XFEROLDVOTES = "user_xferoldvotes"; // users.js
+    public static final String WHAT_OLDVOTES = "oldvotes"; // survey.js
+    public static final String WHAT_FLAGGED = "flagged"; // survey.js
+
+    public static final int oldestVersionForImportingVotes = 25; // Oldest table is cldr_vote_value_25, as of 2018-05-23.
 
     String settablePrefsList[] = { SurveyMain.PREF_CODES_PER_PAGE, SurveyMain.PREF_COVLEV,
-        "oldVoteRemind", "dummy" }; // list
-    // of
-    // prefs
-    // OK
-    // to
-    // get/set
+        "dummy" }; // list of prefs OK to get/set
 
     private Set<String> prefsList = new HashSet<String>();
 
@@ -394,7 +402,6 @@ public class SurveyAjax extends HttpServlet {
                     int xpid = XPathTable.NO_XPATH;
                     String xpath_path = null;
                     String xpath_hex = null;
-                    PathHeader ph = null;
                     if (xpath.startsWith("/")) {
                         xpid = sm.xpt.getByXpath(xpath);
                         xpath_path = xpath;
@@ -505,22 +512,6 @@ public class SurveyAjax extends HttpServlet {
                         request.getParameter("locale"));
                 }
                 this.send(new JSONWriter(), out);
-            } else if (what.equals(WHAT_REVIEW_ADD_POST)) {
-                CookieSession.checkForExpiredSessions();
-                mySession = CookieSession.retrieve(sess);
-
-                JSONWriter postJson = new JSONWriter();
-                if (mySession == null) {
-                    sendError(out, "Missing/Expired Session (idle too long? too many users?): " + sess, ErrorCode.E_SESSION_DISCONNECTED);
-                } else {
-                    mySession.userDidAction();
-                    WebContext ctx = new WebContext(request, response);
-                    ctx.sm = sm;
-                    ctx.session = mySession;
-                    sm.fora.doForum(ctx, "");
-                }
-
-                this.send(postJson, out);
             } else if (sess != null && !sess.isEmpty()) { // this and following:
                 // session needed
                 CookieSession.checkForExpiredSessions();
@@ -592,7 +583,13 @@ public class SurveyAjax extends HttpServlet {
                                     String checkval = val;
                                     if (CldrUtility.INHERITANCE_MARKER.equals(val)) {
                                         Output<String> localeWhereFound = new Output<String>();
-                                        checkval = file.getBaileyValue(xp, null, localeWhereFound);
+                                        /*
+                                         * TODO: this looks dubious, see https://unicode.org/cldr/trac/ticket/11299
+                                         * temporarily for debugging, don't change checkval, but do call
+                                         * getBaileyValue in order to get localeWhereFound
+                                         */
+                                        // checkval = file.getBaileyValue(xp, null, localeWhereFound);
+                                        file.getBaileyValue(xp, null, localeWhereFound);
                                     }
                                     cc.check(xp, result, checkval);
                                     dataEmpty = file.isEmpty();
@@ -648,90 +645,7 @@ public class SurveyAjax extends HttpServlet {
                                 r.put("dataEmpty", Boolean.toString(dataEmpty));
 
                                 if (what.equals(WHAT_SUBMIT)) {
-                                    if (!UserRegistry.userCanModifyLocale(mySession.user, locale)) {
-                                        throw new InternalError("User cannot modify locale.");
-                                    }
-
-                                    PathHeader ph = stf.getPathHeader(xp);
-                                    CheckCLDR.Phase cPhase = CLDRConfig.getInstance().getPhase();
-                                    SurveyToolStatus phStatus = ph.getSurveyToolStatus();
-
-                                    final String candVal = val;
-
-                                    DataSection section = DataSection.make(null, null, mySession, locale, xp, null, false,
-                                        Level.COMPREHENSIVE.toString());
-                                    section.setUserAndFileForVotelist(mySession.user, null);
-
-                                    DataRow pvi = section.getDataRow(xp);
-                                    final Level covLev = pvi.getCoverageLevel();
-                                    //final int coverageValue = covLev.getLevel();
-                                    CheckCLDR.StatusAction showRowAction = pvi.getStatusAction();
-
-                                    if (otherErr != null) {
-                                        r.put("didNotSubmit", "Did not submit.");
-                                    } else if (!showRowAction.isForbidden()) {
-                                        CandidateInfo ci;
-                                        if (candVal == null) {
-                                            ci = null; // abstention
-                                        } else {
-                                            ci = pvi.getItem(candVal); // existing
-                                            // item?
-                                            if (ci == null) { // no, new item
-                                                ci = new CandidateInfo() {
-                                                    @Override
-                                                    public String getValue() {
-                                                        return candVal;
-                                                    }
-
-                                                    @Override
-                                                    public Collection<UserInfo> getUsersVotingOn() {
-                                                        return Collections.emptyList(); // No
-                                                        // users
-                                                        // voting
-                                                        // -
-                                                        // yet.
-                                                    }
-
-                                                    @Override
-                                                    public List<CheckStatus> getCheckStatusList() {
-                                                        return result;
-                                                    }
-                                                };
-                                            }
-                                        }
-                                        CheckCLDR.StatusAction statusActionNewItem = cPhase.getAcceptNewItemAction(ci, pvi,
-                                            CheckCLDR.InputMethod.DIRECT, phStatus, mySession.user);
-                                        if (statusActionNewItem.isForbidden()) {
-                                            r.put("statusAction", statusActionNewItem);
-                                            if (DEBUG)
-                                                System.err.println("Not voting: ::  " + statusActionNewItem);
-                                        } else {
-                                            if (DEBUG)
-                                                System.err.println("Voting for::  " + val);
-                                            Integer withVote = null;
-                                            try {
-                                                withVote = Integer.parseInt(request.getParameter("voteReduced"));
-                                            } catch (Throwable t) {
-                                                withVote = null;
-                                            }
-                                            ballotBox.voteForValue(mySession.user, xp, val, withVote);
-                                            String subRes = ballotBox.getResolver(xp).toString();
-                                            if (DEBUG)
-                                                System.err.println("Voting result ::  " + subRes);
-                                            r.put("submitResultRaw", subRes);
-                                        }
-                                    } else {
-                                        if (DEBUG)
-                                            System.err.println("Not voting: ::  " + showRowAction);
-                                        r.put("statusAction", showRowAction);
-                                    }
-                                    // don't allow adding items if
-                                    // ALLOW_VOTING_BUT_NO_ADD
-
-                                    // informational
-                                    r.put("cPhase", cPhase);
-                                    r.put("phStatus", phStatus);
-                                    r.put("covLev", covLev);
+                                    submitVoteOrAbstention(r, val, mySession, locale, xp, stf, otherErr, result, request, ballotBox);
                                 } else if (what.equals(WHAT_DELETE)) {
                                     if (!UserRegistry.userCanModifyLocale(mySession.user, locale)) {
                                         throw new InternalError("User cannot modify locale.");
@@ -762,10 +676,6 @@ public class SurveyAjax extends HttpServlet {
 
                         if (!prefsList.contains(pref)) {
                             sendError(out, "Bad or unsupported pref: " + pref, ErrorCode.E_INTERNAL);
-                        }
-
-                        if (pref.equals("oldVoteRemind")) {
-                            pref = getOldVotesPref();
                         }
 
                         if (val != null && !val.isEmpty()) {
@@ -817,11 +727,13 @@ public class SurveyAjax extends HttpServlet {
                         } else {
                             mySession.userDidAction();
                             r.put("what", what);
-
-                            //String xp = sm.xpt.getById(id);
                             r.put("loc", loc);
                             r.put("xpath", xpath);
-                            r.put("ret", mySession.sm.fora.toJSON(mySession, locale, id, 0, request.getParameter("cldrVersion")));
+                            /* Don't use deprecated mySession.sm here; we already have sm.
+                             *  For https://unicode.org/cldr/trac/ticket/10935 removed cldrVersion here.
+                             */
+                            r.put("ret", sm.fora.toJSON(mySession, locale, id, 0));
+                            // r.put("ret", mySession.sm.fora.toJSON(mySession, locale, id, 0, request.getParameter("cldrVersion")));
                         }
                         send(r, out);
                     } else if (what.equals(WHAT_FORUM_POST)) {
@@ -836,7 +748,7 @@ public class SurveyAjax extends HttpServlet {
                         final int postId = sm.fora.doPost(mySession, xpath, l, subj, text, replyTo);
                         r.put("postId", postId);
                         if (postId > 0) {
-                            r.put("ret", mySession.sm.fora.toJSON(mySession, l, XPathTable.NO_XPATH, postId, null/*current*/));
+                            r.put("ret", sm.fora.toJSON(mySession, l, XPathTable.NO_XPATH, postId));
                         }
                         send(r, out);
                     } else if (what.equals("mail")) {
@@ -909,7 +821,7 @@ public class SurveyAjax extends HttpServlet {
 
                             // list of modifyable locales
                             JSONArray modifyableLocs = new JSONArray();
-                            Set<CLDRLocale> rolocs = sm.getReadOnlyLocales();
+                            Set<CLDRLocale> rolocs = SurveyMain.getReadOnlyLocales();
                             for (CLDRLocale al : SurveyMain.getLocales()) {
                                 if (rolocs.contains(al)) continue;
                                 if (UserRegistry.userCanModifyLocale(mySession.user, al)) {
@@ -919,40 +831,12 @@ public class SurveyAjax extends HttpServlet {
                             if (modifyableLocs.length() > 0) {
                                 r.put("canmodify", modifyableLocs);
                             }
-                            // any special messages?
-                            if (mySession.user != null && mySession.user.canImportOldVotes()) {
-
-                                // old votes?
-                                String oldVotesPref = getOldVotesPref();
-                                String oldVoteRemind = mySession.settings().get(oldVotesPref, null);
-                                if (oldVoteRemind == null || // never been asked
-                                    !oldVoteRemind.equals("*")) { //  dont ask again
-
-                                    String oldVotesTable = STFactory.getLastVoteTable();
-
-                                    if (DBUtils.hasTable(oldVotesTable)) {
-                                        SurveyLog.warnOnce("Old Votes table present: " + oldVotesTable);
-                                        int count = DBUtils.sqlCount("select  count(*) as count from " + oldVotesTable
-                                            + " where submitter=? " +
-                                            " and value is not null", mySession.user.id);
-
-                                        if (count == 0) { // may be -1 on error
-                                            mySession.settings().set(oldVotesPref, "*"); // Do not ask again this release
-                                        } else {
-                                            if (SurveyMain.isUnofficial())
-                                                System.out.println("Old Votes remaining: " + mySession.user + " oldVotesCount = " + count + " and "
-                                                    + oldVotesPref
-                                                    + "=" + oldVoteRemind);
-                                            r.put("oldVotesRemind",
-                                                new JSONObject().put("pref", oldVotesPref).put("remind", oldVoteRemind).put("count", count));
-                                        }
-                                    } else {
-                                        SurveyLog.warnOnce("Old Votes table missing: " + oldVotesTable);
-                                    }
-                                }
+                            // Import old votes if appropriate.
+                            // TC votes don’t get imported automatically.
+                            if (mySession.user != null && mySession.user.canImportOldVotes() && !UserRegistry.userIsTC(mySession.user)) {
+                                doAutoImportOldWinningVotes(r, mySession.user, sm);
                             }
                         }
-
                         send(r, out);
                     } else if (what.equals(WHAT_POSS_PROBLEMS)) {
                         mySession.userDidAction();
@@ -1021,223 +905,11 @@ public class SurveyAjax extends HttpServlet {
                         //                        }
 
                         send(r, out);
-                    } else if (what.equals("oldvotes")) {
+                    } else if (what.equals(WHAT_OLDVOTES)) {
                         mySession.userDidAction();
+                        boolean isSubmit = (request.getParameter("doSubmit") != null);
                         JSONWriter r = newJSONStatus(sm);
-                        r.put("what", what);
-
-                        final String oldVotesTable = STFactory.getLastVoteTable();
-                        SurveyLog.warnOnce("old votes table is " + oldVotesTable);
-                        if (mySession.user == null) {
-                            r.put("err", "Must be logged in");
-                            r.put("err_code", ErrorCode.E_NOT_LOGGED_IN);
-                        } else if (!mySession.user.canImportOldVotes()) {
-                            r.put("err", "No permission to do this (may not be the right SurveyTool phase)");
-                            r.put("err_code", ErrorCode.E_NO_PERMISSION);
-                        } else if (DBUtils.hasTable(oldVotesTable) == false) {
-                            r.put("err", "No old votes available to import for " + SurveyMain.getLastVoteVersion());
-                            r.put("err_code", ErrorCode.E_NO_OLD_VOTES);
-                            SurveyLog.warnOnce("Could not import old votes, table " + oldVotesTable + " does not exist.");
-                        } else {
-                            JSONObject oldvotes = new JSONObject();
-                            final String newVotesTable = DBUtils.Table.VOTE_VALUE.toString();
-                            oldvotes.put("votesafter", "(version" + SurveyMain.getLastVoteVersion() + ")");
-
-                            if (loc == null || loc.isEmpty()) {
-                                oldvotes.put(
-                                    "locales",
-                                    DBUtils.queryToJSON("select  locale,count(*) as count from " + oldVotesTable
-                                        + " where submitter=? " +
-                                        " and value is not null " +
-                                        " and not exists (select * from " + newVotesTable + " where " + oldVotesTable + ".locale=" + newVotesTable + ".locale "
-                                        +
-                                        " and " + oldVotesTable + ".xpath=" + newVotesTable + ".xpath and " + newVotesTable + ".submitter=" + oldVotesTable
-                                        + ".submitter )" +
-                                        "group by locale order by locale", mySession.user.id));
-                            } else {
-                                CLDRLocale locale = CLDRLocale.getInstance(loc);
-                                oldvotes.put("locale", locale);
-                                oldvotes.put("localeDisplayName", locale.getDisplayName());
-                                HTMLDirection dir = sm.getHTMLDirectionFor(locale);
-                                oldvotes.put("dir", dir);
-                                STFactory fac = sm.getSTFactory();
-                                //CLDRFile file = fac.make(loc, false);
-                                CLDRFile file = sm.getOldFile(loc, true);
-
-                                if (null != request.getParameter("doSubmit")) {
-                                    // submit time.
-                                    if (SurveyMain.isUnofficial())
-                                        System.out.println("User " + mySession.user.toString() + "  is migrating old votes in " + locale.getDisplayName());
-                                    JSONObject list = new JSONObject(val);
-
-                                    BallotBox<User> box = fac.ballotBoxForLocale(locale);
-
-                                    int deletions = 0;
-                                    int confirmations = 0;
-                                    int uncontested = 0;
-
-                                    JSONArray confirmList = list.getJSONArray("confirmList");
-                                    JSONArray deleteList = list.getJSONArray("deleteList");
-
-                                    Set<String> deleteSet = new HashSet<String>();
-                                    Set<String> confirmSet = new HashSet<String>();
-
-                                    // deletions
-                                    for (int i = 0; i < confirmList.length(); i++) {
-                                        String strid = confirmList.getString(i);
-                                        //String xp = sm.xpt.getByStringID(strid);
-                                        //box.unvoteFor(mySession.user,xp);
-                                        //deletions++;
-                                        confirmSet.add(strid);
-                                    }
-
-                                    // confirmations
-                                    for (int i = 0; i < deleteList.length(); i++) {
-                                        String strid = deleteList.getString(i);
-                                        //String xp = sm.xpt.getByStringID(strid);
-                                        //box.revoteFor(mySession.user,xp);
-                                        //confirmations++;
-                                        deleteSet.add(strid);
-                                    }
-
-                                    // now, get all
-                                    {
-                                        String sqlStr = "select xpath,value from " + oldVotesTable + " where locale=? and submitter=? and value is not null " +
-                                            " and not exists (select * from " + newVotesTable + " where " + oldVotesTable + ".locale=" + newVotesTable
-                                            + ".locale  and " + oldVotesTable + ".xpath=" + newVotesTable + ".xpath "
-                                            + "and " + oldVotesTable + ".submitter=" + newVotesTable + ".submitter and " + newVotesTable
-                                            + ".value is not null)";
-                                        Map<String, Object> rows[] = DBUtils.queryToArrayAssoc(sqlStr, locale, mySession.user.id);
-                                        //                                        System.out.println("Running >> " + sqlStr + " -> " + rows.length);
-
-                                        //JSONArray contested = new JSONArray();
-                                        DisplayAndInputProcessor daip = new DisplayAndInputProcessor(locale, false);
-                                        Exception[] exceptionList = new Exception[1];
-                                        for (Map m : rows) {
-                                            String value = m.get("value").toString();
-                                            if (value == null) continue; // ignore unvotes.
-                                            int xp = (Integer) m.get("xpath");
-                                            String xpathString = sm.xpt.getById(xp);
-                                            value = daip.processInput(xpathString, value, exceptionList);
-                                            // String xpathStringHash = sm.xpt.getStringIDString(xp);
-                                            try {
-//                                                String curValue = file.getStringValue(xpathString);
-//                                                if (false && value.equals(curValue)) {
-//                                                    box.voteForValue(mySession.user, xpathString, value); // auto vote for uncontested
-//                                                    uncontested++;
-//                                                } else {
-                                                String strid = sm.xpt.getStringIDString(xp);
-                                                if (deleteSet.contains(strid)) {
-                                                    box.unvoteFor(mySession.user, xpathString);
-                                                    deletions++;
-                                                } else if (confirmSet.contains(strid)) {
-                                                    box.voteForValue(mySession.user, xpathString, value);
-                                                    confirmations++;
-                                                } else {
-                                                    //System.err.println("SAJ: Ignoring non mentioned strid " + xpathString + " for loc " + locale + " in user "  +mySession.user);
-                                                }
-//                                                }
-                                            } catch (InvalidXPathException ix) {
-                                                SurveyLog.logException(ix, "Bad XPath: Trying to vote for " + xpathString);
-                                            } catch (VoteNotAcceptedException ix) {
-                                                SurveyLog.logException(ix, "Vote not accepted: Trying to vote for " + xpathString);
-                                            }
-                                        }
-                                    }
-
-                                    oldvotes.put("didUnvotes", deletions);
-                                    oldvotes.put("didRevotes", confirmations);
-                                    oldvotes.put("didUncontested", uncontested);
-                                    System.out.println("Old Vote migration for " + mySession.user + " " + locale + " - delete:" + deletions + ", confirm:"
-                                        + confirmations + ", uncontestedconfirm:" + uncontested);
-                                    oldvotes.put("ok", true);
-
-                                } else {
-                                    // view old votes
-                                    String sqlStr = "select xpath,value from " + oldVotesTable + " where locale=? and submitter=? and value is not null " +
-                                        " and not exists (select * from " + newVotesTable + " where " + oldVotesTable + ".locale=" + newVotesTable
-                                        + ".locale  and " + oldVotesTable + ".xpath=" + newVotesTable + ".xpath  "
-                                        + " and " + oldVotesTable + ".submitter=" + newVotesTable + ".submitter "
-                                        + " and " + newVotesTable + ".value is not null)";
-                                    Map<String, Object> rows[] = DBUtils.queryToArrayAssoc(sqlStr, locale, mySession.user.id);
-                                    //                                    System.out.println("Running >> " + sqlStr + " -> " + rows.length);
-
-                                    // extract the pathheaders
-                                    for (int i = 0; i < rows.length; i++) {
-                                        Map m = rows[i];
-                                        int xp = (Integer) m.get("xpath");
-                                        String xpathString = sm.xpt.getById(xp);
-                                        m.put("pathHeader", fac.getPathHeader(xpathString));
-                                    }
-
-                                    // sort by pathheader
-                                    Arrays.sort(rows, new Comparator<Map>() {
-
-                                        @Override
-                                        public int compare(Map o1, Map o2) {
-                                            return ((PathHeader) o1.get("pathHeader")).compareTo((PathHeader) o2.get("pathHeader"));
-                                        }
-                                    });
-
-                                    JSONArray uncontested = new JSONArray();
-                                    JSONArray contested = new JSONArray();
-
-                                    int bad = 0;
-
-                                    CLDRFile baseF = sm.getBaselineFile();
-
-                                    //CoverageLevel2 cov = CoverageLevel2.getInstance(sm.getSupplementalDataInfo(),loc);
-
-                                    Set<String> validPaths = fac.getPathsForFile(locale);
-                                    CoverageInfo covInfo = CLDRConfig.getInstance().getCoverageInfo();
-                                    for (Map m : rows) {
-                                        String value = m.get("value").toString();
-                                        if (value == null) continue; // ignore unvotes.
-                                        PathHeader pathHeader = (PathHeader) m.get("pathHeader");
-                                        //                                        System.err.println("PH " + pathHeader + " =" + pathHeader.getSurveyToolStatus());
-                                        if (pathHeader.getSurveyToolStatus() != PathHeader.SurveyToolStatus.READ_WRITE &&
-                                            pathHeader.getSurveyToolStatus() != PathHeader.SurveyToolStatus.LTR_ALWAYS) {
-                                            bad++;
-                                            continue; // skip these
-                                        }
-                                        int xp = (Integer) m.get("xpath");
-                                        String xpathString = sm.xpt.getById(xp);
-                                        if (!validPaths.contains(xpathString)) {
-                                            bad++;
-                                            continue;
-                                        }
-                                        if (covInfo.getCoverageValue(xpathString, loc) > Level.COMPREHENSIVE.getLevel()) {
-                                            //System.err.println("SkipCov PH " + pathHeader + " =" + pathHeader.getSurveyToolStatus());
-                                            bad++;
-                                            continue; // out of coverage
-                                        }
-                                        String xpathStringHash = sm.xpt.getStringIDString(xp);
-                                        String curValue = file.getStringValue(xpathString);
-                                        JSONObject aRow = new JSONObject()
-                                            .put("strid", xpathStringHash)
-                                            .put("myValue", value)
-                                            .put("winValue", curValue)
-                                            .put("baseValue", baseF.getStringValue(xpathString))
-                                            .put("pathHeader", pathHeader.toString());
-                                        if (value.equals(curValue)) {
-                                            uncontested.put(aRow);
-                                        } else {
-                                            contested.put(aRow);
-                                        }
-                                    }
-
-                                    oldvotes.put("contested", contested);
-                                    oldvotes.put("uncontested", uncontested);
-                                    oldvotes.put("bad", bad);
-                                }
-                            }
-
-                            r.put("oldvotes", oldvotes);
-
-                            r.put("BASELINE_LANGUAGE_NAME", SurveyMain.BASELINE_LANGUAGE_NAME);
-                            r.put("BASELINE_ID", SurveyMain.BASELINE_ID);
-                        }
-
+                        importOldVotes(r, mySession.user, sm, isSubmit, val, loc);
                         send(r, out);
                     } else if (what.equals(WHAT_GETSIDEWAYS)) {
                         mySession.userDidAction();
@@ -1311,7 +983,6 @@ public class SurveyAjax extends HttpServlet {
                             final JSONWriter r = newJSONStatusQuick(sm);
                             r.put("what", what);
                             r.put("id", userid);
-                            JSONObject userPerms = new JSONObject();
 
                             UserRegistry.User them = sm.reg.getInfo(userid);
                             if ((them.id == mySession.user.id) || // it's me
@@ -1378,69 +1049,19 @@ public class SurveyAjax extends HttpServlet {
                             }
                         }
                             break;
-                        case WHAT_USER_OLDVOTES: {
-                            String u = request.getParameter("old_user_id");
-                            if (u == null) throw new SurveyException(ErrorCode.E_INTERNAL, "Missing parameter 'u'");
-                            Integer userid = Integer.parseInt(u);
-
-                            if (mySession.user.isAdminForOrg(mySession.user.org) && mySession.user.isAdminFor(sm.reg.getInfo(userid))) {
-                                final String lastVoteTable = sm.getSTFactory().getLastVoteTable();
-                                JSONObject o = DBUtils.queryToJSON("select COUNT(xpath), locale from " + lastVoteTable
-                                    + " where submitter=? group by locale order by locale", userid);
+                        case WHAT_USER_OLDVOTES:
+                            {
                                 final JSONWriter r = newJSONStatusQuick(sm);
-                                r.put("user_oldvotes", o);
-                                r.put("old_user_id", userid);
-                                r.put("lastVoteTable", lastVoteTable);
+                                viewOldVoteStats(r, request, sm, mySession.user);
                                 send(r, out);
-                            } else {
-                                throw new SurveyException(ErrorCode.E_NO_PERMISSION, "You do not have permission to list users.");
                             }
-                        }
                             break;
-                        case WHAT_USER_XFEROLDVOTES: {
-                            // // what=user_xferoldvotes&from_user_id=182&from_locale=de&to_user_id=105&to_locale=de_CH"
-                            Integer from_user_id = getIntParameter(request, "from_user_id");
-                            Integer to_user_id = getIntParameter(request, "to_user_id");
-                            String from_locale = request.getParameter("from_locale");
-                            String to_locale = request.getParameter("to_locale");
-                            if (from_user_id == null || to_user_id == null || from_locale == null || to_locale == null)
-                                throw new SurveyException(ErrorCode.E_INTERNAL, "Missing parameter");
-                            final User toUser = sm.reg.getInfo(to_user_id);
-                            final User fromUser = sm.reg.getInfo(from_user_id);
-                            if (toUser == null || fromUser == null) throw new SurveyException(ErrorCode.E_INTERNAL, "Invalid user parameter");
-                            if (mySession.user.isAdminForOrg(mySession.user.org) && mySession.user.isAdminFor(sm.reg.getInfo(to_user_id))) {
-                                final String lastVoteTable = sm.getSTFactory().getLastVoteTable();
-                                Connection conn = null;
-                                PreparedStatement ps = null;
-                                try {
-                                    conn = DBUtils.getInstance().getDBConnection();
-                                    ps = DBUtils.prepareStatementWithArgs(conn, "INSERT INTO " + lastVoteTable
-                                        + " (locale, xpath, submitter, value, last_mod) " +
-                                        " SELECT ? as locale, " + lastVoteTable + ".xpath as xpath, ? as submitter, " + lastVoteTable + ".value as value, "
-                                        + lastVoteTable + ".last_mod as last_mod " +
-                                        "FROM " + lastVoteTable + " WHERE ?=" + lastVoteTable + ".submitter AND " + lastVoteTable + ".locale=?",
-                                        to_locale, to_user_id, from_user_id, from_locale);
-                                    int rv = ps.executeUpdate();
-                                    conn.commit();
-                                    // remind the user again to look at their votes.
-                                    toUser.settings().set(getOldVotesPref(), (String) null);
-                                    final JSONWriter r = newJSONStatusQuick(sm);
-                                    final JSONObject o = new JSONObject();
-                                    o.put("from_user_id", from_user_id);
-                                    o.put("from_locale", from_locale);
-                                    o.put("to_user_id", to_user_id);
-                                    o.put("to_locale", to_locale);
-                                    o.put("result_count", rv);
-                                    o.put("lastVoteTable", lastVoteTable);
-                                    r.put(WHAT_USER_XFEROLDVOTES, o);
-                                    send(r, out);
-                                } finally {
-                                    DBUtils.close(ps, conn);
-                                }
-                            } else {
-                                throw new SurveyException(ErrorCode.E_NO_PERMISSION, "You do not have permission to do this.");
+                        case WHAT_USER_XFEROLDVOTES:
+                            {
+                                final JSONWriter r = newJSONStatusQuick(sm);
+                                transferOldVotes(r, request, sm, mySession.user);
+                                send(r, out);
                             }
-                        }
                             break;
                         default:
                             sendError(out, "Unknown User Session-based Request: " + what, ErrorCode.E_INTERNAL);
@@ -1662,14 +1283,6 @@ public class SurveyAjax extends HttpServlet {
     }
 
     /**
-     * @return
-     */
-    public String getOldVotesPref() {
-        String oldVotesPref = DBUtils.appendVersionString(new StringBuilder("oldVoteRemind")).toString(); // version the preference
-        return oldVotesPref;
-    }
-
-    /**
      * Validate a locale. Prints standardized error if not found.
      * @param sm
      * @param out
@@ -1827,7 +1440,14 @@ public class SurveyAjax extends HttpServlet {
         }
     }
 
-    private JSONWriter newJSONStatus(SurveyMain sm) {
+    /** Create a new JSONWriter and setup its status with the given SurveyMain.
+     *  
+     * @param sm the SurveyMain
+     * @return the JSONWriter
+     * 
+     * Public for use by unit test TestImportOldVotes.
+     */
+    public JSONWriter newJSONStatus(SurveyMain sm) {
         JSONWriter r = newJSON();
         setupStatus(sm, r);
         return r;
@@ -1914,4 +1534,876 @@ public class SurveyAjax extends HttpServlet {
         WebContext.includeFragment(request, response, "ajax_" + type.name().toLowerCase() + ".jsp");
     }
 
+    /**
+     * Import old votes.
+     *
+     * @param r the JSONWriter in which to write
+     * @param user the User (see UserRegistry.java)
+     * @param sm the SurveyMain instance
+     * @param isSubmit false when just showing options to user, true when user clicks "Vote for selected Winning/Losing Votes"
+     * @param val the String parameter that was passed to processRequest; null when first called for "Import Old Votes";
+     *              like "{"locale":"aa","confirmList":["7b8ee7884f773afa"],"deleteList":[]}" when isSubmit is true
+     * @param loc the String request.getParameter(SurveyMain.QUERY_LOCALE); empty string when first called for "Import Old Votes",
+     *           non-empty when user later clicks the link for a particular locale, then it's like "aa"
+     *
+     * Called locally by processRequest, and also by unit test TestImportOldVotes.java, therefore public.
+     */
+    public void importOldVotes(JSONWriter r, User user, SurveyMain sm, boolean isSubmit, String val, String loc)
+               throws ServletException, IOException, JSONException, SQLException {
+        r.put("what", WHAT_OLDVOTES);
+        if (user == null) {
+            r.put("err", "Must be logged in");
+            r.put("err_code", ErrorCode.E_NOT_LOGGED_IN);
+        } else if (!user.canImportOldVotes()) {
+            r.put("err", "No permission to do this (may not be the right SurveyTool phase)");
+            r.put("err_code", ErrorCode.E_NO_PERMISSION);
+        } else {
+            importOldVotesForValidatedUser(r, user, sm, isSubmit, val, loc);
+        }
+    }
+
+    /**
+     * Import old votes, having confirmed user has permission.
+     *
+     * @param r the JSONWriter in which to write
+     * @param user the User
+     * @param sm the SurveyMain instance
+     * @param isSubmit false when just showing options to user, true when user clicks "Vote for selected Winning/Losing Votes"
+     * @param val the String parameter that was passed to processRequest; null when first called for "Import Old Votes";
+     *              like "{"locale":"aa","confirmList":["7b8ee7884f773afa"],"deleteList":[]}" when isSubmit is true
+     * @param loc the locale as a string, empty when first called for "Import Old Votes",
+     *           non-empty when user later clicks the link for a particular locale, then it's like "aa"
+     *
+     * Called locally by importOldVotes, and also by unit test TestImportOldVotes.java, therefore public.
+     * 
+     *  Three ways this function is called:
+
+        (1) loc == null, isSubmit == false: list locales to choose
+        (2) loc == 'aa', isSubmit == false: show winning/losing votes available for import
+        (3) loc == 'aa', isSubmit == true: update db based on vote
+
+     */
+    public void importOldVotesForValidatedUser(JSONWriter r, User user, SurveyMain sm, boolean isSubmit,
+               String val, String loc)
+               throws ServletException, IOException, JSONException, SQLException {
+
+        JSONObject oldvotes = new JSONObject();
+        final String newVotesTable = DBUtils.Table.VOTE_VALUE.toString();
+        oldvotes.put("votesafter", "(version" + SurveyMain.getLastVoteVersion() + ")");
+
+        if (loc == null || loc.isEmpty()) {
+            listLocalesForImportOldVotes(user, sm, newVotesTable, oldvotes);
+        } else {
+            CLDRLocale locale = CLDRLocale.getInstance(loc);
+            oldvotes.put("locale", locale);
+            oldvotes.put("localeDisplayName", locale.getDisplayName());
+            HTMLDirection dir = sm.getHTMLDirectionFor(locale);
+            oldvotes.put("dir", dir); // e.g., LEFT_TO_RIGHT
+            STFactory fac = sm.getSTFactory();
+            if (isSubmit) {
+                submitOldVotes(user, sm, locale, val, newVotesTable, oldvotes, fac);
+            } else {
+                viewOldVotes(user, sm, loc, locale, newVotesTable, oldvotes, fac);
+            }
+        }
+        r.put("oldvotes", oldvotes);
+        r.put("BASELINE_LANGUAGE_NAME", SurveyMain.BASELINE_LANGUAGE_NAME);
+        r.put("BASELINE_ID", SurveyMain.BASELINE_ID);
+    }
+
+    /**
+     * List locales that have old votes available to be imported.
+     *
+     * @param user the User (this function only uses user.id)
+     * @param sm the SurveyMain instance
+     * @param newVotesTable the String for the table name like "cldr_vote_value_34"
+     * @param oldvotes the JSONObject to be added to
+     */
+    public void listLocalesForImportOldVotes(User user, SurveyMain sm, 
+               final String newVotesTable, JSONObject oldvotes)
+               throws ServletException, IOException, JSONException, SQLException {
+
+        /* Loop thru multiple old votes tables in reverse chronological order. */
+        int ver = Integer.parseInt(SurveyMain.getNewVersion());
+        Map<String, Long> localeCount = new HashMap<String, Long>();
+        Map<String, String> localeName = new HashMap<String, String>();
+        while (--ver >= oldestVersionForImportingVotes) {
+            String oldVotesTable = DBUtils.Table.VOTE_VALUE.forVersion(new Integer(ver).toString(), false).toString();
+            if (DBUtils.hasTable(oldVotesTable)) {
+                String sql = "select locale,count(*) as count from " + oldVotesTable
+                    + " where submitter=? " +
+                    " and value is not null " +
+                    " and not exists (select * from " + newVotesTable + " where " + oldVotesTable + ".locale=" + newVotesTable + ".locale "
+                    +
+                    " and " + oldVotesTable + ".xpath=" + newVotesTable + ".xpath and " + newVotesTable + ".submitter=" + oldVotesTable
+                    + ".submitter )" +
+                    "group by locale order by locale";
+                /* DBUtils.queryToJSON was formerly used here and would return something like this:
+                 * {"data":[["aa",2,"Afar"],["af",2,"Afrikaans"]],"header":{"LOCALE":0,"COUNT":1,"LOCALE_NAME":2}}
+                 * We're no longer using queryToJSON here, due to the use of multiple tables.
+                 * Assemble that same structure using multiple queries and queryToArrayAssoc.
+                 */
+                Map<String, Object> rows[] = DBUtils.queryToArrayAssoc(sql, user.id);
+                for (Map<String, Object> m : rows) {
+                    String loc = m.get("locale").toString(); // like "pt" or "pt_PT"
+                    Long count = (Long) m.get("count"); // like 1616
+                    if (localeCount.containsKey(loc)) {
+                        localeCount.put(loc, count + localeCount.get(loc));
+                    }
+                    else {
+                        localeCount.put(loc, count);
+                        /* Complication: the rows do not include the unabbreviated locale name.
+                         * In queryToJSON it's added specially:
+                         * locale_name = CLDRLocale.getInstance(v).getDisplayName();
+                         * Here we do the same.
+                         */
+                        localeName.put(loc, CLDRLocale.getInstance(loc).getDisplayName());
+                    }
+                } 
+            }
+        }
+        /*
+         * In survey.js the json is used like this:
+         *  var data = json.oldvotes.locales.data;
+         *  var header = json.oldvotes.locales.header;
+         *  The header is then used for header.LOCALE_NAME, header.LOCALE, and header.COUNT.
+         *  The header is always {"LOCALE":0,"COUNT":1,"LOCALE_NAME":2} here, since
+         *  0, 1, and 2 are the indexes of the three elements in each array like ["aa",2,"Afar"].
+         */
+        JSONObject header = new JSONObject().put("LOCALE", 0).put("COUNT", 1).put("LOCALE_NAME", 2);
+        JSONArray data = new JSONArray();
+        STFactory fac = sm.getSTFactory();
+        /* Create the data array. Revise the vote count for each locale, to match how viewOldVotes
+         * will assemble the data, since viewOldVotes may filter out some votes. Call viewOldVotes here
+         * with null for its oldvotes parameter, meaning just count the votes.
+         */
+        JSONObject oldVotesNull = null;
+        localeCount.forEach((loc, count) -> {
+            /* We may get realCount <= count due to filtering. If we catch an exception here thrown in
+             * viewOldVotes, use the value already in count, still enabling the user to select the locale.
+             */
+            long realCount = count;
+            try {
+                realCount = viewOldVotes(user, sm, loc, CLDRLocale.getInstance(loc), newVotesTable, oldVotesNull, fac);
+            } catch (Throwable t) {
+                SurveyLog.logException(t, "listLocalesForImportOldVotes: loc = " + loc);
+            }
+            if (realCount > 0) {
+                data.put(new JSONArray().put(loc).put(realCount).put(localeName.get(loc)));
+            }
+        });
+        JSONObject j = new JSONObject().put("header", header).put("data",  data);
+        oldvotes.put("locales", j);
+    }
+
+    /**
+     * View old votes available to be imported for the given locale; or, if the oldvotes
+     * argument is null, just return the number of old votes available.
+     * 
+     * Add to the given "oldvotes" object an array of "contested" (losing) votes, and possibly
+     * also an array of "uncontested" (winning) votes, to get displayed by survey.js.
+     *
+     * In general, both winning (uncontested) and losing (contested) votes may be present in the db.
+     * Normally, for non-TC users, winning votes are imported automatically. Therefore, don't count
+     * or list winning votes unless user is TC.
+     * 
+     * @param user the User, for user.id and userIsTC
+     * @param sm the SurveyMain instance, used for sm.xpt, sm.getBaselineFile, and sm.getOldFile
+     * @param loc the non-empty String for the locale like "aa"
+     * @param locale the CLDRLocale matching loc
+     * @param newVotesTable the String for the table name like "cldr_vote_value_34"
+     * @param oldvotes the JSONObject to be added to; if null, just return the count
+     * @param fac the STFactory to be used for getPathHeader, getPathsForFile
+     * 
+     * @return the number of entries that will be viewable for this locale in the Import Old Votes interface.
+     *
+     * Called locally by importOldVotesForValidatedUser and listLocalesForImportOldVotes,
+     * and also ideally by unit test TestImportOldVotes.java, therefore public.
+     */
+    public long viewOldVotes(User user, SurveyMain sm, String loc, CLDRLocale locale, 
+               final String newVotesTable, JSONObject oldvotes, STFactory fac)
+               throws ServletException, IOException, JSONException, SQLException {
+
+        Map<String, Object> rows[] = getOldVotesRows(newVotesTable, locale, user.id);
+
+        // extract the pathheaders
+        for (Map<String, Object> m : rows) {
+            int xp = (Integer) m.get("xpath");
+            String xpathString = sm.xpt.getById(xp);
+            m.put("pathHeader", fac.getPathHeader(xpathString));
+        }
+
+        // sort by pathheader
+        Arrays.sort(rows, new Comparator<Map<String, Object>>() {
+            @Override
+            public int compare(Map<String, Object> o1, Map<String, Object> o2) {
+                return ((PathHeader) o1.get("pathHeader")).compareTo((PathHeader) o2.get("pathHeader"));
+            }
+        });
+
+        boolean useWinningVotes = UserRegistry.userIsTC(user);
+
+        /* Some variables are only used if oldvotes != null; otherwise leave them null. */
+        JSONArray contested = null; // contested = losing
+        JSONArray uncontested = null; // uncontested = winning
+        CLDRFile baseF = null;
+        if (oldvotes != null) {
+            contested = new JSONArray();
+            if (useWinningVotes) {
+                uncontested = new JSONArray();
+            }
+            baseF = sm.getBaselineFile();      
+        }
+        CLDRFile file = sm.getOldFile(loc, true);
+        Set<String> validPaths = fac.getPathsForFile(locale);
+        CoverageInfo covInfo = CLDRConfig.getInstance().getCoverageInfo();
+        long viewableVoteCount = 0;
+        for (Map<String, Object> m : rows) {
+            // TODO: clarify which exceptions should be caught here, such as invalid xpathString.
+            // For now, catch all silently and skip old votes that generate exceptions -- they're
+            // invalid; neither winning nor losing, but invisible as far as import is concerned.
+            try {
+                String value = m.get("value").toString();
+                if (value == null) {
+                    continue; // ignore unvotes.
+                }
+                PathHeader pathHeader = (PathHeader) m.get("pathHeader");
+                if (pathHeader.getSurveyToolStatus() != PathHeader.SurveyToolStatus.READ_WRITE &&
+                    pathHeader.getSurveyToolStatus() != PathHeader.SurveyToolStatus.LTR_ALWAYS) {
+                    continue; // skip these
+                }
+                int xp = (Integer) m.get("xpath");
+                String xpathString = sm.xpt.getById(xp);
+                if (!validPaths.contains(xpathString)) {
+                    continue;
+                }
+                if (covInfo.getCoverageValue(xpathString, loc) > Level.COMPREHENSIVE.getLevel()) {
+                    continue; // out of coverage
+                }
+                String curValue = file.getStringValue(xpathString);
+                boolean isWinning = equalsOrInheritsCurrentValue(value, curValue, file, xpathString);
+                if (oldvotes != null) {
+                    String xpathStringHash = sm.xpt.getStringIDString(xp);
+                    JSONObject aRow = new JSONObject()
+                        .put("strid", xpathStringHash)
+                        .put("myValue", value)
+                        .put("winValue", curValue)
+                        .put("baseValue", baseF.getStringValue(xpathString))
+                        .put("pathHeader", pathHeader.toString());
+                    if (isWinning) {
+                        if (uncontested != null) {
+                            uncontested.put(aRow); // uncontested = winning
+                            ++viewableVoteCount;
+                        }
+                    } else {
+                        if (contested != null) {
+                            contested.put(aRow); // contested = losing
+                            ++viewableVoteCount;
+                        }
+                    }
+               } else {
+                   if (isWinning) {
+                       if (useWinningVotes) {
+                           ++viewableVoteCount;
+                       }
+                   }
+                   else { // always count losing votes
+                       ++viewableVoteCount;
+                   }
+               }
+            } catch (Exception e) {
+                continue;
+            }
+        }
+        if (oldvotes != null) {
+            if (contested != null) {
+                oldvotes.put("contested", contested); // contested = losing
+            }
+            if (uncontested != null) {
+                oldvotes.put("uncontested", uncontested); // uncontested = winning
+            }
+        }
+        return viewableVoteCount;
+    }
+
+    /**
+     * Submit the selected old votes to be imported.
+     *
+     * @param user the User
+     * @param sm the SurveyMain instance
+     * @param locale the CLDRLocale
+     * @param val the JSON String like "{"locale":"aa","confirmList":["7b8ee7884f773afa"],"deleteList":[]}"
+     * @param newVotesTable the String for the table name like "cldr_vote_value_34"
+     * @param oldvotes the JSONObject to be added to
+     * @param fac the STFactory to be used for ballotBoxForLocale
+     *
+     * Called locally by importOldVotesForValidatedUser, and also by unit test TestImportOldVotes.java, therefore public.
+     * 
+     * On the frontend, submitOldVotes is called in response to the user clicking a button
+     * set up in addOldvotesType in survey.js: submit.on("click",function(e) {...
+     * ... if(jsondata[kk].box.checked) confirmList.push(jsondata[kk].strid);
+     * That on-click code sets up confirmList, and also an always-empty deleteList. Those are combined in
+     * var saveList = {
+     *   locale: surveyCurrentLocale,
+     *   confirmList: confirmList,
+     *   deleteList: deleteList
+     * };
+     * That saveList is what we receive here as "val", and expand into "list".
+     */
+    public void submitOldVotes(User user, SurveyMain sm, CLDRLocale locale, String val,
+               final String newVotesTable, JSONObject oldvotes, STFactory fac)
+               throws ServletException, IOException, JSONException, SQLException {
+
+        if (SurveyMain.isUnofficial()) {
+            System.out.println("User " + user.toString() + "  is migrating old votes in " + locale.getDisplayName());
+        }
+        JSONObject list = new JSONObject(val);
+
+        BallotBox<User> box = fac.ballotBoxForLocale(locale);
+
+        int deletions = 0;
+        int confirmations = 0;
+
+        JSONArray confirmList = list.getJSONArray("confirmList");
+        JSONArray deleteList = list.getJSONArray("deleteList"); // is this ever non-empty? No, based on addOldvotesType in survey.js
+
+        Set<String> deleteSet = new HashSet<String>();
+        Set<String> confirmSet = new HashSet<String>();
+
+        for (int i = 0; i < confirmList.length(); i++) {
+            String strid = confirmList.getString(i);
+            confirmSet.add(strid);
+        }
+
+        for (int i = 0; i < deleteList.length(); i++) {
+            String strid = deleteList.getString(i);
+            deleteSet.add(strid);
+        }
+
+        Map<String, Object> rows[] = getOldVotesRows(newVotesTable, locale, user.id);
+
+        DisplayAndInputProcessor daip = new DisplayAndInputProcessor(locale, false);
+        Exception[] exceptionList = new Exception[1];
+        for (Map<String, Object> m : rows) {
+            String value = m.get("value").toString();
+            if (value == null) continue; // ignore unvotes.
+            int xp = (Integer) m.get("xpath");
+            String xpathString = sm.xpt.getById(xp);
+            value = daip.processInput(xpathString, value, exceptionList);
+            try {
+                String strid = sm.xpt.getStringIDString(xp);
+                if (deleteSet.contains(strid)) {
+                    box.unvoteFor(user, xpathString);
+                    deletions++;
+                } else if (confirmSet.contains(strid)) {
+                    box.voteForValue(user, xpathString, value);
+                    confirmations++;
+                } else {
+                    //System.err.println("SAJ: Ignoring non mentioned strid " + xpathString + " for loc " + locale + " in user "  +user);
+                }
+            } catch (InvalidXPathException ix) {
+                SurveyLog.logException(ix, "Bad XPath: Trying to vote for " + xpathString);
+            } catch (VoteNotAcceptedException ix) {
+                SurveyLog.logException(ix, "Vote not accepted: Trying to vote for " + xpathString);
+            }
+        }
+        oldvotes.put("didUnvotes", deletions);
+        oldvotes.put("didRevotes", confirmations);
+        int uncontestedCount = 0; // always zero; is this used for anything?
+        oldvotes.put("didUncontested", uncontestedCount);
+        System.out.println("Old Vote migration for " + user + " " + locale + " - delete:" + deletions + ", confirm:"
+            + confirmations + ", uncontestedconfirm:" + uncontestedCount);
+        oldvotes.put("ok", true);
+    }
+
+    /**
+     * Make an array of maps for importing old votes.
+     *  
+     * @param newVotesTable
+     * @param locale
+     * @param id
+     * @return the array of maps
+     * @throws SQLException
+     * @throws IOException
+     * 
+     * Called by viewOldVotes and submitOldVotes.
+     */
+    private static Map<String, Object>[] getOldVotesRows(final String newVotesTable, CLDRLocale locale, int id)
+        throws SQLException, IOException {
+        /* Loop thru multiple old votes tables in reverse chronological order.
+         * Use "union" to combine into a single sql query.
+         */
+        int ver = Integer.parseInt(SurveyMain.getNewVersion());
+        String sql = "";
+        int tableCount = 0;
+        while (--ver >= oldestVersionForImportingVotes) {
+            String oldVotesTable = DBUtils.Table.VOTE_VALUE.forVersion(new Integer(ver).toString(), false).toString();
+            if (DBUtils.hasTable(oldVotesTable)) {
+                if (!sql.isEmpty()) {
+                    sql += " UNION ALL ";
+                }
+                sql += "(select xpath,value from " + oldVotesTable + " where locale=? and submitter=? and value is not null " +
+                    " and not exists (select * from " + newVotesTable + " where " + oldVotesTable + ".locale=" + newVotesTable
+                    + ".locale  and " + oldVotesTable + ".xpath=" + newVotesTable + ".xpath  "
+                    + " and " + oldVotesTable + ".submitter=" + newVotesTable + ".submitter "
+                    + " and " + newVotesTable + ".value is not null))";
+                ++tableCount;
+            }
+        }
+        Object args[] = new Object[2 * tableCount];
+        for (int i = 0; i < 2 * tableCount; i += 2) {
+            args[i] = locale; // one for each locale=? in the query
+            args[i + 1] = id; // one for each submitter=? in the query
+        }
+        Map<String, Object> rows[] = DBUtils.queryToArrayAssoc(sql, args);
+        return rows;
+    }
+
+    /**
+     * Import all old winning votes for this user, without GUI interaction
+     * other than a dialog when finished: 
+     * "Your old winning votes for locales ... have been imported." "OK".
+     * 
+     * Caller already checked (user != null && user.canImportOldVotes() && !UserRegistry.userIsTC(user).
+     * 
+     * See https://unicode.org/cldr/trac/ticket/11056 AND https://unicode.org/cldr/trac/ticket/11123
+     * 
+     * Caller has already verified user.canImportOldVotes().
+     * 
+     * Skip the GUI interactions of importOldVotesForValidatedUser for listing locales, and
+     * viewOldVotes for choosing which votes to import. Instead, gather the needed information
+     * as though the user had chosen to select all their old winning votes in viewOldVotes, and
+     * submit them as in submitOldVotes.
+     *
+     * @param r the JSONWriter in which to write
+     * @param user the User
+     * @param sm the SurveyMain instance
+     * @param oldVotesTable the String for the table name like "cldr_vote_value_33"
+     * @return how many votes imported
+     * @throws ServletException
+     * @throws IOException
+     * @throws JSONException
+     * @throws SQLException
+     *
+     * Called locally by processRequest, and also eventually by unit test TestImportOldVotes.java, therefore public.
+     */
+    public int doAutoImportOldWinningVotes(JSONWriter r, User user, SurveyMain sm)
+               throws ServletException, IOException, JSONException, SQLException {
+
+        final String newVotesTable = DBUtils.Table.VOTE_VALUE.toString(); // the table name like "cldr_vote_value_34" or "cldr_vote_value_34_beta"
+        JSONObject oldvotes = new JSONObject();
+
+        /* Loop thru multiple old votes tables in reverse chronological order:
+         *  cldr_vote_value_33, cldr_vote_value_32, cldr_vote_value_31, ..., cldr_vote_value_25.
+         *  If user voted for an item in version N, then ignore votes for the same item in versions before N 
+         *  (see box.getVoteValue in importAllOldWinningVotes).
+         */
+        int ver = Integer.parseInt(SurveyMain.getNewVersion());
+        int confirmations = 0;
+        while (--ver >= oldestVersionForImportingVotes) {
+            String oldVotesTable = DBUtils.Table.VOTE_VALUE.forVersion(new Integer(ver).toString(), false).toString();
+            if (DBUtils.hasTable(oldVotesTable)) {
+                SurveyLog.warnOnce("Old Votes table present: " + oldVotesTable);
+                int count = DBUtils.sqlCount("select  count(*) as count from " + oldVotesTable
+                    + " where submitter=? " +
+                    " and value is not null", user.id);
+                if (count > 0) { // may be -1 on error
+                    if (SurveyMain.isUnofficial()) {
+                        System.out.println("Old Votes remaining: " + user + " oldVotesCount = " + count);
+                    }
+                    confirmations += importAllOldWinningVotes(user, sm, oldVotesTable, newVotesTable);
+                }
+            } else {
+                SurveyLog.warnOnce("Old Votes table missing: " + oldVotesTable);
+            }
+        }
+        oldvotes.put("ok", true);
+        r.put("what", WHAT_OLDVOTES);
+        r.put("oldvotes", oldvotes);
+        if (confirmations > 0) {
+            r.put("autoImportedOldWinningVotes", confirmations);
+        }      
+        return confirmations;
+    }
+
+    /**
+     * Import all old winning votes for this user in the specified old table.
+     *
+     * @param user the User
+     * @param sm the SurveyMain instance
+     * @param oldVotesTable the String for the table name like "cldr_vote_value_33"
+     * @param newVotesTable the String for the table name like "cldr_vote_value_34"
+     * @return how many votes imported
+     *
+     * Called locally by doAutoImportOldWinningVotes.
+     */
+    private int importAllOldWinningVotes(User user, SurveyMain sm, final String oldVotesTable, final String newVotesTable)
+               throws ServletException, IOException, JSONException, SQLException {
+        STFactory fac = sm.getSTFactory();
+
+        // Different from similar queries elsewhere: since we're doing ALL locales for this user,
+        // here we have "where submitter=?", not "where locale=? and submitter=?";
+        // and we have "select xpath,value,locale" since we need each locale for fac.ballotBoxForLocale(locale)...
+        String sqlStr = "select xpath,value,locale from " + oldVotesTable + " where submitter=? and value is not null " +
+            " and not exists (select * from " + newVotesTable + " where " + oldVotesTable + ".locale=" + newVotesTable
+            + ".locale  and " + oldVotesTable + ".xpath=" + newVotesTable + ".xpath "
+            + "and " + oldVotesTable + ".submitter=" + newVotesTable + ".submitter and " + newVotesTable
+            + ".value is not null)";
+        Map<String, Object> rows[] = DBUtils.queryToArrayAssoc(sqlStr, user.id);
+
+        int confirmations = 0;
+        Exception[] exceptionList = new Exception[1];
+        for (Map<String, Object> m : rows) {
+            String value = m.get("value").toString();
+            if (value == null) continue; // ignore unvotes.
+            int xp = (Integer) m.get("xpath");
+            String xpathString = sm.xpt.getById(xp);
+            String loc = m.get("locale").toString();
+            CLDRLocale locale = CLDRLocale.getInstance(loc);
+            CLDRFile file = sm.getOldFile(loc, true);
+            DisplayAndInputProcessor daip = new DisplayAndInputProcessor(locale, false);
+            value = daip.processInput(xpathString, value, exceptionList);
+            try {
+                String curValue = file.getStringValue(xpathString);
+                if (curValue == null) {
+                    continue;
+                }
+                if (equalsOrInheritsCurrentValue(value, curValue, file, xpathString)) {
+                    // it's "winning" (uncontested).
+                    BallotBox<User> box = fac.ballotBoxForLocale(locale);
+                    /* Only import the most recent vote for the given user and xpathString.
+                     * Skip if user already has a vote for this xpathString (with ANY value).
+                     * Since we're going through tables in reverse chronological order, "already" here implies
+                     * "for a later version".
+                     */
+                    if (box.getVoteValue(user, xpathString) == null) {
+                        box.voteForValue(user, xpathString, value);
+                        confirmations++;
+                    }
+                }
+            } catch (InvalidXPathException ix) {
+                SurveyLog.logException(ix, "Bad XPath: Trying to vote for " + xpathString);
+            } catch (VoteNotAcceptedException ix) {
+                SurveyLog.logException(ix, "Vote not accepted: Trying to vote for " + xpathString);
+            } catch (IllegalByDtdException ix) {
+                SurveyLog.logException(ix, "Illegal by DTD: Trying to vote for " + xpathString);
+            }
+        }
+        // System.out.println("importAllOldWinningVotes: imported " + confirmations + " votes in " + oldVotesTable);
+        return confirmations;
+    }
+    
+    /**
+     * Does the value in question either match or inherent the current value?
+     * 
+     * To match, the value in question and the current value must be non-null and equal.
+     * 
+     * To inherit the current value, the value in question must be INHERITANCE_MARKER
+     * and the current value must equal the bailey value.
+     * 
+     * @param value the value in question
+     * @param curValue the current value, that is, file.getStringValue(xpathString)
+     * @param file the CLDRFile for getBaileyValue
+     * @param xpathString the path identifier
+     * @return true if it matches or inherits, else false
+     */
+    private boolean equalsOrInheritsCurrentValue(String value, String curValue, CLDRFile file, String xpathString) {
+        if (value == null || curValue == null) {
+            return false;
+        }
+        if (value.equals(curValue)) {
+            return true;
+        }
+        if (value.equals(CldrUtility.INHERITANCE_MARKER)) {
+            String baileyValue = file.getBaileyValue(xpathString, null, null);
+            if (baileyValue == null) {
+                /* This may happen for Invalid XPath; InvalidXPathException may be thrown. */
+                return false;
+            }
+            if (curValue.equals(baileyValue)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Transfer all the old votes from one user to another, for all old votes tables.
+     * 
+     * Called when the user presses button "Transfer Old Votes" in the Users page
+     * which may be reached by a URL such as .../cldr-apps/v#users///
+     * 
+     * users.js uses "user_xferoldvotes" as follows:
+     * 
+     * var xurl3 = contextPath + "/SurveyAjax?&s="+surveySessionId+"&what=user_xferoldvotes&from_user_id="+oldUser.data.id+"&from_locale="+oldLocale+"&to_user_id="+u.data.id+"&to_locale="+newLocale;
+     * 
+     * Message displayed in dialog in response to button press:
+     * "First, pardon the modality.
+     * Next, do you want to import votes to '#1921 u_1921@adlam.example.com' FROM another user's old votes? Enter their email address below:"
+     *
+     * @param request the HttpServletRequest, for parameters from_user_id, to_user_id, from_locale, to_locale
+     * @param sm the SurveyMain, for sm.reg and newJSONStatusQuick
+     * @param user the current User, who needs admin rights
+     * @param r the JSONWriter to be written to
+     * @throws SurveyException 
+     * @throws SQLException 
+     * @throws JSONException 
+     * @throws IOException 
+     */
+    private void transferOldVotes(JSONWriter r, HttpServletRequest request, SurveyMain sm, UserRegistry.User user)
+        throws SurveyException, SQLException, JSONException, IOException {
+        Integer from_user_id = getIntParameter(request, "from_user_id");
+        Integer to_user_id = getIntParameter(request, "to_user_id");
+        String from_locale = request.getParameter("from_locale");
+        String to_locale = request.getParameter("to_locale");
+        if (from_user_id == null || to_user_id == null || from_locale == null || to_locale == null) {
+            throw new SurveyException(ErrorCode.E_INTERNAL, "Missing parameter");
+        }
+        final User toUser = sm.reg.getInfo(to_user_id);
+        final User fromUser = sm.reg.getInfo(from_user_id);
+        if (toUser == null || fromUser == null) {
+            throw new SurveyException(ErrorCode.E_INTERNAL, "Invalid user parameter");
+        }
+        /* TODO: replace deprecated isAdminFor with ...? */ 
+        if (user.isAdminForOrg(user.org) && user.isAdminFor(toUser)) {
+            transferOldVotesGivenUsersAndLocales(r, from_user_id, to_user_id, from_locale, to_locale);
+        } else {
+            throw new SurveyException(ErrorCode.E_NO_PERMISSION, "You do not have permission to do this.");
+        }       
+    }
+
+    /**
+     * Transfer all the old votes from one user to another, having validated the users and locales.
+     * 
+     * Loop thru multiple old votes tables in reverse chronological order.
+     *
+     * @param r the JSONWriter to be written to
+     * @param from_user_id the id of the user from which to transfer
+     * @param to_user_id the id of the user to which to transfer
+     * @param from_locale the locale from which to transfer
+     * @param to_locale the locale to which to transfer
+     * @throws SQLException
+     * @throws JSONException
+     */
+    private void transferOldVotesGivenUsersAndLocales(JSONWriter r, Integer from_user_id, Integer to_user_id, String from_locale, String to_locale)
+        throws SQLException, JSONException {
+        int totalVotesTransferred = 0;
+        String oldVotesTableList = "";
+        int ver = Integer.parseInt(SurveyMain.getNewVersion());
+        while (--ver >= oldestVersionForImportingVotes) {
+            String oldVotesTable = DBUtils.Table.VOTE_VALUE.forVersion(new Integer(ver).toString(), false).toString();
+            if (DBUtils.hasTable(oldVotesTable)) {
+                Connection conn = null;
+                PreparedStatement ps = null;
+                try {
+                    conn = DBUtils.getInstance().getDBConnection();
+                    ps = DBUtils.prepareStatementWithArgs(conn, "INSERT INTO " + oldVotesTable
+                        + " (locale, xpath, submitter, value, last_mod) " +
+                        " SELECT ? as locale, " + oldVotesTable + ".xpath as xpath, ? as submitter, " + oldVotesTable + ".value as value, "
+                        + oldVotesTable + ".last_mod as last_mod " +
+                        "FROM " + oldVotesTable + " WHERE ?=" + oldVotesTable + ".submitter AND " + oldVotesTable + ".locale=?",
+                        to_locale, to_user_id, from_user_id, from_locale);
+                    int count = ps.executeUpdate();
+                    if (count > 0) {
+                        totalVotesTransferred += count;
+                        if (!oldVotesTableList.isEmpty()) {
+                            oldVotesTableList += ", ";
+                        }
+                        oldVotesTableList += oldVotesTable;
+                    }
+                    conn.commit();
+                } catch (SQLException e) {
+                    // "Duplicate entry" may occur. Catch here rather than abort entire transfer.
+                    SurveyLog.logException(e, "SQL exception: transferring votes in " + oldVotesTable);
+                } finally {
+                    DBUtils.close(ps, conn);
+                }
+            }
+        }
+        final JSONObject o = new JSONObject();
+        o.put("from_user_id", from_user_id);
+        o.put("from_locale", from_locale);
+        o.put("to_user_id", to_user_id);
+        o.put("to_locale", to_locale);
+        o.put("result_count", totalVotesTransferred);
+        o.put("tables", oldVotesTableList);
+        r.put(WHAT_USER_XFEROLDVOTES, o);
+    }
+    
+    /**
+     * View stats for old votes for the user whose id is specified in the request.
+     * 
+     * We get here when the user presses button "View Old Vote Stats" in the Users page
+     * which may be reached by a URL such as .../cldr-apps/v#users///
+     * 
+     *  users.js uses "user_oldvotes" as follows:
+     *  
+     *  var xurl2 = contextPath + "/SurveyAjax?&s="+surveySessionId+"&what=user_oldvotes&old_user_id="+u.data.id;
+     *
+     * @param request the HttpServletRequest, for parameter old_user_id
+     * @param sm the SurveyMain, for sm.reg and newJSONStatusQuick
+     * @param user the current User, who needs admin rights
+     * @param r the JSONWriter to be written to
+     * @throws SQLException
+     * @throws JSONException
+     * @throws SurveyException 
+     * @throws IOException 
+     */
+    private void viewOldVoteStats(JSONWriter r, HttpServletRequest request, SurveyMain sm, User user)
+        throws SQLException, JSONException, SurveyException, IOException {
+
+        String u = request.getParameter("old_user_id");
+        if (u == null) {
+            throw new SurveyException(ErrorCode.E_INTERNAL, "Missing parameter 'old_user_id'");
+        }
+        Integer old_user_id = Integer.parseInt(u);
+        if (user.isAdminForOrg(user.org) && user.isAdminFor(sm.reg.getInfo(old_user_id))) {
+            viewOldVoteStatsForOldUserId(r, old_user_id);
+        } else {
+            throw new SurveyException(ErrorCode.E_NO_PERMISSION, "You do not have permission to list users.");
+        }
+    }
+
+    /**
+     * View stats for old votes for the user whose id is specified.
+     *
+     * Check multiple old votes tables.
+     *
+     * @param r the JSONWriter to be written to
+     * @throws SQLException
+     * @throws JSONException
+     * @throws IOException 
+     */
+    private void viewOldVoteStatsForOldUserId(JSONWriter r, Integer old_user_id)
+        throws SQLException, JSONException, IOException {
+        
+        JSONObject tables = new JSONObject();
+        int ver = Integer.parseInt(SurveyMain.getNewVersion());
+        while (--ver >= oldestVersionForImportingVotes) {
+            String oldVotesTable = DBUtils.Table.VOTE_VALUE.forVersion(new Integer(ver).toString(), false).toString();
+            if (DBUtils.hasTable(oldVotesTable)) {
+                JSONObject o = DBUtils.queryToJSON("select COUNT(xpath), locale from " + oldVotesTable
+                    + " where submitter=? group by locale order by locale", old_user_id);
+                String d = o.getString("data");
+                if (!d.equals("[]")) {
+                    tables.put("v" + ver, d);
+                }
+            }
+        }
+        JSONObject data = new JSONObject();
+        if (tables.length() > 0) {
+            data.put("data", tables);            
+        }
+        r.put("user_oldvotes", data); // WHAT_USER_OLDVOTES
+        r.put("old_user_id", old_user_id);
+    }
+
+    /**
+     * Handle the user's submission of a vote, or an abstention if val is null.
+     * 
+     * @param r the JSONWriter to be written to
+     * @param val the string value voted for, or null for abstention
+     * @param mySession the CookieSession
+     * @param locale the CLDRLocale
+     * @param xp the path
+     * @param stf the STFactory
+     * @param otherErr ?
+     * @param result the List<CheckStatus>?
+     * @param request the HttpServletRequest
+     * @param ballotBox the BallotBox
+     * 
+     * @throws VoteNotAcceptedException 
+     * @throws InvalidXPathException
+     *
+     * Note: the function CandidateItem.getItem in DataSection.java
+     * called from here as ci = pvi.getItem(candVal)
+     * has been revised for https://unicode.org/cldr/trac/ticket/11299
+     * -- when val = candVal = INHERITANCE_MARKER, it now returns inheritedItem
+     * with inheritedItem.rawValue = INHERITANCE_MARKER. This appears to work
+     * correctly so no change has been made here.
+     */
+    private void submitVoteOrAbstention(JSONWriter r, String val, CookieSession mySession, CLDRLocale locale,
+            String xp, STFactory stf, String otherErr, final List<CheckStatus> result,
+            HttpServletRequest request, BallotBox<UserRegistry.User> ballotBox)
+                throws InvalidXPathException, VoteNotAcceptedException {
+
+        if (!UserRegistry.userCanModifyLocale(mySession.user, locale)) {
+            throw new InternalError("User cannot modify locale.");
+        }
+
+        PathHeader ph = stf.getPathHeader(xp);
+        CheckCLDR.Phase cPhase = CLDRConfig.getInstance().getPhase();
+        SurveyToolStatus phStatus = ph.getSurveyToolStatus();
+
+        final String candVal = val;
+
+        DataSection section = DataSection.make(null, null, mySession, locale, xp, null, false,
+            Level.COMPREHENSIVE.toString());
+        section.setUserAndFileForVotelist(mySession.user, null);
+
+        DataRow pvi = section.getDataRow(xp);
+        final Level covLev = pvi.getCoverageLevel();
+        CheckCLDR.StatusAction showRowAction = pvi.getStatusAction();
+
+        if (otherErr != null) {
+            r.put("didNotSubmit", "Did not submit.");
+        } else if (!showRowAction.isForbidden()) {
+            CandidateInfo ci;
+            if (candVal == null) {
+                ci = null; // abstention
+            } else {
+                ci = pvi.getItem(candVal); // existing item?
+                if (ci == null) { // no, new item
+                    ci = new CandidateInfo() {
+                        @Override
+                        public String getValue() {
+                            return candVal;
+                        }
+
+                        @Override
+                        public Collection<UserInfo> getUsersVotingOn() {
+                            return Collections.emptyList(); // No users voting - yet.
+                        }
+
+                        @Override
+                        public List<CheckStatus> getCheckStatusList() {
+                            return result;
+                        }
+                    };
+                }
+            }
+            CheckCLDR.StatusAction statusActionNewItem = cPhase.getAcceptNewItemAction(ci, pvi,
+                CheckCLDR.InputMethod.DIRECT, phStatus, mySession.user);
+            if (statusActionNewItem.isForbidden()) {
+                r.put("statusAction", statusActionNewItem);
+                if (DEBUG)
+                    System.err.println("Not voting: ::  " + statusActionNewItem);
+            } else {
+                if (DEBUG)
+                    System.err.println("Voting for::  " + val);
+                Integer withVote = null;
+                try {
+                    withVote = Integer.parseInt(request.getParameter("voteReduced"));
+                } catch (Throwable t) {
+                    withVote = null;
+                }
+                ballotBox.voteForValue(mySession.user, xp, val, withVote);
+                String subRes = ballotBox.getResolver(xp).toString();
+                if (DEBUG)
+                    System.err.println("Voting result ::  " + subRes);
+                r.put("submitResultRaw", subRes);
+            }
+        } else {
+            if (DEBUG)
+                System.err.println("Not voting: ::  " + showRowAction);
+            r.put("statusAction", showRowAction);
+        }
+        // don't allow adding items if
+        // ALLOW_VOTING_BUT_NO_ADD
+
+        // informational
+        r.put("cPhase", cPhase);
+        r.put("phStatus", phStatus);
+        r.put("covLev", covLev);
+    }
 }

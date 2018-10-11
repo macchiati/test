@@ -39,6 +39,7 @@ import org.unicode.cldr.util.CLDRConfig.Environment;
 import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.CLDRFile.DraftStatus;
 import org.unicode.cldr.util.CLDRLocale;
+import org.unicode.cldr.util.Emoji;
 import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.LDMLUtilities;
 import org.unicode.cldr.util.LocaleIDParser;
@@ -134,12 +135,6 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
 
     private static final String VOTE_OVERRIDE = "vote_override";
 
-    /**
-     * If true: run EVERY xpath through the resolver.
-     */
-    public static final boolean RESOLVE_ALL_XPATHS = false;
-    public static final boolean RE_RESOLVE_ALL_XPATHS = true;
-
     public class DataBackedSource extends DelegateXMLSource {
         PerLocaleData ballotBox;
         XMLSource aliasOf; // original XMLSource
@@ -199,50 +194,41 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
          *
          * @param path
          * @param resolver
-         * @return
+         * @return the VoteResolver
          */
         public VoteResolver<String> setValueFromResolver(String path, VoteResolver<String> resolver) {
             org.unicode.cldr.web.STFactory.PerLocaleData.PerXPathData xpd = ballotBox.peekXpathData(path);
             String res;
             String fullPath = null;
-            if ((xpd == null || xpd.isEmpty()) && !RESOLVE_ALL_XPATHS) { // no
-                // votes,
-                // so..
+            if (xpd == null || xpd.isEmpty()) { // no votes, so..
                 res = ballotBox.diskData.getValueAtDPath(path);
                 fullPath = ballotBox.diskData.getFullPathAtDPath(path);
-                // System.err.println("SVFR: " + fullPath +
-                // " due to disk data");
             } else {
                 res = (resolver = ballotBox.getResolver(xpd, path, resolver)).getWinningValue();
                 String diskFullPath = ballotBox.diskData.getFullPathAtDPath(path);
                 if (diskFullPath == null) {
-                    diskFullPath = path; // if the disk didn't have a full path,
-                    // just use the inbound path.
+                    /*
+                     * If the disk didn't have a full path, just use the inbound path.
+                     */
+                    diskFullPath = path;
                 }
-                String baseXPath = XPathTable.removeDraftAltProposed(diskFullPath); // Remove
-                // JUST
-                // draft
-                // alt
-                // proposed.
-                // Leave
-                // 'numbers='
-                // etc.
-
+                /*
+                 * Remove JUST draft alt proposed. Leave 'numbers=' etc.
+                 */
+                String baseXPath = XPathTable.removeDraftAltProposed(diskFullPath);
                 Status win = resolver.getWinningStatus();
                 if (win == Status.approved) {
                     fullPath = baseXPath;
                 } else {
                     fullPath = baseXPath + "[@draft=\"" + win + "\"]";
                 }
-                // System.err.println(" SVFR: " + fullPath + " due to " + win +
-                // " from " + resolver.toString());
             }
-            // SurveyLog.logger.info(path+"="+res+", by resolver.");
             if (res != null) {
-                delegate.removeValueAtDPath(path); // TODO: needed to clear
-                // fullpath? Otherwise,
-                // fullpath may be ignored if
-                // value is extant.
+                /*
+                 * TODO: needed to clear fullpath? Otherwise, fullpath may be ignored if
+                 * value is extant.
+                 */
+                delegate.removeValueAtDPath(path);
                 delegate.putValueAtPath(fullPath, res);
             } else {
                 delegate.removeValueAtDPath(path);
@@ -688,15 +674,14 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
         }
 
         /**
-         * Load internal data , push into source.
+         * Load internal data, push into source.
          *
          * @param dataBackedSource
-         * @return
+         * @return the DataBackedSource
          */
         private DataBackedSource loadVoteValues(DataBackedSource dataBackedSource) {
             if (!readonly) {
-                VoteResolver<String> resolver = null; // save recalculating
-                // this.
+                VoteResolver<String> resolver = null; // save recalculating this.
                 Set<String> hitXpaths = new HashSet<String>();
                 ElapsedTimer et = (SurveyLog.DEBUG) ? new ElapsedTimer("Loading PLD for " + locale) : null;
                 Connection conn = null;
@@ -705,8 +690,8 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                 ResultSet rs = null;
                 ResultSet rs2 = null;
                 int n = 0;
-                int n2 = 0;
                 int del = 0;
+                
                 try {
                     conn = DBUtils.getInstance().getDBConnection();
                     ps = openQueryByLocaleRW(conn);
@@ -723,12 +708,11 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                         Integer voteOverride = rs.getInt(5); // 5 override
                         if (voteOverride == 0 && rs.wasNull()) { // if override was a null..
                             voteOverride = null;
-                        } else {
                         }
-                        Timestamp lastmod = rs.getTimestamp(6); // last mod
+                        Timestamp last_mod = rs.getTimestamp(6); // last mod
                         User theSubmitter = sm.reg.getInfo(submitter);
                         if (theSubmitter == null) {
-                            if (true) SurveyLog.warnOnce("Ignoring votes for deleted user #" + submitter);
+                            SurveyLog.warnOnce("Ignoring votes for deleted user #" + submitter);
                         }
                         if (!UserRegistry.countUserVoteForLocale(theSubmitter, locale)) { // check user permission to submit
                             continue;
@@ -737,8 +721,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                             continue;
                         }
                         try {
-                            internalSetVoteForValue(theSubmitter, xpath, value, resolver, dataBackedSource, voteOverride,
-                                lastmod); // last_mod
+                            internalSetVoteForValue(theSubmitter, xpath, value, voteOverride, last_mod);
                             n++;
                         } catch (BallotBox.InvalidXPathException e) {
                             System.err.println("InvalidXPathException: Deleting vote for " + theSubmitter + ":" + locale + ":" + xpath);
@@ -754,7 +737,6 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                         int xp = rs2.getInt(1);
                         String value = DBUtils.getStringUTF8(rs2, 2);
                         addToOthers(xp, value);
-                        n2++;
                     }
 
                     if (del > 0) {
@@ -769,26 +751,14 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                     DBUtils.close(rs2, ps2, rs, ps, conn);
                 }
                 SurveyLog.debug(et + " - read " + n + " items  (" + xpathToData.size() + " xpaths.)");
-                if (RESOLVE_ALL_XPATHS) {
-                    et = (SurveyLog.DEBUG) ? new ElapsedTimer("Loading PLD for " + locale) : null;
-                    int j = 0;
-                    for (String xp : diskData) {
-                        if (hitXpaths.contains(xp))
-                            continue;
-                        resolver = dataBackedSource.setValueFromResolver(xp, resolver);
-                        j++;
-                    }
-                    SurveyLog.debug(et + " - RESOLVE_ALL_XPATHS  - resolved " + j + " additional items, " + n + " total.");
+
+                et = (SurveyLog.DEBUG) ? new ElapsedTimer("Resolver loading for xpaths in " + locale) : null;
+                int j = 0;
+                for (String xp : allPXDPaths()) {
+                    resolver = dataBackedSource.setValueFromResolver(xp, resolver);
+                    j++;
                 }
-                if (RE_RESOLVE_ALL_XPATHS) {
-                    et = (SurveyLog.DEBUG) ? new ElapsedTimer("Re-resolver loading for xpaths in " + locale) : null;
-                    int j = 0;
-                    for (String xp : allPXDPaths()) {
-                        resolver = dataBackedSource.setValueFromResolver(xp, resolver);
-                        j++;
-                    }
-                    SurveyLog.debug(et + " - Re-resolver  - resolved " + j + " additional items, " + n + " total.");
-                }
+                SurveyLog.debug(et + " - resolved " + j + " additional items, " + n + " total.");
             }
             stamp.next();
             dataBackedSource.addListener(gTestCache);
@@ -912,6 +882,8 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
          * @param r
          *            if non-null, resolver to re-use.
          * @return the new or updated resolver
+         * 
+         * This function is called by getResolver, and may also call itself recursively.
          */
         private VoteResolver<String> getResolverInternal(PerXPathData perXPathData, String path, VoteResolver<String> r) {
             if (path == null)
@@ -922,10 +894,31 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             } else {
                 r.clear(); // reuse
             }
+            /* Apply special voting method adjustAnnotationVoteCounts only to certain bar-separated keyword annotations.
+             * See http://unicode.org/cldr/trac/ticket/10973
+             * The paths for keyword annotations start with "//ldml/annotations/annotation" and do NOT include Emoji.TYPE_TTS.
+             * Both name paths (cf. namePath, getNamePaths) and keyword paths (cf. keywordPath, getKeywordPaths)
+             * have "//ldml/annotations/annotation". Name paths include Emoji.TYPE_TTS, and keyword paths don't.
+             * Special voting is only for keyword paths, not for name paths.
+             * Compare path dependencies in DisplayAndInputProcessor.java. See also VoteResolver.splitAnnotationIntoComponentsList.
+             * Note: this does not affect the occurrences of "new VoteResolver" in ConsoleCheckCLDR.java or TestUtilities.java;
+             * if those tests ever involve annotation keywords, they could set useKeywordAnnotationVoting as needed, or a new
+             * constructor for VoteResolver could take useKeywordAnnotationVoting (or the path) as a parameter.
+             */
+            r.useKeywordAnnotationVoting = path.startsWith("//ldml/annotations/annotation") && !path.contains(Emoji.TYPE_TTS);
 
-            // Workaround
+            // Workaround (workaround what?)
             CLDRFile.Status status = new CLDRFile.Status();
             diskFile.getSourceLocaleID(path, status); // ask disk file
+
+            /*
+             * TODO: Fix bug: the baileyValue set here is not, in general, the same as the one in updateInheritedValue
+             * in DataSection.java! There,
+             * inheritedValue = ourSrc.getConstructedBaileyValue(xpath, inheritancePathWhereFound, localeWhereFound);
+             * For example, here we get baileyValue = "Veräifachts Chineesisch",
+             * but in updateInheritedValue we get inheritedValue = "Chineesisch (Veräifachti Chineesischi Schrift)".
+             * That's for http://localhost:8080/cldr-apps/v#/gsw_FR/Languages_A_D/3f16ed8804cebb7d
+             */
             String baileyValue = null;
             if (status.pathWhereFound.equals(path)) {
                 // we found it on the same path, so no aliasing
@@ -1272,26 +1265,25 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                 readonly();
             }
 
-            internalSetVoteForValue(user, distinguishingXpath, value, null, xmlsource, withVote, new Date()); // will create/throw away a resolver.
+            internalSetVoteForValue(user, distinguishingXpath, value, withVote, new Date());
+            xmlsource.setValueFromResolver(distinguishingXpath, null);
         }
 
         /**
          * @param user
          * @param distinguishingXpath
          * @param value
-         * @param source
          * @param when
-         * @return
          */
-        private final VoteResolver<String> internalSetVoteForValue(User user, String distinguishingXpath, String value,
-            VoteResolver<String> resolver, DataBackedSource source, Integer voteOverride, Date when) throws InvalidXPathException {
+        private void internalSetVoteForValue(User user, String distinguishingXpath, String value,
+            Integer voteOverride, Date when) throws InvalidXPathException {
+
             // Don't allow illegal xpaths to be set.
             if (!getPathsForFile().contains(distinguishingXpath)) {
                 throw new InvalidXPathException(distinguishingXpath);
             }
             getXPathData(distinguishingXpath).setVoteForValue(user, distinguishingXpath, value, voteOverride, when);
             stamp.next();
-            return resolver = source.setValueFromResolver(distinguishingXpath, resolver);
         }
 
         @Override
@@ -2021,10 +2013,11 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
     }
 
     /**
-     * Returns userid of flagger, or null if not flagged
+     * Does the list of flags contain one for this locale and xpath?
+     *
      * @param locale
      * @param xpath
-     * @return user or null
+     * @return true or false
      */
     public boolean getFlag(CLDRLocale locale, int xpath) {
         synchronized (STFactory.class) {

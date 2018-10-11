@@ -9,7 +9,6 @@
 		ourVote = ballotBox.getVoteValue(ctx.session.user, xpath);
 	}
 	Collection<DataSection.DataRow.CandidateItem> items = p.getItems();
-	DataSection.DataRow.CandidateItem winningItem =  p.getCurrentItem();
 	String statusIcon = p.getStatusIcon(ctx);
 	String specialUrl = p.getSpecialURL(ctx);
 	String rclass =  p.getRowClass();
@@ -45,30 +44,12 @@
 <% } %>
 <th rowspan='<%= rowSpan %>' class='botgray' valign='top' align='left'>
 	<%= p.itemTypeName(ctx,canModify,zoomedIn,specialUrl) %>
-	<% if (p.altType !=null) { %>
-		<br> (<%= p.altType %> alternative)
-	<% } %>
 	<%-- <%= ctx.base() --%>
 </th>
 <th rowspan='<%= rowSpan %>' style='padding-left: 4px;' colspan='1' valign='top' align='left' class='botgray'>
 	<%= p.getDisplayName()  
-	      // + " " + p.fullFieldHash()
 	%>
-<% if(false&&SurveyMain.isUnofficial()) { %>	       <br/>
-	X=<%= p.getXpath() %>
-	       <br/>
-	W=<%= ballotBox.getResolver(p.getXpath()).getWinningValue()  %>
-	       <br/>
-	curr=<%= winningItem %>
-	       <br/>
-    items: <%= items.size() %>	       
-<%
-if(items.size()>0) {
-	for(DataSection.DataRow.CandidateItem i : items) {
-		%><br><%= i %><%
-	}
-}
-} %></th>
+</th>
 <% if(p.hasExamples()) { 
 			if(baseExample!=null) { %>
 				<td rowspan='<%= rowSpan %>' align='left' valign='top' class='generatedexample'>
@@ -79,5 +60,4 @@ if(items.size()>0) {
 			<% } 
 } %>
 	
-<% /* TODO: more from showDataRow needs to move here. */ %>
-
+<% /* Note: more from showDataRow (in DataSection.java prior to svn revision 14289) could move here? */ %>
