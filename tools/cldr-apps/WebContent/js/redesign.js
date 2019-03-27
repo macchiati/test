@@ -83,7 +83,7 @@ function resizeSidebar() {
 	sidebar.css('top', header.height());
 }
 
-//this function is used in survey.js
+//this function is used in CldrSurveyVettingLoader.js
 var sentenceFilter;
 //filter all the locale (first son, then parent so we can build the tree, and let the parent displayed if a son is matched)
 function filterAllLocale(event) {
@@ -488,16 +488,28 @@ function labelizeIcon() {
 	                 title:'The "Proposed" (winning) value will be in the release (with a slightly lower status).'
 	             },
 	             {
+	            	 selector:'.d-dr-provisional',
+	                 type:'warning',
+	                 text:'Provisional',
+	                 title:'There is a "Proposed" (winning) value, but it doesn\'t have enough votes.'
+	             },
+	             {
 	            	 selector:'.d-dr-unconfirmed',
 	                 type:'warning',
 	                 text:'Unconfirmed',
 	                 title:'There is a "Proposed" (winning) value, but it doesn\'t have enough votes.'
 	             },
 	             {
-	            	 selector:'.d-dr-provisional',
-	                 type:'warning',
-	                 text:'Provisional',
-	                 title:'There is a "Proposed" (winning) value, but it doesn\'t have enough votes.'
+	            	 selector:'.d-dr-inherited-provisional',
+	                 type:'inherited-provisional',
+	                 text:'Inherited and Provisional',
+	                 title:'The "Proposed" (winning) value is inherited and provisional.'
+	             },
+	             {
+	            	 selector:'.d-dr-inherited-unconfirmed',
+	                 type:'inherited-unconfirmed',
+	                 text:'Inherited and Unconfirmed',
+	                 title:'The "Proposed" (winning) value is inherited and unconfirmed.'
 	             },
 	             {
 	            	 selector:'.d-dr-missing',
@@ -510,12 +522,6 @@ function labelizeIcon() {
 	                 type:'primary',
 	                 text:'Last Value',
 	                 title:'The value from the last release.'
-	             },
-	             {
-	            	 selector:'.i-vote',
-	                 type:'default',
-	                 text:'Voted',
-	                 title:'This at least one vote for this value, but it is losing'
 	             }
                  ];
 	

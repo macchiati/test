@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.unicode.cldr.icu.LDMLConstants;
 import org.unicode.cldr.test.CheckCLDR;
 import org.unicode.cldr.test.ExampleGenerator;
-import org.unicode.cldr.test.SimpleTestCache;
 import org.unicode.cldr.test.TestCache;
 import org.unicode.cldr.test.TestCache.TestResultBundle;
 import org.unicode.cldr.util.CLDRConfig;
@@ -39,6 +38,7 @@ import org.unicode.cldr.util.CLDRConfig.Environment;
 import org.unicode.cldr.util.CLDRFile;
 import org.unicode.cldr.util.CLDRFile.DraftStatus;
 import org.unicode.cldr.util.CLDRLocale;
+import org.unicode.cldr.util.CldrUtility;
 import org.unicode.cldr.util.Emoji;
 import org.unicode.cldr.util.Factory;
 import org.unicode.cldr.util.LDMLUtilities;
@@ -220,7 +220,8 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                 if (win == Status.approved) {
                     fullPath = baseXPath;
                 } else {
-                    fullPath = baseXPath + "[@draft=\"" + win + "\"]";
+                    DraftStatus draftStatus = draftStatusFromWinningStatus(win);
+                    fullPath = baseXPath + "[@draft=\"" + draftStatus.toString() + "\"]";
                 }
             }
             if (res != null) {
@@ -235,6 +236,30 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             }
             notifyListeners(path);
             return resolver;
+        }
+
+        /**
+         * Map the given VoteResolver.Status to a CLDRFile.DraftStatus
+         *
+         * @param win the VoteResolver.Status (winning status)
+         * @return the DraftStatus
+         *
+         * As a rule, the name of each VoteResolver.Status is also a name of a DraftStatus.
+         * Any exceptions to that rule should be handled explicitly in this function.
+         * 
+         * References:
+         *     https://unicode.org/cldr/trac/ticket/11721
+         *     https://unicode.org/cldr/trac/ticket/11766
+         *     https://unicode.org/cldr/trac/ticket/11103
+         */
+        private DraftStatus draftStatusFromWinningStatus(VoteResolver.Status win) {
+            try {
+                DraftStatus draftStatus = DraftStatus.forString(win.toString());
+                return draftStatus;
+            } catch (IllegalArgumentException e) {
+                SurveyLog.logException(e, "Exception in draftStatusFromWinningStatus of " + win);
+                return DraftStatus.unconfirmed;
+            }
         }
 
         /*
@@ -355,6 +380,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
         private CLDRFile file = null, rFile = null;
         private CLDRLocale locale;
         private CLDRFile oldFile;
+        private CLDRFile oldFileUnresolved;
         private boolean readonly;
         private MutableStamp stamp = null;
 
@@ -809,12 +835,24 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             }
         }
 
-        public synchronized CLDRFile getOldFile() {
-            if (oldFile == null && !oldFileMissing) {
+        public synchronized CLDRFile getOldFileResolved() {
+            if (oldFileMissing) { // common flag across both resolve and unresolved
+                return null;
+            } else if (oldFile == null) {
                 oldFile = sm.getOldFile(locale, true);
                 oldFileMissing = (oldFile == null); // if we get null, it's because the file wasn't available.
             }
             return oldFile;
+        }
+
+        public synchronized CLDRFile getOldFileUnresolved() {
+            if (oldFileMissing) { // common flag across both resolve and unresolved
+                return null;
+            } else if (oldFileUnresolved == null) {
+                oldFileUnresolved = sm.getOldFile(locale, false);
+                oldFileMissing = (oldFileUnresolved == null); // if we get null, it's because the file wasn't available.
+            }
+            return oldFileUnresolved;
         }
 
         // public VoteResolver<String> getResolver(Map<User, String> m, String
@@ -902,10 +940,9 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
              * Special voting is only for keyword paths, not for name paths.
              * Compare path dependencies in DisplayAndInputProcessor.java. See also VoteResolver.splitAnnotationIntoComponentsList.
              * Note: this does not affect the occurrences of "new VoteResolver" in ConsoleCheckCLDR.java or TestUtilities.java;
-             * if those tests ever involve annotation keywords, they could set useKeywordAnnotationVoting as needed, or a new
-             * constructor for VoteResolver could take useKeywordAnnotationVoting (or the path) as a parameter.
+             * if those tests ever involve annotation keywords, they could call setUsingKeywordAnnotationVoting as needed.
              */
-            r.useKeywordAnnotationVoting = path.startsWith("//ldml/annotations/annotation") && !path.contains(Emoji.TYPE_TTS);
+            r.setUsingKeywordAnnotationVoting(path.startsWith("//ldml/annotations/annotation") && !path.contains(Emoji.TYPE_TTS));
 
             // Workaround (workaround what?)
             CLDRFile.Status status = new CLDRFile.Status();
@@ -918,6 +955,7 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
              * For example, here we get baileyValue = "Veräifachts Chineesisch",
              * but in updateInheritedValue we get inheritedValue = "Chineesisch (Veräifachti Chineesischi Schrift)".
              * That's for http://localhost:8080/cldr-apps/v#/gsw_FR/Languages_A_D/3f16ed8804cebb7d
+             * Reference https://unicode.org/cldr/trac/ticket/11420
              */
             String baileyValue = null;
             if (status.pathWhereFound.equals(path)) {
@@ -932,12 +970,24 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             } else {
                 // the path changed, so use that path to get the right value
                 // from the *current* file (not the parent)
-//              System.out.println("≥≥@@@>>" + path +" << " + status.pathWhereFound);
                 r = getResolverInternal(peekXpathData(status.pathWhereFound), status.pathWhereFound, r);
-                // Issue- "status.pathWhereFound"'s votes may not have been counted yet.
-                baileyValue = r.getWinningValue();
-//              System.out.println("≥≥@@@>>" + path +" << " + status.pathWhereFound + " == " + baileyValue);
-//              baileyValue = currentFile.getStringValue(status.pathWhereFound);
+                /*
+                 * Caution: never set baileyValue = INHERITANCE_MARKER!
+                 * That happened here, with "baileyValue = r.getWinningValue()" when
+                 * getWinningValue returned INHERITANCE_MARKER.
+                 * http://localhost:8080/cldr-apps/v#/ko/Gregorian/42291caf2163ca8d
+                 * Third "BCE" row ("eraNarrow"), which inherits from second "BCE" row ("eraAbbr").
+                 * We got hard BCE in Winning column, soft BCE in Others column.
+                 * Recursive call to PerLocaleData.getResolverInternal was involved.
+                 * If r.getWinningValue() returns INHERITANCE_MARKER, then set
+                 * this.baileyValue = r.getBaileyValue().
+                 * Reference https://unicode.org/cldr/trac/ticket/11611
+                 */
+                String wv = r.getWinningValue();
+                if (CldrUtility.INHERITANCE_MARKER.equals(wv)) {
+                    wv = r.getBaileyValue();
+                }
+                baileyValue = wv;                    
                 r.clear(); // clear it again
             }
 
@@ -946,16 +996,18 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             // Set established locale
             r.setLocale(locale, getPathHeader(path));
 
-            CLDRFile anOldFile = getOldFile();
-            if (anOldFile == null)
-                anOldFile = diskFile; // use 'current' for 'previous' if
-            // previous is missing.
+            // ticket:11427 we only want *unresolved* last values 
+            // and if the old file is missing, treat as empty.
+            CLDRFile anOldFile = getOldFileResolved(); 
+            if (anOldFile == null) {
+                anOldFile = diskFile; // use 'current' for 'previous' if previous is missing.
+            }
 
             // set prior release (if present)
-            final String lastValue = anOldFile.getStringValue(path);
-            final Status lastStatus = getStatus(anOldFile, path, lastValue);
+            final String lastValue = anOldFile == null ? null : anOldFile.getStringValue(path);
+            final Status lastStatus = lastValue == null ? Status.missing : getStatus(anOldFile, path, lastValue);
             if (ERRORS_ALLOWED_IN_VETTING || vc.canUseValue(lastValue)) {
-                r.setLastRelease(lastValue, lastValue == null ? Status.missing : lastStatus); /* add the last release value */
+                r.setLastRelease(lastValue, lastStatus); /* add the last release value */
             } else {
                 r.setLastRelease(null, Status.missing); /* missing last release value  due to error. */
             }
@@ -1620,11 +1672,11 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
     /**
      * Test cache against (this)
      */
-    TestCache gTestCache = new SimpleTestCache();
+    TestCache gTestCache = new TestCache();
     /**
      * Test cache against disk. For rejecting items.
      */
-    TestCache gDiskTestCache = new SimpleTestCache();
+    TestCache gDiskTestCache = new TestCache();
 
     /**
      * The infamous back-pointer.
@@ -1647,9 +1699,9 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
             setSupplementalDirectory(sm.getDiskFactory().getSupplementalDirectory());
 
             progress.update("setup test cache");
-            gTestCache.setFactory(this, "(?!.*(CheckCoverage).*).*", sm.getBaselineFile());
+            gTestCache.setFactory(this, "(?!.*(CheckCoverage).*).*");
             progress.update("setup disk test cache");
-            gDiskTestCache.setFactory(sm.getDiskFactory(), "(?!.*(CheckCoverage).*).*", sm.getBaselineFile());
+            gDiskTestCache.setFactory(sm.getDiskFactory(), "(?!.*(CheckCoverage).*).*");
             sm.reg.addListener(this);
             progress.update("reload all users");
             handleUserChanged(null);
@@ -1945,6 +1997,45 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
                 conn.commit();
                 System.err.println("Created table " + DBUtils.Table.VOTE_FLAGGED);
             }
+            if (!DBUtils.hasTable(conn, DBUtils.Table.IMPORT.toString())) {
+                /*
+                 * Create the IMPORT table, for keeping track of imported old losing votes.
+                 * Use DB_SQL_BINCOLLATE for compatibility with existing vote tables, which
+                 * (on st.unicode.org as of 2018-11-08) have "DEFAULT CHARSET=latin1 COLLATE=latin1_bin".
+                 */
+                s = conn.createStatement();
+                String valueLen = DBUtils.db_Mysql ? "(750)" : "";
+                sql = "CREATE TABLE " + DBUtils.Table.IMPORT + "( " + "locale VARCHAR(20), " + "xpath INT NOT NULL, " + "value "
+                    + DBUtils.DB_SQL_UNICODE + ", "
+                    + " PRIMARY KEY (locale,xpath,value" + valueLen + ") " + " ) "
+                    + DBUtils.DB_SQL_BINCOLLATE;
+                s.execute(sql);
+
+                sql = "CREATE UNIQUE INDEX  " + DBUtils.Table.IMPORT + " ON " + DBUtils.Table.IMPORT + " (locale,xpath,value" + valueLen + ")";
+                s.execute(sql);
+                s.close();
+                s = null; // don't close twice.
+                conn.commit();
+                System.err.println("Created table " + DBUtils.Table.IMPORT);
+             }
+            if (!DBUtils.hasTable(conn, DBUtils.Table.IMPORT_AUTO.toString())) {
+                /*
+                 * Create the IMPORT_AUTO table, for keeping track of which users have auto-imported old winning votes.
+                 * Use DB_SQL_BINCOLLATE for compatibility with existing vote tables, which
+                 * (on st.unicode.org as of 2018-12-19) have "DEFAULT CHARSET=latin1 COLLATE=latin1_bin".
+                 */
+                s = conn.createStatement();
+                sql = "CREATE TABLE " + DBUtils.Table.IMPORT_AUTO + "(userid INT NOT NULL, PRIMARY KEY (userid) ) "
+                    + DBUtils.DB_SQL_BINCOLLATE;
+                s.execute(sql);
+
+                sql = "CREATE UNIQUE INDEX  " + DBUtils.Table.IMPORT_AUTO + " ON " + DBUtils.Table.IMPORT_AUTO + " (userid)";
+                s.execute(sql);
+                s.close();
+                s = null; // don't close twice.
+                conn.commit();
+                System.err.println("Created table " + DBUtils.Table.IMPORT_AUTO);
+             }
         } catch (SQLException se) {
             SurveyLog.logException(se, "SQL: " + sql);
             SurveyMain.busted("Setting up DB for STFactory, SQL: " + sql, se);
@@ -2104,8 +2195,8 @@ public class STFactory extends Factory implements BallotBoxFactory<UserRegistry.
      * @param locale
      * @return
      */
-    public CLDRFile getOldFile(CLDRLocale locale) {
-        return get(locale).getOldFile();
+    public CLDRFile getOldFileResolved(CLDRLocale locale) {
+        return get(locale).getOldFileResolved();
     }
 
     /**

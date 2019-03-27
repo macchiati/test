@@ -1,7 +1,4 @@
 // survey.js  -Copyright (C) 2012,2016 IBM Corporation and Others. All Rights Reserved.
-// move anything that's not dynamically generated here.
-
-// These need to be available @ bootstrap time.
 
 /**
  * @module survey.js - SurveyTool main JavaScript stuff
@@ -10,62 +7,12 @@
 // TODO: replace with AMD [?] loading
 dojo.require("dojo.i18n");
 dojo.require("dojo.string");
-window.haveDialog = false;
 
 /*
  * INHERITANCE_MARKER indicates that the value of a candidate item is inherited.
  * Compare INHERITANCE_MARKER in CldrUtility.java.
  */
 const INHERITANCE_MARKER = "↑↑↑";
-
-/*
- * TODO: delete the following fixes for Object.keys, Array.isArray, and String.trim,
- * which are probably not needed anymore with the current system requirements of SurveyTool,
- * namely, versions of Chrome, Firefox, Safari, Edge not more than six months old.
- * 
- * References indicating full support in current browsers:
- *  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
- *  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
- *  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/trim
- */
-
-/**
- * @class Object
- * @method keys
- */
-if(!Object.prototype.keys && !Object.keys) {
-	console.log("fixing missing Object.keys");
-	Object.keys = function(x) {
-		var r = [];
-		for (var j in x) {
-			r.push(j);
-		}
-		return r;
-	};
-}
-
-/**
- * @class Array
- * @method isArray
- */
-if(!Array.prototype.isArray && !Array.isArray) {
-	console.log("fixing missing Array.isArray() ");
-	Array.isArray = function(x) {
-		if(x === null) return false;
-		return x instanceof Array;   // if this doesn't work, we're in trouble.
-	};
-}
-
-/**
- * @class String
- * @method trim
- */
-if(!String.prototype.trim && !String.trim) {
-	console.log("TODO fix broken String.trim() ");
-	String.prototype.trim = function(x) {
-		return x;
-	};
-}
 
 /**
  * Format a date and time for display in a forum post.
@@ -82,7 +29,7 @@ function fmtDateTime(x) {
     }
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
     	   ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-};
+}
 
 /**
  * Is the given string for a report, that is, does it start with "r_"?
@@ -621,6 +568,8 @@ function isInputBusy() {
 /**
  * Create a DOM object with the specified text, tag, and HTML class.
  * Applies (classname)+"_desc" as a tooltip (title).
+ * TODO: clarify whether the "_desc" tooltip (title) is ever created, it doesn't appear to be.
+ *
  * @method createChunk
  * @param {String} text textual content of the new object, or null for none
  * @param {String} tag which element type to create, or null for "span"
@@ -1215,7 +1164,7 @@ function undeferUpdate(what) {
 /**
  * Perform or queue an update. Note that there's data waiting if we are deferring.
  * @method doUpdate
- * @param {String} what
+ * @param {String} what, e.g., "DynamicDataSection" (theDiv.id)
  * @param {Function} fn function to call, now or later
  */
 function doUpdate(what,fn) {
@@ -2021,9 +1970,22 @@ function showForumStuff(frag, forumDiv, tr) {
 
 			var url = contextPath + "/SurveyAjax?what=getsideways&_="+surveyCurrentLocale+"&s="+surveySessionId+"&xpath="+tr.theRow.xpstrid +  cacheKill();
 			myLoad(url, "sidewaysView", function(json) {
-				// if there is 1 sublocale(+ 1 default), we do nothing
-				var locale_count = Object.keys(json.others).length + json.novalue.length;
-				if(locale_count <= 2){
+				/*
+				 * Count the number of unique locales in json.others and json.novalue.
+				 *
+				 * There was a bug here:
+				 *    var locale_count = Object.keys(json.others).length + json.novalue.length;
+				 * This's not a valid way to count the locales, since the keys of json.others are candidate
+				 * values, not locales. Reference: https://unicode.org/cldr/trac/ticket/11688
+				 */
+				var relatedLocales = json.novalue.slice();
+				for (var s in json.others) {
+					for (var t in json.others[s]) {
+						relatedLocales[json.others[s][t]] = true;
+					}
+				}
+				// if there is 1 sublocale (+ 1 default), we do nothing
+				if (Object.keys(relatedLocales).length <= 2) {
 					oneLocales[surveyCurrentLocale] = true;
 					updateIf(sidewaysControl, "");
 				}else{
@@ -2061,8 +2023,9 @@ function showForumStuff(frag, forumDiv, tr) {
 								}
 							}
 						}
+
 						// compare all sublocale values
-						var appendLocaleList = function appendLocaleList(list) {
+						var appendLocaleList = function appendLocaleList(list, curValue) {
 							var group = document.createElement("optGroup");
 							var br = document.createElement("optGroup");
 							group.appendChild(br);
@@ -2070,18 +2033,8 @@ function showForumStuff(frag, forumDiv, tr) {
 							group.setAttribute("label", "Regional Variants for " + curLocale);
 							group.setAttribute("title", "Regional Variants for " + curLocale);
 
-							var curValue = null;
 							var escape = "\u00A0\u00A0\u00A0";
 							var unequalSign = "\u2260\u00A0";
-
-							// find the currenct locale name
-							for(var l=0;l<list.length;l++){
-								var loc = list[l][0];
-								if(loc === surveyCurrentLocale) {
-									curValue = list[l][1];
-									break;
-								}
-							};
 
 							for(var l=0;l<list.length;l++) {
 								var loc = list[l][0];
@@ -2117,18 +2070,37 @@ function showForumStuff(frag, forumDiv, tr) {
 						var dataList = [];
 
 						var popupSelect = document.createElement("select");
-						var inheritValue = null; // inherit value for no-value object
 						for(var s in json.others) {
 							for(var t in json.others[s]){
-								if(json.others[s][t] === topLocale){
-									inheritValue = s;
-								}
 								dataList.push([json.others[s][t], s]);
 							}
 						}
-						if(json.novalue) {
-							for(s in json.novalue){
-								dataList.push([json.novalue[s], inheritValue]);
+
+						/*
+						 * Set curValue = the value for surveyCurrentLocale
+						 */
+						var curValue = null;
+						for (var l = 0; l < dataList.length; l++){
+							var loc = dataList[l][0];
+							if (loc === surveyCurrentLocale) {
+								curValue = dataList[l][1];
+								break;
+							}
+						}
+						/*
+						 * Force the use of unequalSign in the regional comparison pop-up for locales in
+						 * json.novalue, by assigning a value that's different from curValue.
+						 *
+						 * Formerly the inherited value (based on topLocale) was used here; that was a bug.
+						 * If the server doesn't know the winning value, then the client shouldn't pretend to know.
+						 * The server code has been fixed to resolve most such cases.
+						 *
+						 * Reference: https://unicode.org/cldr/trac/ticket/11688
+						 */
+						if (json.novalue) {
+							const differentValue = (curValue === 'A') ? 'B' : 'A'; // anything different from curValue
+							for (s in json.novalue) {
+								dataList.push([json.novalue[s], differentValue]);
 							}
 						}
 						mergeReadBase(dataList);
@@ -2137,7 +2109,7 @@ function showForumStuff(frag, forumDiv, tr) {
 						dataList = dataList.sort(function(a,b) {
 							return locmap.getRegionAndOrVariantName(a[0]) > locmap.getRegionAndOrVariantName(b[0]);
 					    });
-						appendLocaleList(dataList);
+						appendLocaleList(dataList, curValue);
 
 						var group = document.createElement("optGroup");
 						popupSelect.appendChild(group);
@@ -2748,20 +2720,7 @@ function showItemInfoFn(theRow, item) {
 		}
 
 		if (item.value === INHERITANCE_MARKER) {
-			/*
-			 * Add a link in the Info Panel for "Jump to Original" (stui.str('followAlias')),
-			 * if theRow.inheritedLocale or theRow.inheritedXpid is defined.
-			 *
-			 * Normally at least one of theRow.inheritedLocale and theRow.inheritedXpid should be
-			 * defined whenever we have an INHERITANCE_MARKER item. Otherwise an error is reported
-			 * by checkRowConsistency.
-			 */
-			if (theRow.inheritedLocale || theRow.inheritedXpid) {
-				var clickyLink = createChunk(stui.str('followAlias'), "a", 'followAlias');
-				clickyLink.href = '#/'+ ( theRow.inheritedLocale || surveyCurrentLocale )+
-					'//'+ ( theRow.inheritedXpid || theRow.xpstrid ); //linkToLocale(subLoc);
-				h3.appendChild(clickyLink);
-			}
+			addJumpToOriginal(theRow, h3);
 		}
 
 		var newDiv = document.createElement("div");
@@ -2777,6 +2736,42 @@ function showItemInfoFn(theRow, item) {
 			appendExample(td, item.example);
 		}
 	}; // end function(td)
+}
+
+/**
+ * Add a link in the Info Panel for "Jump to Original" (stui.str('followAlias')),
+ * if theRow.inheritedLocale or theRow.inheritedXpid is defined.
+ *
+ * Normally at least one of theRow.inheritedLocale and theRow.inheritedXpid should be
+ * defined whenever we have an INHERITANCE_MARKER item. Otherwise an error is reported
+ * by checkRowConsistency.
+ *
+ * This is currently (2018-12-01) the only place inheritedLocale or inheritedXpid is used on the client.
+ * An alternative would be for the server to send the link (clickyLink.href), instead of inheritedLocale
+ * and inheritedXpid, to the client, avoiding the need for the client to know so much, including the need
+ * to replace 'code-fallback' with 'root' or when to use surveyCurrentLocale in place of inheritedLocale
+ * or use xpstrid in place of inheritedXpid.
+ * 
+ * @param theRow the row
+ * @param el the element to which to append the link
+ */
+function addJumpToOriginal(theRow, el) {
+	if (theRow.inheritedLocale || theRow.inheritedXpid) {
+		var loc = theRow.inheritedLocale;
+		if (!loc) {
+			loc = surveyCurrentLocale;
+		} else if (loc === 'code-fallback') {
+			/*
+			 * Never use 'code-fallback' in the link, use 'root' instead.
+			 * On the server, 'code-fallback' sometimes goes by the name XMLSource.CODE_FALLBACK_ID.
+			 * Reference: https://unicode.org/cldr/trac/ticket/11622
+			 */
+			loc = 'root';
+		}
+		var clickyLink = createChunk(stui.str('followAlias'), "a", 'followAlias');
+		clickyLink.href = '#/'+ loc + '//'+ (theRow.inheritedXpid || theRow.xpstrid);
+		el.appendChild(clickyLink);
+	}	
 }
 
 function appendExample(parent, text, loc) {
@@ -2803,9 +2798,7 @@ function addVitem(td, tr, theRow, item, newButton) {
 	var testKind = getTestKind(item.tests);
 	setDivClass(div,testKind);
 	item.div = div; // back link
-	if(item==null)  {
-		return;
-	}
+
 	var displayValue = item.value;
 	if (item.value === INHERITANCE_MARKER) {
 		displayValue = theRow.inheritedValue; // TODO: what if theRow.inheritedValue is undefined, as it sometimes is?
@@ -2828,21 +2821,10 @@ function addVitem(td, tr, theRow, item, newButton) {
 	setLang(span);
 	checkLRmarker(choiceField, span.dir, item.value);
 
-	/*
-	 * TODO: show star even if isWinner? See https://unicode.org/cldr/trac/ticket/11386
-	 * That can be done by commenting out " && !isWinner" here...
-	 */
-	if(item.isOldValue==true /*** && !isWinner ***/) {
-		addIcon(choiceField,"i-star");
+	if( item.isOldValue == true) {
+		appendIcon(choiceField, "i-star", stui.str("voteInfo_lastRelease_desc"));
 	}
 	if(item.votes && !isWinner) {
-		/* Disable all usage of the "i-vote" (vote.png, check-mark in a square) icon pending
-		 * clarification/documentation of its meaning/purpose.
-		 * Comment out in two places: here in addVitem, and in updateRowVoteInfo.
-		 * See https://unicode.org/cldr/trac/ticket/10521#comment:29
-		 */
-		// addIcon(choiceField,"i-vote");
-
 		if(item.valueHash == theRow.voteVhash && theRow.canFlagOnLosing && !theRow.rowFlagged){
 			var newIcon = addIcon(choiceField,"i-stop"); // DEBUG
 		}
@@ -2887,1009 +2869,6 @@ function appendExtraAttributes(container, theRow) {
 		var attrval = theRow.extraAttributes[attr];
 		var extraChunk = createChunk( attr+"="+attrval , "span", "extraAttribute");
 		container.appendChild(extraChunk);
-	}
-}
-
-/**
- * Update one row using data received from server.
- *
- * @param tr the table row
- * @param theRow the data for the row
- *
- * Cells (columns) in each row:
- * Code    English    Abstain    A    Winning    Add    Others
- * 
- * From left to right, td elements have these id attributes (which BTW aren't unique when
- * other rows are taken into account, see <https://unicode.org/cldr/trac/ticket/11312>):
- * 
- * codecell  comparisoncell  nocell  statuscell  proposedcell  addcell  othercell
- *
- * TODO: is this function also used for Dashboard? See call to isDashboard() which
- * seems to imply this was used for Dashboard at one time.
- *
- * Dashboard columns are:
- * Code    English    CLDR 33    Winning 34    Action
- * 
- * Called by insertRowsIntoTbody and loadHandler (in refreshRow2).
- */
-function updateRow(tr, theRow) {
-	tr.theRow = theRow;
-
-	checkRowConsistency(theRow);
-
-	/*
-	 * For convenience, set up two hashes, for reverse mapping from value or rawValue to item.
-	 */	
-	tr.valueToItem = {}; // hash:  string value to item (which has a div)
-	tr.rawValueToItem = {}; // hash:  string value to item (which has a div)
-	for(var k in theRow.items) {
-		var item = theRow.items[k];
-		if(item.value) {
-			tr.valueToItem[item.value] = item; // back link by value
-			tr.rawValueToItem[item.rawValue] = item; // back link by value
-		}
-	}
-
-	/*
-	 * Update the vote info.
-	 */
-	if(theRow.voteResolver) {
-		updateRowVoteInfo(tr, theRow);
-	} else {
-		tr.voteDiv = null;
-	}
-
-	tr.statusAction = parseStatusAction(theRow.statusAction);
-	tr.canModify = (tr.theTable.json.canModify && tr.statusAction.vote);
-	tr.ticketOnly = (tr.theTable.json.canModify && tr.statusAction.ticket);
-	tr.canChange = (tr.canModify && tr.statusAction.change);
-
-	if(!theRow || !theRow.xpathId) {
-		tr.innerHTML="<td><i>ERROR: missing row</i></td>";
-		return;
-	}
-	if(!tr.xpstrid) {
-		tr.xpathId = theRow.xpathId;
-		tr.xpstrid = theRow.xpstrid;
-		if(tr.xpstrid) {
-			tr.id = "r@"+tr.xpstrid;
-			tr.sethash = tr.xpstrid;
-		}
-	}
-
-	var children = getTagChildren(tr);
-
-	/*
-	 * config = surveyConfig has fields indicating which cells (columns) to display. It might look like this: 
-	 * 
-	 * Object {codecell: "0", comparisoncell: "1", nocell: "2", votedcell: "3", statuscell: "4", errcell: "5", proposedcell: "6", addcell: "7", othercell: "8"}
-	 */
-	var config = surveyConfig;
-
-	var protoButton = null; // no voting at all, unless tr.canModify
-	if (tr.canModify) {
-		protoButton = dojo.byId('proto-button');
-	}
-
-	children[config.statuscell].className = "d-dr-"+theRow.confirmStatus + " d-dr-status";
-
-	if(!children[config.statuscell].isSetup) {
-		listenToPop("", tr, children[config.statuscell]);
-		children[config.statuscell].isSetup=true;
-	}
-
-	children[config.statuscell].title = stui.sub('draftStatus',[stui.str(theRow.confirmStatus)]);
-
-	if(theRow.hasVoted) {
-		children[config.nocell].title=stui.voTrue;
-		children[config.nocell].className= "d-no-vo-true";
-	} else {
-		children[config.nocell].title=stui.voFalse;
-		children[config.nocell].className= "d-no-vo-false";
-	}
-
-	/*
-	 * Assemble the "code cell", a.k.a. the "Code" column.
-	 */
-	if(config.codecell) {
-		updateRowCodeCell(tr, theRow, config, children);
-	}
-
-	/*
-	 * Set up the "comparison cell", a.k.a. the "English" column.
-	 */
-	if(!children[config.comparisoncell].isSetup) {
-		updateRowEnglishComparisonCell(tr, theRow, config, children);
-	}
-	
-	/*
-	 * Set up the "proposed cell", a.k.a. the "Winning" column.
-	 * 
-	 * Column headings are: Code    English    Abstain    A    Winning    Add    Others
-	 * TODO: are we going out of order here, from English to Winning, skipping Abstain and A?
-	 */
-	updateRowProposedWinningCell(tr, theRow, config, children, protoButton);
-
-	/*
-	 * Set up the "err cell"
-	 * 
-	 * TODO: is this something that's normally hidden? Clarify.
-	 * 
-	 * "config.errcell" doesn't occur anywhere else so this may be dead code.
-	 */
-	if(config.errcell) {
-		listenToPop(null,tr,children[config.errcell], children[config.proposedcell].showFn);
-	}
-
-	/*
-	 *  add button
-	 *  
-	 * TODO: clarify usage of formAdd
-	 */
-	var formAdd = document.createElement("form");
-
-	/*
-	 * Set up the "other cell", a.k.a. the "Others" column.
-	 */
-	updateRowOthersCell(tr, theRow, config, children, protoButton, formAdd);
-
-	/*
-	 * If the user can make changes, add "+" button for adding new candidate item.
-	 * 
-	 * TODO: explain the call to isDashboard(): is this code for Dashboard as well as the basic navigation interface?
-	 * This block concerns othercell if isDashboard(), otherwise it concerns addcell.
-	 */
-	if(tr.canChange) {
-		if(isDashboard()) {
-			children[config.othercell].appendChild(document.createElement('hr'));
-			children[config.othercell].appendChild(formAdd);//add button
-		}
-		else {
-			removeAllChildNodes(children[config.addcell]);
-			children[config.addcell].appendChild(formAdd);//add button
-		}
-	}
-
-	/*
-	 * Set up the "no cell", a.k.a. the "Abstain" column.
-	 * If the user can make changes, add an "abstain" button;
-	 * else, possibly add a ticket link, or else hide the column.
-	 */
-	updateRowNoAbstainCell(tr, theRow, config, children, protoButton);
-
-	/*
-	 * Set className for this row to "vother" and "cov..." based on the coverage value.
-	 * Elsewhere className can get values including "ferrbox", "tr_err", "tr_checking2".
-	 */
-	tr.className = 'vother cov' + theRow.coverageValue;
-
-	/*
-	 * Show the current ID.
-	 * TODO: explain.
-	 */
-	if(surveyCurrentId!== '' && surveyCurrentId === tr.id) {
-		window.showCurrentId(); // refresh again - to get the updated voting status.
-	}
-}
-
-/**
- * Check whether the data for this row is consistent, and report to console error
- * if it isn't.
- *
- * @param theRow the data from the server for this row
- *
- * Called by updateRow.
- * 
- * Inconsistencies should primarily be detected/reported/fixed on server (DataSection.java)
- * rather than here on the client, but better late than never, and these checks may be useful
- * for automated testing with WebDriver.
- */
-function checkRowConsistency(theRow) {
-	'use strict';
-	if (!theRow.winningVhash) {
-		/*
-		 * The server, not the client, is responsible for ensuring that a winning item is present.
-		 */
-		console.error('For ' + theRow.xpstrid + ' - there is no winningVhash');
-	} else if (theRow.items && !theRow.items[theRow.winningVhash]) {
-		console.error('For ' + theRow.xpstrid + ' - there is winningVhash but no item for it');
-	}
-	for (var k in theRow.items) {
-		var item = theRow.items[k];
-		if (item.value === INHERITANCE_MARKER) {
-			if (!theRow.inheritedValue) {
-				/*
-				 * In earlier implementation, essentially the same error was reported as "... there is no Bailey Target item!")
-				 * Reference: https://unicode.org/cldr/trac/ticket/11238
-				 */ 
-				console.error('For ' + theRow.xpstrid + ' - there is INHERITANCE_MARKER without inheritedValue');
-			} else if (!theRow.inheritedLocale && !theRow.inheritedXpid) {
-				/*
-				 * It is probably a bug if item.value === INHERITANCE_MARKER but theRow.inheritedLocale and
-				 * theRow.inheritedXpid are both undefined (null on server).
-				 * This happens with "example C" in
-				 *     https://unicode.org/cldr/trac/ticket/11299#comment:15
-				 */
-				console.log('For ' + theRow.xpstrid + ' - there is INHERITANCE_MARKER without inheritedLocale or inheritedXpid');
-			}
-		}
-	}
-}
-
-/**
- * Update the vote info for this row.
- *
- * Set up the "vote div".
- *
- * @param tr the table row
- * @param theRow the data from the server for this row
- * 
- * Called by updateRow.
- * 
- * TODO: shorten this function by using subroutines.
- */
-function updateRowVoteInfo(tr, theRow) {
-	'use strict';
-	var vr = theRow.voteResolver;
-	var div = tr.voteDiv = document.createElement("div");
-	tr.voteDiv.className = "voteDiv";
-	if (theRow.voteVhash &&
-		theRow.voteVhash !== '' && surveyUser) {
-		var voteForItem = theRow.items[theRow.voteVhash];
-		if (voteForItem && voteForItem.votes && voteForItem.votes[surveyUser.id] &&
-			voteForItem.votes[surveyUser.id].overridedVotes) {
-			tr.voteDiv.appendChild(createChunk(stui.sub("override_explain_msg", {
-				overrideVotes: voteForItem.votes[surveyUser.id].overridedVotes,
-				votes: surveyUser.votecount
-			}), "p", "helpContent"));
-		}
-		if (theRow.voteVhash !== theRow.winningVhash &&
-			theRow.canFlagOnLosing) {
-			if (!theRow.rowFlagged) {
-				var newIcon = addIcon(tr.voteDiv, "i-stop");
-				tr.voteDiv.appendChild(createChunk(stui.sub("mustflag_explain_msg", {}), "p", "helpContent"));
-			} else {
-				var newIcon = addIcon(tr.voteDiv, "i-flag");
-				tr.voteDiv.appendChild(createChunk(stui.str("flag_desc", "p", "helpContent")));
-			}
-		}
-	}
-	if (!theRow.rowFlagged && theRow.canFlagOnLosing) {
-		var newIcon = addIcon(tr.voteDiv, "i-flag-d");
-		tr.voteDiv.appendChild(createChunk(stui.str("flag_d_desc", "p", "helpContent")));
-	}
-	var haveWinner = false;
-	var haveLast = false;
-	// next, the org votes
-	var perValueContainer = div; // IF NEEDED: >>  = document.createElement("div");  perValueContainer.className = "perValueContainer";
-	var n = 0;
-	while (n < vr.value_vote.length) {
-		var value = vr.value_vote[n++];
-		if (value == null) continue;
-		var vote = vr.value_vote[n++];
-		var item = tr.rawValueToItem[value]; // backlink to specific item in hash
-		if (item == null) continue;
-		var vdiv = createChunk(null, "table", "voteInfo_perValue table table-vote");
-		if (n > 2) {
-			var valdiv = createChunk(null, "div", "value-div");
-		} else {
-			var valdiv = createChunk(null, "div", "value-div first")
-		}
-		// heading row
-		var vrow = createChunk(null, "tr", "voteInfo_tr voteInfo_tr_heading");
-		if (item.rawValue === INHERITANCE_MARKER || (item.votes && Object.keys(item.votes).length > 0)) {
-			vrow.appendChild(createChunk(stui.str("voteInfo_orgColumn"), "td", "voteInfo_orgColumn voteInfo_td"));
-		}
-		var isection = createChunk(null, "div", "voteInfo_iconBar");
-		var isectionIsUsed = false;
-		var vvalue = createChunk("User", "td", "voteInfo_valueTitle voteInfo_td");
-		var vbadge = createChunk(vote, "span", "badge");
-
-		/*
-		 * Note: due to the existence of the function fixWinningValue in DataSection.java, here on the the client
-		 * we should use theRow.winningValue, not vr.winningValue. Eventually VoteResolver.getWinningValue may be
-		 * fixed in such a way that fixWinningValue isn't necessary and there won't be a distinction between
-		 * theRow.winningValue and vr.winningValue. Cf. theRow.winningVhash.
-		 * TODO: alternatively, could we just check for item.pClass === "winner" here?
-		 */
-		if (value == theRow.winningValue) {
-			appendIcon(isection, "voteInfo_winningItem d-dr-" + theRow.voteResolver.winningStatus);
-			isectionIsUsed = true;
-		}
-
-		/*
-		 * For adding star for last release value, we could check item.isOldValue or (value == vr.lastReleaseValue);
-		 * ideally the two should be consistent. The star icon should be applied to old value = inherited value when
-		 * appropriate. Work is in progress on ticket 11299, whether item with value INHERITANCE_MARKER has isOldValue,
-		 * whether vr.lastReleaseValue is ever INHERITANCE_MARKER. For flexibility, for now, show star if either of the
-		 * conditions is true.
-		 */
-		if (value == vr.lastReleaseValue || item.isOldValue) {
-			appendIcon(isection, "voteInfo_lastRelease i-star");
-			isectionIsUsed = true;
-		}
-		/* Disable all usage of the "i-vote" (vote.png, check-mark in a square) icon pending
-		 * clarification/documentation of its meaning/purpose.
-		 * Comment out in two places: here in updateRowVoteInfo, and in addVitem.
-		 * See https://unicode.org/cldr/trac/ticket/10521#comment:29
-		 */
-		/***
-		if(value != theRow.winningValue) {
-			appendIcon(isection,"i-vote");
-			isectionIsUsed = true;
-		}
-		***/
-		setLang(valdiv);
-		if (value === INHERITANCE_MARKER) {
-			appendItem(valdiv, theRow.inheritedValue, item.pClass, tr);
-			valdiv.appendChild(createChunk(stui.str("voteInfo_votesForInheritance"), 'p'));
-		} else {
-			/*
-			 * TODO: alternatively, could we just check for item.pClass === "winner" here?
-			 */
-			appendItem(valdiv, value, (value == theRow.winningValue) ? "winner" : "value", tr);
-			if (value === theRow.inheritedValue) {
-				valdiv.appendChild(createChunk(stui.str('voteInfo_votesForSpecificValue'), 'p'));
-			}
-		}
-		if (isectionIsUsed) {
-			valdiv.appendChild(isection);			
-		}
-		vrow.appendChild(vvalue);
-		var cell = createChunk(null, "td", "voteInfo_voteTitle voteInfo_voteCount voteInfo_td" + "");
-		cell.appendChild(vbadge);
-		vrow.appendChild(cell);
-		vdiv.appendChild(vrow);
-		if (!item.votes || Object.keys(item.votes).length == 0) {
-			var vrow = createChunk(null, "tr", "voteInfo_tr voteInfo_orgHeading");
-			vrow.appendChild(createChunk(stui.str("voteInfo_noVotes"), "td", "voteInfo_noVotes voteInfo_td"));
-			vrow.appendChild(createChunk(null, "td", "voteInfo_noVotes voteInfo_td"));
-			vdiv.appendChild(vrow);
-		} else {
-			updateRowVoteInfoForAllOrgs(theRow, vr, value, item, vdiv);
-		}
-		perValueContainer.appendChild(valdiv);
-		perValueContainer.appendChild(vdiv);
-	}
-	if (vr.requiredVotes) {
-		var msg = stui.sub("explainRequiredVotes", {
-			requiredVotes: vr.requiredVotes
-		});
-		perValueContainer.appendChild(createChunk(msg, "p", "alert alert-warning fix-popover-help"));
-	}
-	// done with voteresolver table
-	if (stdebug_enabled) {
-		tr.voteDiv.appendChild(createChunk(vr.raw, "p", "debugStuff"));
-	}
-}
-
-/**
- * Update the vote info for one candidate item in this row, looping through all the orgs.
- * Information will be displayed in the Information Panel (right edge of window).
- * 
- * @param theRow the row
- * @param vr the vote resolver
- * @param value the value of the candidate item
- * @param item the candidate item
- * @param vdiv a table created by the caller as vdiv = createChunk(null, "table", "voteInfo_perValue table table-vote")
- */
-function updateRowVoteInfoForAllOrgs(theRow, vr, value, item, vdiv) {
-	'use strict';
-	var createVoter = function(v) {
-		if (v == null) {
-			return createChunk("(missing information)!", "i", "stopText");
-		}
-		var div = createChunk(v.name || stui.str('emailHidden'), "td", "voteInfo_voterInfo voteInfo_td");
-		div.setAttribute('data-name', v.name || stui.str('emailHidden'));
-		div.setAttribute('data-email', v.email || '');
-		return div;
-	};
-	for (org in theRow.voteResolver.orgs) {
-		var theOrg = vr.orgs[org];
-		var vrRaw = {};
-		/*
-		 * Prior to changes for ticket 11299 there was a bug here when value = INHERITANCE_MARKER,
-		 * theOrg.orgVote = INHERITANCE_MARKER, but theOrg.votes had one member, and was is for "latn" 
-		 * not INHERITANCE_MARKER; bug was on server, problematic substitutions of "soft" votes with "hard" votes, now fixed.
-		 */
-		var orgVoteValue = theOrg.votes[value];
-		if (orgVoteValue !== undefined && orgVoteValue > 0) { // someone in the org actually voted for it
-			var topVoter = null; // top voter for this item
-			var orgsVote = (theOrg.orgVote == value);
-			var topVoterTime = 0; // Calculating the latest time for a user from same org
-			if (orgsVote) {
-				// find a top-ranking voter to use for the top line
-				for (var voter in item.votes) {
-					if (item.votes[voter].org == org && item.votes[voter].votes == theOrg.votes[value]) {
-						if (topVoterTime != 0) {
-							// Get the latest time vote only
-							if (vr.nameTime[item.votes[topVoter].name] < vr.nameTime[item.votes[voter].name]) {
-								topVoter = voter;
-								// console.log(item);
-								// console.log(vr.nameTime[item.votes[topVoter].name]);
-								topVoterTime = vr.nameTime[item.votes[topVoter].name];
-							}
-						} else {
-							topVoter = voter;
-							// console.log(item);
-							// console.log(vr.nameTime[item.votes[topVoter].name]);
-							topVoterTime = vr.nameTime[item.votes[topVoter].name];
-						}
-					}
-				}
-			} else {
-				// just find someone in the right org..
-				for (var voter in item.votes) {
-					if (item.votes[voter].org == org) {
-						topVoter = voter;
-						break;
-					}
-				}
-			}
-			// ORG SUBHEADING row
-
-			/*
-			 * There was some buggy code here, testing item.votes[topVoter].isVoteForBailey, but no element
-			 * of the votes array could have had isVoteForBailey, which was a property of an "item" (CandidateItem)
-			 * not a "vote" (based on UserRegistry.User -- see CandidateItem.toJSONString in DataSection.java)
-			 * 
-			 * item.votes[topVoter].isVoteForBailey was always undefined (effectively false), so baileyClass
-			 * was always "" (empty string) here.
-			 * 
-			 * This has been fixed, to test item.rawValue === INHERITANCE_MARKER instead.
-			 * 
-			 * This only affects cells ("td" elements) with style "voteInfo_voteCount", which appear in the info panel,
-			 * and which have contents like '<span class="badge">12</span>'. If the "fallback" style is added, then
-			 * these circled numbers are surrounded (outside the circle) by a colored background.
-			 * 
-			 * TODO: see whether the colored background is actually wanted in this context, around the numbers.
-			 * For now, display it, and use item.pClass rather than literal "fallback" so the color matches when
-			 * item.pClass is "alias", "fallback_root", etc.
-			 */
-			var baileyClass = (item.rawValue === INHERITANCE_MARKER) ? " " + item.pClass : "";
-			var vrow = createChunk(null, "tr", "voteInfo_tr voteInfo_orgHeading");
-			vrow.appendChild(createChunk(org, "td", "voteInfo_orgColumn voteInfo_td"));
-			if (item.votes[topVoter]) {
-				vrow.appendChild(createVoter(item.votes[topVoter])); // voteInfo_td
-			} else {
-				vrow.appendChild(createVoter(null));
-			}
-			if (orgsVote) {
-				var cell = createChunk(null, "td", "voteInfo_orgsVote voteInfo_voteCount voteInfo_td" + baileyClass);
-				cell.appendChild(createChunk(orgVoteValue, "span", "badge"));
-				vrow.appendChild(cell);
-			} else {
-				vrow.appendChild(createChunk(orgVoteValue, "td", "voteInfo_orgsNonVote voteInfo_voteCount voteInfo_td" + baileyClass));
-			}
-			vdiv.appendChild(vrow);
-			// now, other rows:
-			for (var voter in item.votes) {
-				if (item.votes[voter].org != org || // wrong org or
-					voter == topVoter) { // already done
-					continue; // skip
-				}
-				// OTHER VOTER row
-				var vrow = createChunk(null, "tr", "voteInfo_tr");
-				vrow.appendChild(createChunk("", "td", "voteInfo_orgColumn voteInfo_td")); // spacer
-				vrow.appendChild(createVoter(item.votes[voter])); // voteInfo_td
-				vrow.appendChild(createChunk(item.votes[voter].votes, "td", "voteInfo_orgsNonVote voteInfo_voteCount voteInfo_td" + baileyClass));
-				vdiv.appendChild(vrow);
-			}
-		}
-	}
-}
-
-/*
- * Update the "Code" cell (column) of this row
- * 
- * @param tr the table row
- * @param theRow the data from the server for this row
- * @param config
- * @param children
- * 
- * Called by updateRow.
- */
-function updateRowCodeCell(tr, theRow, config, children) {
-	'use strict';
-	children[config.codecell].appendChild(createChunk('|>'));
-	removeAllChildNodes(children[config.codecell]);
-	children[config.codecell].appendChild(createChunk('<|'));
-	removeAllChildNodes(children[config.codecell]);
-	var codeStr = theRow.code;
-	if (theRow.coverageValue == 101 && !stdebug_enabled) {
-		codeStr = codeStr + " (optional)";
-	}
-	children[config.codecell].appendChild(createChunk(codeStr));
-	if (tr.theTable.json.canModify) { // pointless if can't modify.
-		children[config.codecell].className = "d-code";
-		if (!tr.forumDiv) {
-			tr.forumDiv = document.createElement("div");
-			tr.forumDiv.className = "forumDiv";
-		}
-		appendForumStuff(tr, theRow, tr.forumDiv);
-	}
-	// extra attributes
-	if (theRow.extraAttributes && Object.keys(theRow.extraAttributes).length > 0) {
-		appendExtraAttributes(children[config.codecell], theRow);
-	}
-	if (stdebug_enabled) {
-		var anch = document.createElement("i");
-		anch.className = "anch";
-		anch.id = theRow.xpathId;
-		children[config.codecell].appendChild(anch);
-		anch.appendChild(document.createTextNode("#"));
-		var go = document.createElement("a");
-		go.className = "anch-go";
-		go.appendChild(document.createTextNode("zoom"));
-		go.href = window.location.pathname + "?_=" + surveyCurrentLocale + "&x=r_rxt&xp=" + theRow.xpathId;
-		children[config.codecell].appendChild(go);
-		var js = document.createElement("a");
-		js.className = "anch-go";
-		js.appendChild(document.createTextNode("{JSON}"));
-		js.popParent = tr;
-		listenToPop(JSON.stringify(theRow), tr, js);
-		children[config.codecell].appendChild(js);
-		children[config.codecell].appendChild(createChunk(" c=" + theRow.coverageValue));
-	}
-	if (!children[config.codecell].isSetup) {
-		var xpathStr = "";
-		if (stdebug_enabled) {
-			xpathStr = "XPath: " + theRow.xpath;
-		}
-		listenToPop(xpathStr, tr, children[config.codecell]);
-		children[config.codecell].isSetup = true;
-	}
-}
-
-/**
- * Update the "comparison cell", a.k.a. the "English" column, of this row
- * 
- * @param tr the table row
- * @param theRow the data from the server for this row
- * @param config
- * @param children
- * 
- * Called by updateRow.
- */
-function updateRowEnglishComparisonCell(tr, theRow, config, children) {
-	'use strict';
-	if (theRow.displayName) {
-		var hintPos = theRow.displayName.indexOf('[translation hint');
-		var hasExample = false;
-		if (theRow.displayExample) {
-			hasExample = true;
-		}
-		if (hintPos != -1) {
-			theRow.displayExample = theRow.displayName.substr(hintPos, theRow.displayName.length) + (theRow.displayExample ? theRow.displayExample.replace(/\[translation hint.*?\]/g, "") : '');
-			theRow.displayName = theRow.displayName.substr(0, hintPos);
-		}
-		children[config.comparisoncell].appendChild(createChunk(theRow.displayName, 'span', 'subSpan'));
-		setLang(children[config.comparisoncell], surveyBaselineLocale);
-		if (theRow.displayExample) {
-			appendExample(children[config.comparisoncell], theRow.displayExample, surveyBaselineLocale);
-		}
-		if (hintPos != -1 || hasExample) {
-			var infos = document.createElement("div");
-			infos.className = 'infos-code';
-			if (hintPos != -1) {
-				var img = document.createElement("img");
-				img.src = 'hint.png';
-				img.alt = 'Translation hint';
-				infos.appendChild(img);
-			}
-			if (hasExample) {
-				var img = document.createElement("img");
-				img.src = 'example.png';
-				img.alt = 'Example';
-				infos.appendChild(img);
-			}
-			children[config.comparisoncell].appendChild(infos);
-		}
-	} else {
-		children[config.comparisoncell].appendChild(document.createTextNode(""));
-	}
-	/* The next line (listenToPop...) had been commented out, for unknown reasons.
-	 * Restored (uncommented) for http://unicode.org/cldr/trac/ticket/10573 so that
-	 * the right-side panel info changes when you click on the English column.
-	 */
-	listenToPop(null, tr, children[config.comparisoncell]);
-	children[config.comparisoncell].isSetup = true;
-}
-
-/**
- * Update the "proposed cell", a.k.a. the "Winning" column, of this row
- * 
- * @param tr the table row
- * @param theRow the data from the server for this row
- * @param config
- * @param children
- * @param protoButton
- * 
- * Called by updateRow.
- */
-function updateRowProposedWinningCell(tr, theRow, config, children, protoButton) {
-	'use strict';
-	removeAllChildNodes(children[config.proposedcell]); // win
-	if (theRow.rowFlagged) {
-		var flagIcon = addIcon(children[config.proposedcell], "s-flag");
-		flagIcon.title = stui.str("flag_desc");
-	} else if (theRow.canFlagOnLosing) {
-		var flagIcon = addIcon(children[config.proposedcell], "s-flag-d");
-		flagIcon.title = stui.str("flag_d_desc");
-	}
-	setLang(children[config.proposedcell]);
-	tr.proposedcell = children[config.proposedcell];
-
-	/*
-	 * If server doesn't do its job properly, theRow.items[theRow.winningVhash] may be undefined.
-	 * Check for that here to prevent crash in addVitem. An error message might be appropriate here
-	 * in that case, though the consistency checking really should happen earlier.
-	 */
-	if (theRow.items && theRow.winningVhash && theRow.items[theRow.winningVhash]) {
-		addVitem(children[config.proposedcell], tr, theRow, theRow.items[theRow.winningVhash], cloneAnon(protoButton));
-	} else {
-		children[config.proposedcell].showFn = function() {}; // nothing else to show
-	}
-	listenToPop(null, tr, children[config.proposedcell], children[config.proposedcell].showFn);
-}
-
-/*
- * Update the "Others" cell (column) of this row
- * 
- * @param tr the table row
- * @param theRow the data from the server for this row
- * @param config
- * @param children
- * @param protoButton
- * @param formAdd
- * 
- * Called by updateRow.
- */
-function updateRowOthersCell(tr, theRow, config, children, protoButton, formAdd) {
-	'use strict';
-	var hadOtherItems = false;
-	removeAllChildNodes(children[config.othercell]); // other
-	setLang(children[config.othercell]);
-
-	if (tr.canModify) {
-		formAdd.role = "form";
-		formAdd.className = "form-inline";
-		var buttonAdd = document.createElement("div");
-		var btn = document.createElement("button");
-		buttonAdd.className = "button-add form-group";
-
-		toAddVoteButton(btn);
-
-		buttonAdd.appendChild(btn);
-		formAdd.appendChild(buttonAdd);
-
-		var input = document.createElement("input");
-		var popup;
-		input.className = "form-control input-add";
-		input.placeholder = 'Add a translation';
-		var copyWinning = document.createElement("button");
-		copyWinning.className = "copyWinning btn btn-info btn-xs";
-		copyWinning.title = "Copy Winning";
-		copyWinning.type = "button";
-		copyWinning.innerHTML = '<span class="glyphicon glyphicon-arrow-right"></span> Winning';
-		copyWinning.onclick = function(e) {
-			var theValue = null;
-			if (theRow.items[theRow.winningVhash]) {
-				theValue = theRow.items[theRow.winningVhash].value;
-			}
-			if (theValue === INHERITANCE_MARKER || theValue === null) {
-				theValue = theRow.inheritedValue;
-			}
-			input.value = theValue || null;
-			input.focus();
-		}
-		var copyEnglish = document.createElement("button");
-		copyEnglish.className = "copyEnglish btn btn-info btn-xs";
-		copyEnglish.title = "Copy English";
-		copyEnglish.type = "button";
-		copyEnglish.innerHTML = '<span class="glyphicon glyphicon-arrow-right"></span> English';
-		copyEnglish.onclick = function(e) {
-			input.value = theRow.displayName || null;
-			input.focus();
-		}
-		btn.onclick = function(e) {
-			//if no input, add one
-			if ($(buttonAdd).parent().find('input').length == 0) {
-
-				//hide other
-				$.each($('button.vote-submit'), function() {
-					toAddVoteButton(this);
-				});
-
-				//transform the button
-				toSubmitVoteButton(btn);
-				$(buttonAdd).popover({
-					content: ' '
-				}).popover('show');
-				popup = $(buttonAdd).parent().find('.popover-content');
-				popup.append(input);
-				if (theRow.displayName) {
-					popup.append(copyEnglish);
-				}
-				if ((theRow.items[theRow.winningVhash] && theRow.items[theRow.winningVhash].value) ||
-					theRow.inheritedValue) {
-					popup.append(copyWinning);
-				}
-				popup.closest('.popover').css('top', popup.closest('.popover').position().top - 19);
-				input.focus();
-
-				//enter pressed
-				$(input).keydown(function(e) {
-					var newValue = $(this).val();
-					if (e.keyCode == 13) { //enter pressed
-						if (newValue) {
-							addValueVote(children[config.othercell], tr, theRow, newValue, cloneAnon(protoButton));
-						} else {
-							toAddVoteButton(btn);
-						}
-					} else if (e.keyCode === 27) {
-						toAddVoteButton(btn);
-					}
-				});
-
-			} else {
-				var newValue = input.value;
-
-				if (newValue) {
-					addValueVote(children[config.othercell], tr, theRow, newValue, cloneAnon(protoButton));
-				} else {
-					toAddVoteButton(btn);
-				}
-				stStopPropagation(e);
-				return false;
-			}
-			stStopPropagation(e);
-			return false;
-		};
-	}
-	/*
-	/* Add the other vote info -- that is, vote info for the "Others" column.
-	 */
-	for (k in theRow.items) {
-		if (k === theRow.winningVhash) { // skip vote for winner
-			continue;
-		}
-		hadOtherItems = true;
-		addVitem(children[config.othercell], tr, theRow, theRow.items[k], cloneAnon(protoButton));
-		children[config.othercell].appendChild(document.createElement("hr"));
-	}
-
-	if (!hadOtherItems /*!onIE*/ ) {
-		listenToPop(null, tr, children[config.othercell]);
-	}
-	if (tr.myProposal && tr.myProposal.value && !findItemByValue(theRow.items, tr.myProposal.value)) {
-		// add back my proposal
-		children[config.othercell].appendChild(tr.myProposal);
-	} else {
-		tr.myProposal = null; // not needed
-	}
-}
-
-/*
- * Update the "no cell", a.k.a, the "Abstain" column, of this row
- *
- * If the user can make changes, add an "abstain" button;
- * else, possibly add a ticket link, or else hide the column.
- *
- * @param tr the table row
- * @param theRow the data from the server for this row
- * @param config
- * @param children
- * @param protoButton
- * 
- * Called by updateRow.
- */
-function updateRowNoAbstainCell(tr, theRow, config, children, protoButton) {
-	'use strict';
-	if (tr.canModify) {
-		removeAllChildNodes(children[config.nocell]); // no opinion
-		var noOpinion = cloneAnon(protoButton);
-		var wrap;
-		wireUpButton(noOpinion, tr, theRow, null);
-		noOpinion.value = null;
-		wrap = wrapRadio(noOpinion);
-		children[config.nocell].appendChild(wrap);
-		listenToPop(null, tr, children[config.nocell]);
-	} else if (tr.ticketOnly) { // ticket link
-		if (!tr.theTable.json.canModify) { // only if hidden in the header
-			setDisplayed(children[config.nocell], false);
-		}
-		children[config.proposedcell].className = "d-change-confirmonly";
-		var surlink = document.createElement("div");
-		surlink.innerHTML = '<span class="glyphicon glyphicon-list-alt"></span>&nbsp;&nbsp;';
-		surlink.className = 'alert alert-info fix-popover-help';
-		var link = createChunk(stui.str("file_a_ticket"), "a");
-		var newUrl = "http://unicode.org/cldr/trac" +
-			"/newticket?component=data&summary=" + surveyCurrentLocale + ":" + theRow.xpath +
-			"&locale=" + surveyCurrentLocale + "&xpath=" + theRow.xpstrid + "&version=" + surveyVersion;
-		link.href = newUrl;
-		link.target = "cldr-target-trac";
-		theRow.proposedResults = createChunk(stui.str("file_ticket_must"), "a",
-			"fnotebox");
-		theRow.proposedResults.href = newUrl;
-		if (!window.surveyOfficial) {
-			link.appendChild(createChunk(
-				" (Note: this is not the production SurveyTool! Do not submit a ticket!) ", "p"));
-			link.href = link.href + "&description=NOT+PRODUCTION+SURVEYTOOL!";
-		}
-		children[config.proposedcell].appendChild(createChunk(stui.str("file_ticket_notice"), "i", "fnotebox"));
-		surlink.appendChild(link);
-		tr.ticketLink = surlink;
-	} else { // no change possible
-		if (!tr.theTable.json.canModify) { // only if hidden in the header
-			setDisplayed(children[config.nocell], false);
-		}
-	}
-}
-
-function findPartition(partitions,partitionList,curPartition,i) {
-	if(curPartition &&
-			i>=curPartition.start &&
-			i<curPartition.limit) {
-		return curPartition;
-	}
-	for(var j in partitionList) {
-		var p = partitions[j];
-		if(i>=p.start &&
-			i<p.limit) {
-				return p;
-			}
-	}
-	return null;
-}
-
-function insertRowsIntoTbody(theTable,tbody) {
-	theTable.hitCount++;
-	var theRows = theTable.json.section.rows;
-	var toAdd = theTable.toAdd;
-	var parRow = dojo.byId('proto-parrow');
-	removeAllChildNodes(tbody);
-
-	var theSort = theTable.json.displaySets[theTable.curSortMode];
-	var partitions = theSort.partitions;
-	var rowList = theSort.rows;
-	var partitionList = Object.keys(partitions);
-	var curPartition = null;
-	for(i in rowList ) {
-		var k = rowList[i];
-		var theRow = theRows[k];
-		var dir = theRow.dir;
-		overridedir = (dir != null ? dir : null);
-		//no partition in the dashboard
-		if(!isDashboard()) {
-			var newPartition = findPartition(partitions,partitionList,curPartition,i);
-
-			if(newPartition != curPartition) {
-				if(newPartition.name != "") {
-					var newPar = cloneAnon(parRow);
-					var newTd = getTagChildren(newPar);
-					var newHeading = getTagChildren(newTd[0]);
-					newHeading[0].innerHTML = newPartition.name;
-					newHeading[0].id = newPartition.name;
-					tbody.appendChild(newPar);
-					newPar.origClass = newPar.className;
-					newPartition.tr = newPar; // heading
-				}
-				curPartition = newPartition;
-			}
-
-			var theRowCov = parseInt(theRow.coverageValue);
-			if(!newPartition.minCoverage || newPartition.minCoverage > theRowCov) {
-				newPartition.minCoverage = theRowCov;
-                if(newPartition.tr) {
-                    // only set coverage of the header if there's a header
-            	    newPartition.tr.className = newPartition.origClass+" cov"+newPartition.minCoverage;
-                }
-			}
-		}
-
-		var tr = theTable.myTRs[k];
-		if(!tr) {
-			tr = cloneAnon(toAdd);
-			theTable.myTRs[k]=tr; // save for later use
-		}
-
-		tr.rowHash = k;
-		tr.theTable = theTable;
-		if(!theRow) {
-			console.log("Missing row " + k);
-		}
-		// update the xpath map
-		xpathMap.put({id: theRow.xpathId,
-					  hex: theRow.xpstrid,
-					  path: theRow.xpath,
-					  ph: {
-					       section: surveyCurrentSection, // Section: Timezones
-					       page: surveyCurrentPage,    // Page: SEAsia ( id, not name )
-					       header: curPartition.name,    // Header: Borneo
-					       code: theRow.code           // Code: standard-long
-					  	}
-					});
-
-		// refresh the tr's contents
-		updateRow(tr,theRow);
-
-		// add the tr to the table
-		tbody.appendChild(tr);
-	}
-}
-
-function reSort(theTable,k) {
-	if(theTable.curSortMode==k) {
-		return; // no op
-	}
-	theTable.curSortMode=k;
-	insertRowsIntoTbody(theTable,theTable.getElementsByTagName("tbody")[0]);
-	var lis = theTable.sortMode.getElementsByTagName("li");
-	for(i in lis) {
-		var li = lis[i];
-		if(li.mode==k) {
-			li.className="selected";
-		} else {
-			li.className = "notselected";
-		}
-	}
-}
-
-/**
- *
- * Setup the 'sort' popup menu.
- */
-function setupSortmode(theTable) {
-	var theSortmode = theTable.sortMode;
-	// ignore what's there
-	removeAllChildNodes(theSortmode);
-	var listOfLists = Object.keys(theTable.json.displaySets);
-	var itemCount = Object.keys(theTable.json.section.rows).length;
-	var size = document.createElement("span");
-	size.className="d-sort-size";
-	var ul = document.createElement("ul");
-	if(itemCount>0) {
-		for(i in listOfLists) {
-			var k = listOfLists[i];
-			if(k=="default") continue;
-
-			var a = document.createElement("li");
-			a.onclick = (function() {
-				var kk = k;
-				return function() {
-					reSort(theTable, kk);
-				};
-			})();
-			a.appendChild(document.createTextNode(theTable.json.displaySets[k].displayName));
-			a.mode=k;
-			if(k==theTable.curSortMode) {
-				a.className="selected";
-			} else {
-				a.className = "notselected";
-			}
-			ul.appendChild(a);
-		}
-	}
-	theTable.json.section.itemCount = itemCount;
-
-	if(itemCount==0 && theTable.json.section.skippedDueToCoverage) {
-		size.appendChild(document.createTextNode(
-				stui.sub("itemCountAllHidden", theTable.json.section)
-				));
-		size.className = "d-sort-size0";
-	} else if(itemCount==0) {
-		size.appendChild(document.createTextNode(
-				stui.sub("itemCountNone", theTable.json.section)
-				));
-		size.className = "d-sort-size0";
-	} else if(theTable.json.section.skippedDueToCoverage) {
-		size.appendChild(document.createTextNode(
-				stui.sub("itemCountHidden",theTable.json.section)
-				));
-	} else {
-		size.appendChild(document.createTextNode(
-				stui.sub("itemCount", theTable.json.section)));
 	}
 }
 
@@ -3973,81 +2952,6 @@ function updateCoverage(theDiv) {
 	}
 }
 
-/**
- * Prepare rows to be inserted into theDiv
- * @method insertRows
- */
-function insertRows(theDiv,xpath,session,json) {
-	var theTable = theDiv.theTable;
-	var doInsertTable = null;
-
-	removeAllChildNodes(theDiv);
-	window.insertLocaleSpecialNote(theDiv);
-	//recreated table in every case
-	theTable = cloneLocalizeAnon(dojo.byId('proto-datatable'));
-	if(isDashboard())
-		theTable.className += ' dashboard';
-	else
-		theTable.className += ' vetting-page';
-	updateCoverage(theDiv);
-	localizeFlyover(theTable);
-	theTable.theadChildren = getTagChildren(theTable.getElementsByTagName("tr")[0]);
-	var toAdd = dojo.byId('proto-datarow');  // loaded from "hidden.html", which see.
-	var rowChildren = getTagChildren(toAdd);
-	theTable.config = surveyConfig ={};
-	for(var c in rowChildren) {
-		rowChildren[c].title = theTable.theadChildren[c].title;
-		if(rowChildren[c].id) {
-			surveyConfig[rowChildren[c].id] = c;
-			stdebug("  config."+rowChildren[c].id+" = children["+c+"]");
-			if(false&&stdebug_enabled) {
-				removeAllChildNodes(rowChildren[c]);
-				rowChildren[c].appendChild(createChunk("config."+rowChildren[c].id+"="+c));
-			}
-		} else {
-			stdebug("(proto-datarow #"+c+" has no id");
-		}
-	}
-	if(stdebug_enabled) stdebug("Table Config: " + JSON.stringify(theTable.config));
-
-	theTable.toAdd = toAdd;
-	if(!json.canModify) {
-		setDisplayed(theTable.theadChildren[theTable.config.nocell], false);
-	}
-	theTable.sortMode = cloneAnon(dojo.byId('proto-sortmode'));
-	theDiv.appendChild(theTable.sortMode);
-	theTable.myTRs = [];
-	theDiv.theTable = theTable;
-	theTable.theDiv = theDiv;
-	doInsertTable=theTable;
-
-	// append header row
-	theTable.json = json;
-	theTable.xpath = xpath;
-	theTable.hitCount=0;
-	theTable.session = session;
-
-	if(!theTable.curSortMode) {
-		theTable.curSortMode = theTable.json.displaySets["default"];
-		// hack - choose one of these
-		if(theTable.json.displaySets.codecal) {
-			theTable.curSortMode = "codecal";
-		} else if(theTable.json.displaySets.metazon) {
-			theTable.curSortMode = "metazon";
-		}
-	}
-	setupSortmode(theTable);
-
-	var tbody = theTable.getElementsByTagName("tbody")[0];
-	insertRowsIntoTbody(theTable,tbody);
-	if(doInsertTable) {
-		theDiv.appendChild(doInsertTable);
-	} else {
-		setDisplayed(theTable, true);
-	}
-	hideLoader(theDiv.loader);
-}
-
 function loadStui(loc, cb) {
 	if(!stui.ready) {
 		require(["dojo/i18n!./surveyTool/nls/stui.js"], function(stuibundle){
@@ -4071,8 +2975,9 @@ function firstword(str) {
 	return str.split(" ")[0];
 }
 
-function appendIcon(toElement, className) {
+function appendIcon(toElement, className, title) {
 	var e = createChunk(null, "div", className);
+	e.title = title;
 	toElement.appendChild(e);
 	return e;
 }
@@ -4196,1999 +3101,201 @@ function setLang(node, loc) {
 
 	if(overridedir){
 		node.dir = overridedir;
-	} else if (info.dir) {
+	} else if (info && info.dir) {
 		node.dir = info.dir;
 	}
 
-	if(info.bcp47) {
+	if(info && info.bcp47) {
 		node.lang = info.bcp47;
 	}
 }
 
-/**
- * Utilities for the 'v.jsp' (new dispatcher) page.  Call this once in the page. It expects to find a node #DynamicDataSection
- * @method showV
+/*
+ * Note: the large function showV() has moved from here to CldrSurveyVettingLoader.js
  */
-function showV() {
-	// REQUIRES
-	require([
-	         "dojo/ready",
-	         "dojo/dom",
-	         "dojo/parser",
-	         "dijit/DropDownMenu",
-	         "dijit/form/DropDownButton",
-	         "dijit/MenuSeparator",
-	         "dijit/MenuItem",
-	         "dijit/form/TextBox",
-	         "dijit/form/Button",
-	         "dijit/CheckedMenuItem",
-	         "dijit/Dialog",
-	         "dijit/registry",
-	         "dijit/PopupMenuItem",
-	         "dijit/form/Select",
-	         "dojox/form/BusyButton",
-	         "dijit/layout/StackContainer",
-	         "dijit/TitlePane",
-	         "dojo/hash",
-	         "dojo/topic",
-	         "dojo/dom-construct",
-	         "dojo/number",
-	         "dojo/domReady!"
-	         ],
-	         // HANDLES
-	         function(
-	        		 ready,
-	        		 dom,
-	        		 parser,
-	        		 DropDownMenu,
-	        		 DropDownButton,
-	        		 MenuSeparator,
-	        		 MenuItem,
-	        		 TextBox,
-	        		 Button,
-	        		 CheckedMenuItem,
-	        		 Dialog,
-	        		 registry,
-	        		 PopupMenuItem,
-	        		 Select,
-	        		 BusyButton,
-	        		 StackContainer,
-	        		 TitlePane,
-	        		 dojoHash,
-	        		 dojoTopic,
-	        		 domConstruct,
-	        		 dojoNumber
-	         ) {
-		loadStui(null, function(/*stui*/) {
 
-		var appendLocaleLink = function appendLocaleLink(subLocDiv, subLoc, subInfo, fullTitle) {
-			var name = locmap.getRegionAndOrVariantName(subLoc);
-			if(fullTitle) {
-				name = locmap.getLocaleName(subLoc);
-			}
-			var clickyLink = createChunk(name, "a", "locName");
-			clickyLink.href = linkToLocale(subLoc);
-			subLocDiv.appendChild(clickyLink);
-			if(subInfo == null) {
-				console.log("* internal: subInfo is null for " + name + " / " + subLoc);
-			}
-			if(subInfo.name_var) {
-				addClass(clickyLink, "name_var");
-			}
-			clickyLink.title=subLoc; // remove auto generated "locName.title"
+/**
+ * Get a table showing old votes available for importing, along with
+ * controls for choosing which votes to import. 
+ *
+ * @param voteList the array of old votes
+ * @param type "contested" for losing votes or "uncontested" for winning votes
+ * @param baselineLanguage a string indicating the baseline language, generally "English"
+ * @param dir the direction, such as "ltr" for left-to-right
+ * @returns a new div element containing the table and controls
+ * 
+ * Called only by addOldvotesType
+ */
+function showVoteTable(voteList, type, baselineLanguage, dir) {
+    'use strict';
+    var voteTableDiv = document.createElement("div");
+    var t = document.createElement("table");
+    t.id = 'oldVotesAcceptList';
+    voteTableDiv.appendChild(t);
+    var th = document.createElement("thead");
+    var tb = document.createElement("tbody");
+    var tr = document.createElement("tr");
+    tr.appendChild(createChunk(stui.str("v_oldvotes_path"), "th", "code"));
+    tr.appendChild(createChunk(baselineLanguage, "th", "v-comp"));
+    tr.appendChild(createChunk(stui.sub("v_oldvotes_winning_msg", {
+        version: surveyLastVoteVersion
+    }), "th", "v-win"));
+    tr.appendChild(createChunk(stui.str("v_oldvotes_mine"), "th", "v-mine"));
+    tr.appendChild(createChunk(stui.str("v_oldvotes_accept"), "th", "v-accept"));
+    th.appendChild(tr);
+    t.appendChild(th);
+    var oldPath = '';
+    var oldSplit = [];
+    var mainCategories = [];
+    for (var k in voteList) {
+        var row = voteList[k];
+        var tr = document.createElement("tr");
+        var tdp;
+        var rowTitle = '';
 
-			if(subInfo.readonly) {
-				addClass(clickyLink, "locked");
-				addClass(subLocDiv, "hide");
-
-				if(subInfo.readonly_why) {
-					clickyLink.title = subInfo.readonly_why;
-				} else if(subInfo.dcChild) {
-					clickyLink.title = stui.sub("defaultContentChild_msg", { info: subInfo, locale: subLoc, dcChildName: locmap.getLocaleName(subInfo.dcChild)});
-				} else {
-					clickyLink.title = 	stui.str("readonlyGuidance");
-				}
-			} else if(window.canmodify && subLoc in window.canmodify) {
-				addClass(clickyLink, "canmodify");
-			}
-			else {
-				addClass(subLocDiv, "hide");
-			}
-			return clickyLink;
-		};
-
-		/**
-		 * list of pages to use with the flipper
-		 * @property pages
-		 */
-		var pages = {
-				loading: "LoadingMessageSection",
-				data: "DynamicDataSection",
-				other: "OtherSection",
-		};
-		var flipper = new Flipper( [pages.loading, pages.data, pages.other] );
-
-		var pucontent = dojo.byId("itemInfo");
-		var theDiv = flipper.get(pages.data);
-		theDiv.pucontent = pucontent;
-		theDiv.stui = loadStui();
-
-		pucontent.appendChild(createChunk(stui.str("itemInfoBlank"),"i"));
-
-		/**
-		 * List of buttons/titles to set.
-		 * @property menubuttons
-		 */
-		var menubuttons = {
-			locale: "title-locale",
-			section: "title-section",
-			page: "title-page",
-			dcontent: "title-dcontent",
-
-			set: function(x,y) {
-				stdebug("menuset " + x + " = " + y);
-				var cnode = dojo.byId(x+"-container");
-				var wnode = this.getRegistry(x);
-				var dnode = this.getDom(x);
-				if(!cnode) cnode = dnode; // for Elements that do their own stunts
-				if(y && y !== '-' && y !== '') {
-					if(wnode != null) {
-						wnode.set('label',y);
-					} else  {
-						updateIf(x,y); // non widget
-					}
-					setDisplayed(cnode, true);
-				} else {
-					setDisplayed(cnode, false);
-					if(wnode != null) {
-						wnode.set('label','-');
-					} else  {
-						updateIf(x,'-'); // non widget
-					}
-				}
-			},
-			getDom: function(x) {
-				return dojo.byId(x);
-			},
-			getRegistry: function(x) {
-				return registry.byId(x);
-			},
-			getContainer: function(x) {
-				return dojo.byId(x+"-container");
-			}
-		};
-
-		// TODO remove this debug item
-		window.__FLIPPER = flipper;
-
-		/**
-		 * Manage additional special pages
-		 * @class OtherSpecial
-		 */
-		function OtherSpecial() {
-			// cached page list
-			this.pages = {};
-		}
-
-		/**
-		 * @function getSpecial
-		 */
-		OtherSpecial.prototype.getSpecial = function getSpecial(name) {
-			return this.pages[name];
-		};
-
-		/**
-		 * @function loadSpecial
-		 */
-		OtherSpecial.prototype.loadSpecial = function loadSpecial(name, onSuccess, onFailure) {
-			var special = this.getSpecial(name);
-			var otherThis = this;
-			if(special) {
-				stdebug("OS: Using cached special: "+ name);
-				onSuccess(special);
-			} else if (special === null) {
-				stdebug("OS: cached NULL: " + name);
-				onFailure("Special page failed to load: " + name);
-			} else {
-				stdebug("OS: Attempting load.." + name);
-				try {
-					require(["js/special/"+name+".js"], function(specialFn) {
-						stdebug("OS: Loaded, instantiatin':" + name);
-						var special = new specialFn();
-						special.name = name;
-						otherThis.pages[name] = special; // cache for next time
-
-						stdebug("OS: SUCCESS! " + name);
-						onSuccess(special);
-					});
-				} catch(e) {
-					stdebug("OS: Load FAIL!:" + name + " - " + e.message + " - " + e);
-					if(!otherThis.pages[name]) { // if the load didn't complete:
-						otherThis.pages[name]=null; // mark as don't retry load.
-					}
-					onFailure(e);
-				}
-			}
-		};
-
-		/**
-		 * @function parseHash
-		 */
-		OtherSpecial.prototype.parseHash = function parseHash(name, hash, pieces) {
-			this.loadSpecial(name, function onSuccess(special) {
-				special.parseHash(hash, pieces);
-			}, function onFailure(e) {
-				console.log("OtherSpecial.parseHash: Failed to load " + name + " - " + e);
-			});
-		};
-
-		/**
-		 * @function handleIdChanged
-		 */
-		OtherSpecial.prototype.handleIdChanged = function handleIdChanged(name, id) {
-			this.loadSpecial(name, function onSuccess(special) {
-				special.handleIdChanged(id);
-			}, function onFailure(e) {
-				console.log("OtherSpecial.handleIdChanged: Failed to load " + name + " - " + e);
-			});
-		};
-
-		/**
-		 * @function showPage
-		 */
-		OtherSpecial.prototype.show = function show(name, params) {
-			this.loadSpecial(name, function onSuccess(special) {
-				// populate the params a little more
-				params.otherSpecial = this;
-				params.name = name;
-				params.special = special;
-
-				// add anything from scope..
-
-				params.exports = {
-						// All things that should be separate AMD modules..
-						appendLocaleLink: appendLocaleLink,
-						handleDisconnect: handleDisconnect,
-						clickToSelect: clickToSelect
-				};
-
-				special.show(params);
-			}, function onFailure(err) {
-
-				// extended error
-				var loadingChunk;
-				var msg_fmt = stui.sub("v_bad_special_msg",
-						{special: name });
-				params.flipper.flipTo(params.pages.loading, loadingChunk = createChunk(msg_fmt,"p","errCodeMsg"));
-				isLoading=false;
-			});
-		};
-
-		/**
-		 * instance of otherSpecial manager
-		 * @property otherSpecial
-		 */
-		var otherSpecial = new OtherSpecial();
-
-		/**
-		 * parse the hash string into surveyCurrent___ variables.
-		 * Expected to update document.title also.
-		 * @method parseHash
-		 * @param {String} id
-		 */
-		window.parseHash = function parseHash(hash) {
-			function updateWindowTitle() {
-				var t=stui.str('survey_title');
-				if(surveyCurrentLocale && surveyCurrentLocale != '') {
-					t = t + ': '+locmap.getLocaleName(surveyCurrentLocale);
-				}
-				if(surveyCurrentSpecial && surveyCurrentSpecial!='') {
-					t = t + ': ' + stui.str('special_'+surveyCurrentSpecial);
-				}
-				if(surveyCurrentPage && surveyCurrentPage !='') {
-					t = t + ': ' + surveyCurrentPage;
-				}
-				document.title = t;
-			};
-			if(hash) {
-				var pieces = hash.substr(0).split("/");
-				if(pieces.length > 1) {
-					surveyCurrentLocale = pieces[1]; // could be null
-				} else {
-					surveyCurrentLocale = '';
-				}
-				if(pieces[0].length==0 && surveyCurrentLocale!=''&&surveyCurrentLocale!=null) {
-					if(pieces.length>2) {
-						surveyCurrentPage = pieces[2];
-						if(pieces.length>3){
-							surveyCurrentId = pieces[3];
-							if(surveyCurrentId.substr(0,2)=='x@') {
-								surveyCurrentId=surveyCurrentId.substr(2);
-							}
-						} else {
-							surveyCurrentId = '';
-						}
-					} else {
-						surveyCurrentPage='';
-						surveyCurrentId='';
-					}
-					window.surveyCurrentSpecial=null;
-				} else {
-					window.surveyCurrentSpecial = pieces[0];
-					if(surveyCurrentSpecial=='') {
-						surveyCurrentSpecial='locales';
-					}
-					if(surveyCurrentSpecial=='locales') {
-						// allow locales list to retain ID / Page string for passthrough.
-						surveyCurrentLocale='';
-						if(pieces.length>2) {
-							surveyCurrentPage = pieces[2];
-							if(pieces.length>3){
-								surveyCurrentId = pieces[3];
-								if(surveyCurrentId.substr(0,2)=='x@') {
-									surveyCurrentId=surveyCurrentId.substr(2);
-								}
-							} else {
-								surveyCurrentId = '';
-							}
-						} else {
-							surveyCurrentPage='';
-							surveyCurrentId='';
-						}
-					} else if(isReport(surveyCurrentSpecial)) { // allow page and ID to fall through.
-						if(pieces.length>2) {
-							surveyCurrentPage = pieces[2];
-							if(pieces.length>3){
-								surveyCurrentId = pieces[3];
-							} else {
-								surveyCurrentId = '';
-							}
-						} else {
-							surveyCurrentPage='';
-							surveyCurrentId='';
-						}
-					} else {
-						otherSpecial.parseHash(surveyCurrentSpecial, hash, pieces);
-					}
-				}
-			} else {
-				surveyCurrentLocale = '';
-				surveyCurrentSpecial='locales';
-				surveyCurrentId='';
-				surveyCurrentPage='';
-				surveyCurrentSection='';
-			}
-			updateWindowTitle();
-
-			 // if there is no locale id, refresh the search.
-			if(!surveyCurrentLocale) {
-				searchRefresh();
-			}
-		};
-
-
-		/**
-		 * update hash (and title)
-		 * @method replaceHash
-		 * @param doPush {Boolean} if true, do a push (instead of replace)
-		 */
-		window.replaceHash = function replaceHash(doPush) {
-			if(!doPush) doPush = false; // by default -replace.
-			var theId = window.surveyCurrentId;
-			if(theId == null) theId = '';
-			var theSpecial = window.surveyCurrentSpecial;
-			if(theSpecial == null) theSpecial = '';
-			var thePage = window.surveyCurrentPage;
-			if(thePage == null) thePage = '';
-			var theLocale = window.surveyCurrentLocale;
-			if(theLocale==null) theLocale = '';
-			var newHash =  '#' + theSpecial + '/' + theLocale + '/' + thePage + '/' + theId;
-			if(newHash != dojoHash()) {
-				dojoHash(newHash , !doPush);
-			}
-		};
-
-		window.updateCurrentId = function updateCurrentId(id) {
-			if(id==null) id = '';
-		    if(surveyCurrentId != id) { // don't set if already set.
-			    surveyCurrentId = id;
-			    replaceHash(false); // usually dont want to save
-		    }
-		};
-
-		// (back to showV) some setup.
-		// click on the title to copy (permalink)
-		clickToSelect(dojo.byId("ariScroller"));
-		updateIf("title-dcontent-link",stui.str("defaultContent_titleLink"));
-
-		// TODO - rewrite using AMD
-		/**
-		 * @param postData optional - makes this a POST
-		 */
-		window.myLoad = function myLoad(url, message, handler, postData, headers) {
-			var otime = new Date().getTime();
-			console.log("MyLoad: " + url + " for " + message);
-			var errorHandler = function(err, ioArgs){
-				console.log('Error: ' + err + ' response ' + ioArgs.xhr.responseText);
-				handleDisconnect("Could not fetch " + message + " - error " + err.name + " / " + err.message + "\n" + ioArgs.xhr.responseText + "\n url: " + url + "\n", null, "disconnect");
-			};
-			var loadHandler = function(json){
-				console.log("        "+url+" loaded in "+(new Date().getTime()-otime)+"ms");
-				try {
-					handler(json);
-					//resize height
-					$('#main-row').css({height:$('#main-row>div').height()});
-				}catch(e) {
-					console.log("Error in ajax post ["+message+"]  " + e.message + " / " + e.name );
-					handleDisconnect("Exception while  loading: " + message + " - "  + e.message + ", n="+e.name, null); // in case the 2nd line doesn't work
-				}
-			};
-			var xhrArgs = {
-					url: url,
-					handleAs:"json",
-					load: loadHandler,
-					error: errorHandler,
-					postData: postData,
-					headers: headers
-			};
-			queueXhr(xhrArgs);
-		};
-
-		/**
-		 * Verify that the JSON returned is as expected.
-		 * @method verifyJson
-		 * @param json the returned json
-		 * @param subkey the key to look for,  json.subkey
-		 * @return true if OK, false if bad
-		 */
-		function verifyJson(json, subkey) {
-			if(!json) {
-				console.log("!json");
-				showLoader(null,"Error while  loading "+subkey+":  <br><div style='border: 1px solid red;'>" + "no data!" + "</div>");
-				return false;
-			} else if(json.err_code) {
-				var msg_fmt = formatErrMsg(json, subkey);
-				var loadingChunk;
-				flipper.flipTo(pages.loading, loadingChunk = createChunk(msg_fmt, "p", "errCodeMsg"));
-				var retryButton = createChunk(stui.str("loading_reload"),"button");
-				loadingChunk.appendChild(retryButton);
-				retryButton.onclick = function() { 	window.location.reload(true); };
-				return false;
-			} else if(json.err) {
-				console.log("json.err!" + json.err);
-				showLoader(null,"Error while  loading "+subkey+": <br><div style='border: 1px solid red;'>" + json.err + "</div>");
-				handleDisconnect("while loading "+subkey+"" ,json);
-				return false;
-			} else if(!json[subkey]) {
-				console.log("!json.oldvotes");
-				showLoader(null,"Error while  loading "+subkey+": <br><div style='border: 1px solid red;'>" + "no data" + "</div>");
-				handleDisconnect("while loading- no "+subkey+"",json);
-				return false;
-			} else {
-				return true;
-			}
-		}
-
-		window.showCurrentId = function() {
-			if(surveyCurrentSpecial && surveyCurrentSpecial != '' && !isDashboard()) {
-				otherSpecial.handleIdChanged(surveyCurrentSpecial, showCurrentId);
-			} else {
-				if(surveyCurrentId != '') {
-				    var xtr = dojo.byId('r@' + surveyCurrentId);
-				    if(!xtr) {
-				        console.log("Warning could not load id " + surveyCurrentId + " does not exist");
-				        window.updateCurrentId(null);
-				    } else if(xtr.proposedcell && xtr.proposedcell.showFn) {
-				        // TODO: visible? coverage?
-				        window.showInPop("",xtr,xtr.proposedcell, xtr.proposedcell.showFn, true);
-				        console.log("Changed to " + surveyCurrentId);
-				        if(!isDashboard())
-				        	scrollToItem();
-				    } else {
-				        console.log("Warning could not load id " + surveyCurrentId + " - not setup - " + xtr.toString() + " pc=" + xtr.proposedcell + " sf = " + xtr.proposedcell.showFn);
-				    }
-				}
-			}
-		};
-
-
-		window.ariRetry = function() {
-			ariDialog.hide();
-			window.location.reload(true);
-		};
-
-		window.showARIDialog = function(why, json, word, oneword, p, what) {
-			console.log('showARIDialog');
-			p.parentNode.removeChild(p);
-
-			if(didUnbust) {
-				why = why + "\n\n" + stui.str('ari_force_reload');
-			}
-
-			// setup with why
-			var ari_message;
-
-			if(json && json.session_err) {
-				ari_message = stui_str("ari_sessiondisconnect_message");
-			} else {
-				ari_message = stui.str('ari_message');
-			}
-
-			var ari_submessage = formatErrMsg(json, what);
-
-			updateIf('ariMessage', ari_message.replace(/\n/g,"<br>"));
-			updateIf('ariSubMessage', ari_submessage.replace(/\n/g,"<br>"));
-			updateIf('ariScroller',window.location + '<br>' + why.replace(/\n/g,"<br>"));
-			// TODO: update  ariMain and ariRetryBtn
-			hideOverlayAndSidebar();
-
-			ariDialog.show();
-			var oneword = dojo.byId("progress_oneword");
-			oneword.onclick = function() {
-				if(disconnected) {
-					ariDialog.show();
-				}
-			};
-		};
-
-		function updateCoverageMenuTitle() {
-			if(surveyUserCov) {
-				$('#coverage-info').text(stui.str('coverage_' + surveyUserCov));
-			}
-			else {
-				$('#coverage-info').text(stui.sub('coverage_auto_msg', {surveyOrgCov: stui.str('coverage_' + surveyOrgCov)}));
-			}
-		}
-
-		function updateLocaleMenu() {
-            if(surveyCurrentLocale!=null && surveyCurrentLocale!='' && surveyCurrentLocale!='-') {
-        		surveyCurrentLocaleName = locmap.getLocaleName( surveyCurrentLocale);
-        		var bund = locmap.getLocaleInfo(surveyCurrentLocale);
-        		if(bund) {
-        			if( bund.readonly) {
-        				addClass(menubuttons.getDom(menubuttons.locale), "locked");
-        			} else {
-            			removeClass(menubuttons.getDom(menubuttons.locale), "locked");
-        			}
-
-        			if(bund.dcChild) {
-        				menubuttons.set(menubuttons.dcontent, stui.sub("defaultContent_header_msg", {info: bund, locale: surveyCurrentLocale, dcChild: locmap.getLocaleName(bund.dcChild)}));
-        			} else {
-        				menubuttons.set(menubuttons.dcontent);
-        			}
-        		} else {
-        			removeClass(menubuttons.getDom(menubuttons.locale), "locked");
-    				menubuttons.set(menubuttons.dcontent);
-        		}
-            } else {
-            	surveyCurrentLocaleName = '';
-            	removeClass(menubuttons.getDom(menubuttons.locale), "locked");
-				menubuttons.set(menubuttons.dcontent);
+        // delete common substring
+        var pathSplit = row.pathHeader.split('	');
+        for (var nn in pathSplit) {
+            if (pathSplit[nn] != oldSplit[nn]) {
+                break;
             }
-            menubuttons.set(menubuttons.locale, surveyCurrentLocaleName);
-		}
-
-		/**
-		 * Update the #hash and menus to the current settings.
-		 * @method updateHashAndMenus
-		 * @param doPush {Boolean} if false, do not add to history
-		 */
-		function updateHashAndMenus(doPush) {
-			/**
-			 * 'name' - the js/special/___.js name
-			 * 'hidden' - true to hide the item
-			 * 'title' - override of menu name
-			 * @property specialItems
-			 */
-			var specialItems = new Array();
-			if(surveyUser != null){
-				specialItems = [
-				    {divider: true},
-
-					{title: 'Admin Panel', url: surveyUserURL.adminPanel, display: (surveyUser && surveyUser.userlevelName === 'ADMIN')},
-					{divider: true, display: (surveyUser && surveyUser.userlevelName === 'ADMIN')},
-
-				    {title: 'My Account'}, // My Account section
-
-				    {title: 'Settings', level: 2, url: surveyUserURL.myAccountSetting, display: surveyUserPerms.userExist },
-				    {title: 'Lock (Disable) My Account', level: 2, url: surveyUserURL.disableMyAccount, display: surveyUserPerms.userExist },
-
-				    {divider: true},
-				    {title: 'My Votes'}, // My Votes section
-
-				    {special: 'oldvotes', level: 2, display: surveyUserPerms.userCanImportOldVotes },
-				    {title: 'See My Recent Activity', level: 2, url: surveyUserURL.recentActivity },
-				    {title: 'Upload XML', level: 2, url: surveyUserURL.xmlUpload },
-
-				    {divider: true},
-				    {title: 'My Organization('+organizationName+')'}, // My Organization section
-
-				    {special: 'vsummary', level: 2, display: surveyUserPerms.userCanUseVettingSummary },
-				    {title: 'List ' + org + ' Users', level: 2, url: surveyUserURL.manageUser, display: (surveyUserPerms.userIsTC || surveyUserPerms.userIsVetter) },
-				    {title: 'LOCKED: Note: your account is currently locked.', level: 2,  display: surveyUserPerms.userIsLocked, bold: true},
-
-				    {divider: true},
-				    {title: 'Forum'}, // Forum section
-
-				    {special: 'flagged', level: 2, img: surveyImgInfo.flag},
-				    {title: 'RSS 2.0', level: 2, url: surveyUserURL.RSS, img: surveyImgInfo.RSS},
-				    {special: 'mail', level: 2, display: !surveyOfficial },
-
-				    {divider: true},
-				    {title: 'Informational'}, // Informational section
-
-				    {special: 'statistics', level: 2 },
-				    {title: 'About', level: 2, url: surveyUserURL.about },
-				    {title: 'Lookup a code or xpath', level: 2, url: surveyUserURL.browse, display: surveyUserPerms.hasDataSource },
-
-				    {divider: true},
-				];
-			}
-			if(!doPush) {doPush = false;}
-			replaceHash(doPush); // update the hash
-			updateLocaleMenu();
-
-			if(surveyCurrentLocale==null) { // deadcode?
-				menubuttons.set(menubuttons.section);
-				if(surveyCurrentSpecial!=null) {
-					var specialId = "special_"+surveyCurrentSpecial;
-					menubuttons.set(menubuttons.page, stui_str(specialId));
-				} else {
-					menubuttons.set(menubuttons.page);
-				}
-				return; // nothing to do.
-			}
-			var titlePageContainer = dojo.byId("title-page-container");
-
-			/**
-			 * Just update the titles of the menus. Internal to updateHashAndMenus
-			 * @method updateMenuTitles
-			 */
-			function updateMenuTitles(menuMap) {
-				if(menubuttons.lastspecial === undefined) {
-					menubuttons.lastspecial = null;
-
-					// Set up the menu here?
-					var parMenu = dojo.byId("manage-list");
-					for(var k =0; k< specialItems.length; k++) {
-						var item = specialItems[k];
-						(function(item){
-							if(item.display != false) {
-								var subLi = document.createElement("li");
-								if(item.special){ // special items so look up in stui.js
-									item.title = stui.str('special_' + item.special);
-									item.url = '#' + item.special;
-									item.blank = false;
-								}
-								if(item.url){
-									var subA = document.createElement("a");
-
-									if(item.img){ // forum may need images attached to it
-										var Img=document.createElement("img");
-										Img.setAttribute('src', item.img.src);
-										Img.setAttribute('alt', item.img.alt);
-										Img.setAttribute('title', item.img.src);
-										Img.setAttribute('border', item.img.border);
-
-										subA.appendChild(Img);
-									}
-									subA.appendChild(document.createTextNode(item.title+' '));
-									subA.href = item.url;
-
-									if(item.blank != false){
-										subA.target = '_blank';
-										subA.appendChild(createChunk('','span','glyphicon glyphicon-share manage-list-icon'));
-									}
-
-									if(item.level){ // append it to appropriate levels
-										var level = item.level;
-										for(var i=0; i< level-1; i++){
-											var sublevel = document.createElement("ul");
-											sublevel.appendChild(subA);
-											subA = sublevel;
-										}
-									}
-									subLi.appendChild(subA);
-								}
-								if(!item.url && !item.divider){ // if it is pure text/html & not a divider
-									if(!item.level){
-										subLi.appendChild(document.createTextNode(item.title+' '));
-									}else{
-										var subA = null;
-										if(item.bold){
-											subA = document.createElement("b");
-										}else if(item.italic){
-											subA = document.createElement("i");
-										}else{
-											subA = document.createElement("span");
-										}
-										subA.appendChild(document.createTextNode(item.title+' '));
-
-										var level = item.level;
-										for(var i=0; i< level-1; i++){
-											var sublevel = document.createElement("ul");
-											sublevel.appendChild(subA);
-											subA = sublevel;
-										}
-										subLi.appendChild(subA);
-									}
-								}
-								if(item.divider) {
-									subLi.className = 'nav-divider';
-								}
-								parMenu.appendChild(subLi);
-							}
-						})(item);
-					}
-				}
-
-				if(menubuttons.lastspecial) {
-					removeClass(menubuttons.lastspecial, "selected");
-				}
-
-				updateLocaleMenu(menuMap);
-				if(surveyCurrentSpecial!= null && surveyCurrentSpecial != '') {
-					var specialId = "special_"+surveyCurrentSpecial;
-					$('#section-current').html(stui_str(specialId));
-					setDisplayed(titlePageContainer, false);
-				} else if(!menuMap) {
-					setDisplayed(titlePageContainer, false);
-				} else {
-					if(menuMap.sectionMap[window.surveyCurrentPage]) {
-						surveyCurrentSection = surveyCurrentPage; // section = page
-						$('#section-current').html(menuMap.sectionMap[surveyCurrentSection].name);
-						setDisplayed(titlePageContainer, false); // will fix title later
-					} else if(menuMap.pageToSection[window.surveyCurrentPage]) {
-						var mySection = menuMap.pageToSection[window.surveyCurrentPage];
-						surveyCurrentSection = mySection.id;
-						$('#section-current').html(mySection.name);
-						setDisplayed(titlePageContainer, false); // will fix title later
-					} else {
-						$('#section-current').html(stui_str("section_general"));
-						setDisplayed(titlePageContainer, false);
-					}
-				}
-			}
-
-			/**
-			 * @method updateMenus
-			 */
-			function updateMenus(menuMap) {
-				// initialize menus
-				if(!menuMap.menusSetup) {
-					menuMap.menusSetup=true;
-					menuMap.setCheck = function(menu, checked,disabled) {
-						menu.set('iconClass', checked ? "dijitMenuItemIcon menu-x" : "dijitMenuItemIcon menu-o");
-						menu.set('disabled', disabled);
-					};
-					var menuSection = registry.byId("menu-section");
-					menuMap.section_general = new MenuItem({
-						label: stui_str("section_general"),
-						iconClass:  "dijitMenuItemIcon ",
-						disabled: true,
-						onClick: function(){
-							if(surveyCurrentPage!='' || (surveyCurrentSpecial!='' && surveyCurrentSpecial != null)) {
-								surveyCurrentId = ''; // no id if jumping pages
-								surveyCurrentPage = '';
-								surveyCurrentSection = '';
-								surveyCurrentSpecial = '';
-								updateMenuTitles(menuMap);
-								reloadV();
-							}
-						}
-					});
-					menuSection.addChild(menuMap.section_general);
-					for(var j in menuMap.sections) {
-						(function (aSection){
-							aSection.menuItem = new MenuItem({
-								label: aSection.name,
-								iconClass: "dijitMenuItemIcon",
-								onClick: function(){
-										surveyCurrentId = '!'; // no id if jumping pages
-										surveyCurrentPage = aSection.id;
-										surveyCurrentSpecial = '';
-										updateMenus(menuMap);
-										updateMenuTitles(menuMap);
-										reloadV();
-								},
-								disabled: true
-							});
-
-							menuSection.addChild(aSection.menuItem);
-						})(menuMap.sections[j]);
-					}
-
-					menuSection.addChild(new MenuSeparator());
-
-					menuMap.forumMenu = new MenuItem({
-						label: stui_str("section_forum"),
-						iconClass: "dijitMenuItemIcon", // menu-chat
-						disabled: true,
-						onClick: function(){
-							surveyCurrentId = '!'; // no id if jumping pages
-							surveyCurrentPage = '';
-							surveyCurrentSpecial = 'forum';
-							updateMenus(menuMap);
-							updateMenuTitles(menuMap);
-							reloadV();						}
-					});
-					menuSection.addChild(menuMap.forumMenu);
-				}
-
-				updateMenuTitles(menuMap);
-
-				var myPage = null;
-				var mySection = null;
-				if(surveyCurrentSpecial==null || surveyCurrentSpecial=='') {
-					// first, update display names
-					if(menuMap.sectionMap[window.surveyCurrentPage]) { // page is really a section
-						mySection = menuMap.sectionMap[surveyCurrentPage];
-						myPage = null;
-					} else if(menuMap.pageToSection[window.surveyCurrentPage]) {
-						mySection = menuMap.pageToSection[surveyCurrentPage];
-						myPage = mySection.pageMap[surveyCurrentPage];
-					}
-					if(mySection!==null) {
-						// update menus under 'page' - peer pages
-						if(!titlePageContainer.menus) {
-							titlePageContainer.menus = {};
-						}
-
-						// hide all. TODO use a foreach model?
-						for(var zz in titlePageContainer.menus) {
-							var aMenu = titlePageContainer.menus[zz];
-							aMenu.set('label','-');
-						}
-
-						var showMenu = titlePageContainer.menus[mySection.id];
-
-						if(!showMenu) {
-							// doesn't exist - add it.
-							var menuPage = new DropDownMenu();
-							for(var k in mySection.pages) { // use given order
-								(function(aPage) {
-
-									var pageMenu = aPage.menuItem =  new MenuItem({
-										label: aPage.name,
-										iconClass: (aPage.id == surveyCurrentPage) ? "dijitMenuItemIcon menu-x" : "dijitMenuItemIcon menu-o",
-										onClick: function(){
-											surveyCurrentId = ''; // no id if jumping pages
-											surveyCurrentPage = aPage.id;
-											updateMenuTitles(menuMap);
-											reloadV();
-										},
-										disabled: (effectiveCoverage()<parseInt(aPage.levs[surveyCurrentLocale]))
-									});
-								})(mySection.pages[k]);
-							}
-
-							showMenu = new DropDownButton({label: '-', dropDown: menuPage});
-
-							titlePageContainer.menus[mySection.id] = mySection.pagesMenu = showMenu;
-						}
-
-						if(myPage !== null) {
-							$('#title-page-container').html('<h1>'+myPage.name+'</h1>').show();
-						} else {
-							$('#title-page-container').html('').hide();
-						}
-						setDisplayed(showMenu, true);
-						setDisplayed(titlePageContainer, true); // will fix title later
-					}
-				}
-
-				stdebug('Updating menus.. ecov = ' + effectiveCoverage());
-
-				menuMap.setCheck(menuMap.section_general,  (surveyCurrentPage == '' && (surveyCurrentSpecial=='' || surveyCurrentSpecial==null)),false);
-
-				// Update the status of the items in the Section menu
-				for(var j in menuMap.sections) {
-					var aSection = menuMap.sections[j];
-					// need to see if any items are visible @ current coverage
-					stdebug("for " + aSection.name + " minLev["+surveyCurrentLocale+"] = "+ aSection.minLev[surveyCurrentLocale]);
-					menuMap.setCheck(aSection.menuItem,  (surveyCurrentSection == aSection.id),effectiveCoverage()<aSection.minLev[surveyCurrentLocale]);
-
-					// update the items in that section's Page menu
-					if(surveyCurrentSection == aSection.id) {
-						for(var k in aSection.pages ) {
-							var aPage = aSection.pages[k];
-							if(!aPage.menuItem) {
-								console.log("Odd - " + aPage.id + " has no menuItem");
-							} else {
-								menuMap.setCheck(aPage.menuItem,  (aPage.id == surveyCurrentPage),  (effectiveCoverage()<parseInt(aPage.levs[surveyCurrentLocale])));
-							}
-						}
-					}
-				}
-
-				menuMap.setCheck(menuMap.forumMenu,  (surveyCurrentSpecial == 'forum'),(surveyUser	===null));
-				resizeSidebar();
-			}
-
-			if(_thePages == null || _thePages.loc != surveyCurrentLocale ) {
-				// show the raw IDs while loading.
-				updateMenuTitles(null);
-
-				if(surveyCurrentLocale!=null&&surveyCurrentLocale!='') {
-					var needLocTable = false;
-
-					var url = contextPath + "/SurveyAjax?_="+surveyCurrentLocale+"&s="+surveySessionId+"&what=menus&locmap="+needLocTable+cacheKill();
-					myLoad(url, "menus", function(json) {
-						if(!verifyJson(json, "menus")) {
-							return; // busted?
-						}
-
-						if(json.locmap) {
-							locmap = new LocaleMap(locmap); // overwrite with real data
-						}
-
-						// make this into a hashmap.
-						if(json.canmodify) {
-							var canmodify = {};
-							for(var k in json.canmodify) {
-								canmodify[json.canmodify[k]]=true;
-							}
-							window.canmodify = canmodify;
-						}
-
-						updateCovFromJson(json);
-						updateCoverageMenuTitle();
-						updateCoverage(flipper.get(pages.data)); // update CSS and auto menu title
-
-						function unpackMenus(json) {
-							var menus = json.menus;
-
-							if(_thePages) {
-								stdebug("Updating cov info into menus for " + json.loc);
-								for(var k in menus.sections) {
-									var oldSection = _thePages.sectionMap[menus.sections[k].id];
-									for(var j in menus.sections[k].pages) {
-										var oldPage = oldSection.pageMap[menus.sections[k].pages[j].id];
-
-										// copy over levels
-										oldPage.levs[json.loc] = menus.sections[k].pages[j].levs[json.loc];
-									}
-								}
-							} else {
-								stdebug("setting up new hashes for " + json.loc);
-								// set up some hashes
-								menus.haveLocs = {};
-								menus.sectionMap = {};
-								menus.pageToSection = {};
-								for(var k in menus.sections) {
-									menus.sectionMap[menus.sections[k].id] = menus.sections[k];
-									menus.sections[k].pageMap = {};
-									menus.sections[k].minLev = {};
-									for(var j in menus.sections[k].pages) {
-										menus.sections[k].pageMap[menus.sections[k].pages[j].id] = menus.sections[k].pages[j];
-										menus.pageToSection[menus.sections[k].pages[j].id] = menus.sections[k];
-									}
-								}
-								_thePages = menus;
-							}
-
-							stdebug("Calculating minimum section coverage for " + json.loc);
-							for(var k in _thePages.sectionMap) {
-								var min = 200;
-								for(var j in _thePages.sectionMap[k].pageMap) {
-									var thisLev = parseInt(_thePages.sectionMap[k].pageMap[j].levs[json.loc]);
-									if(min > thisLev) {
-										min = thisLev;
-									}
-								}
-								_thePages.sectionMap[k].minLev[json.loc] = min;
-							}
-
-							_thePages.haveLocs[json.loc] = true;
-						}
-
-						unpackMenus(json);
-						unpackMenuSideBar(json);
-						updateMenus(_thePages);
-					});
-				}
-			} else {
-				// go ahead and update
-				updateMenus(_thePages);
-			}
-		}
-
-		window.insertLocaleSpecialNote = function insertLocaleSpecialNote(theDiv) {
-			if(surveyBeta) {
-				var theChunk = domConstruct.toDom(stui.sub("beta_msg", { info: bund, locale: surveyCurrentLocale, msg: msg}));
-				var subDiv = document.createElement("div");
-				subDiv.appendChild(theChunk);
-				subDiv.className = 'warnText';
-				theDiv.appendChild(subDiv);
-			}
-
-			var bund = locmap.getLocaleInfo(surveyCurrentLocale);
-
-			if(bund) {
-				if(bund.readonly) {
-					var msg = null;
-					if(bund.readonly_why) {
-						msg = bund.readonly_why_raw;
-					} else {
-						msg = stui.str("readonly_unknown");
-					}
-					var asHtml = stui.sub("readonly_msg", { info: bund, locale: surveyCurrentLocale, msg: msg});
-					asHtml = locmap.linkify(asHtml);
-					var theChunk = domConstruct.toDom(asHtml);
-					var subDiv = document.createElement("div");
-					subDiv.appendChild(theChunk);
-					subDiv.className = 'warnText';
-					theDiv.appendChild(subDiv);
-				} else if(bund.dcChild) {
-					var theChunk = domConstruct.toDom(stui.sub("defaultContentChild_msg", { info: bund, locale: surveyCurrentLocale, dcChildName: locmap.getLocaleName(bund.dcChild)}));
-					var subDiv = document.createElement("div");
-					subDiv.appendChild(theChunk);
-					subDiv.className = 'warnText';
-					theDiv.appendChild(subDiv);
-				}
-			}
-		};
-
-		/**
-		 * Show the "possible problems" section which has errors for the locale
-		 * @method showPossibleProblems
-		 */
-		function showPossibleProblems(flipper,flipPage,loc, session, effectiveCov, requiredCov) {
-			surveyCurrentLocale = loc;
-			dojo.ready(function(){
-
-				var url = contextPath + "/SurveyAjax?what=possibleProblems&_="+surveyCurrentLocale+"&s="+session+"&eff="+effectiveCov+"&req="+requiredCov+  cacheKill();
-				myLoad(url, "possibleProblems", function(json) {
-					if(verifyJson(json, 'possibleProblems')) {
-						stdebug("json.possibleProblems OK..");
-						if(json.dataLoadTime) {
-							updateIf("dynload", json.dataLoadTime);
-						}
-
-						var theDiv = flipper.flipToEmpty(flipPage);
-
-						insertLocaleSpecialNote(theDiv);
-
-						if(json.possibleProblems.length > 0) {
-							var subDiv = createChunk("","div");
-							subDiv.className = "possibleProblems";
-
-							var h3 = createChunk(stui_str("possibleProblems"), "h3");
-							subDiv.appendChild(h3);
-
-							var div3 = document.createElement("div");
-							var newHtml = "";
-							newHtml += testsToHtml(json.possibleProblems);
-							div3.innerHTML = newHtml;
-							subDiv.appendChild(div3);
-							theDiv.appendChild(subDiv);
-						}
-						var theInfo = createChunk("","p","special_general");
-						theDiv.appendChild(theInfo);
-						theInfo.innerHTML = stui_str("special_general"); // TODO replace with … ?
-						hideLoader(null);
-					}
-				});
-			});
-		}
-
-		var isLoading = false;
-
-		/**
-		 * This is the main entrypoint to the 'new' view system, based in /v.jsp
-		 * @method reloadV
-		 */
-		window.reloadV = function reloadV() {
-			if(disconnected) {
-				unbust();
-			}
-
-			document.getElementById('DynamicDataSection').innerHTML = '';//reset the data
-			$('#nav-page').hide();
-			isLoading = false;
-			showers[flipper.get(pages.data).id]=function(){ console.log("reloadV()'s shower - ignoring reload request, we are in the middle of a load!"); };
-
-			// assume parseHash was already called, if we are taking input from the hash
-			ariDialog.hide();
-
-			updateHashAndMenus(true);
-
-			if(surveyCurrentLocale!=null && surveyCurrentLocale!=''&&surveyCurrentLocale!='-'){
-				var bund = locmap.getLocaleInfo(surveyCurrentLocale);
-				if(bund!==null && bund.dcParent) {
-					var theChunk = domConstruct.toDom(stui.sub("defaultContent_msg", { info: bund, locale: surveyCurrentLocale, dcParentName: locmap.getLocaleName(bund.dcParent)}));
-					var theDiv = document.createElement("div");
-					theDiv.appendChild(theChunk);
-					theDiv.className = 'ferrbox';
-					flipper.flipTo(pages.other, theDiv);
-					return;
-				}
-			}
-
-			// todo dont even flip if it's quick.
-			var loadingChunk;
-			flipper.flipTo(pages.loading, loadingChunk = createChunk(stui_str("loading"), "i", "loadingMsg"));
-
-			var itemLoadInfo = createChunk("","div","itemLoadInfo");
-
-			// Create a little spinner to spin "..." so the user knows we are doing something..
-			var spinChunk = createChunk("...","i","loadingMsgSpin");
-			var spin = 0;
-			var timerToKill = window.setInterval(function() {
-				 var spinTxt = '';
-				 spin++;
-				 switch(spin%3) {
-					 case 0: spinTxt = '.  '; break;
-					 case 1: spinTxt = ' . '; break;
-					 case 2: spinTxt = '  .'; break;
-				 }
-				 removeAllChildNodes(spinChunk);
-				 spinChunk.appendChild(document.createTextNode(spinTxt));
-			}, 1000);
-
-			// Add the "..." until the Flipper flips
-			flipper.addUntilFlipped(function() {
-				var frag = document.createDocumentFragment();
-				frag.appendChild(spinChunk);
-				return frag;
-			}, function() {
-				window.clearInterval(timerToKill);
-			});
-
-			// now, load. Use a show-er function for indirection.
-			var shower = function() {
-				if(isLoading) {
-					console.log("reloadV inner shower: already isLoading, exitting.");
-					return;
-				}
-				isLoading = true;
-				var theDiv = flipper.get(pages.data);
-				var theTable = theDiv.theTable;
-
-				if(!theTable) {
-					var theTableList = theDiv.getElementsByTagName("table");
-					if(theTableList) {
-						theTable = theTableList[0];
-						theDiv.theTable = theTable;
-					}
-				}
-
-				showLoader(null, theDiv.stui.loading);
-
-				if((surveyCurrentSpecial == null||surveyCurrentSpecial=='') && surveyCurrentLocale!=null && surveyCurrentLocale!='') {
-					if((surveyCurrentPage==null || surveyCurrentPage=='') && (surveyCurrentId==null||surveyCurrentId=='')) {
-						// the 'General Info' page.
-						itemLoadInfo.appendChild(document.createTextNode(locmap.getLocaleName(surveyCurrentLocale)));
-						showPossibleProblems(flipper, pages.other, surveyCurrentLocale, surveySessionId, covName(effectiveCoverage()), covName(effectiveCoverage()));
-						showInPop2(stui.str("generalPageInitialGuidance"), null, null, null, true); /* show the box the first time */
-						isLoading=false;
-					} else if(surveyCurrentId=='!') {
-						var frag = document.createDocumentFragment();
-						frag.appendChild(createChunk(stui.str('section_help'),"p", "helpContent"));
-						var infoHtml = stui.str('section_info_'+surveyCurrentPage);
-						var infoChunk  = document.createElement("div");
-						infoChunk.innerHTML = infoHtml;
-						frag.appendChild(infoChunk);
-						flipper.flipTo(pages.other, frag);
-						hideLoader(null);
-						isLoading=false;
-
-					} else {
-						// (common case) this is an actual locale data page.
-						itemLoadInfo.appendChild(document.createTextNode(locmap.getLocaleName(surveyCurrentLocale) + '/' + surveyCurrentPage + '/' + surveyCurrentId));
-						var url = contextPath + "/RefreshRow.jsp?json=t&_="+surveyCurrentLocale+"&s="+surveySessionId+"&x="+surveyCurrentPage+"&strid="+surveyCurrentId+cacheKill();
-						$('#nav-page').show();
-						myLoad(url, "section", function(json) {
-							isLoading=false;
-							showLoader(theDiv.loader,stui.loading2);
-							if(!verifyJson(json, 'section')) {
-								return;
-							} else if(json.section.nocontent) {
-								surveyCurrentSection = '';
-								if(json.pageId) {
-									surveyCurrentPage = json.pageId;
-								} else {
-									surveyCurrentPage= '';
-								}
-								showLoader(null);
-								updateHashAndMenus(); // find out why there's no content. (locmap)
-							} else if(!json.section.rows) {
-								console.log("!json.section.rows");
-								showLoader(theDiv.loader,"Error while  loading: <br><div style='border: 1px solid red;'>" + "no rows" + "</div>");
-								handleDisconnect("while loading- no rows",json);
-							} else {
-								stdebug("json.section.rows OK..");
-								showLoader(theDiv.loader, "loading..");
-								if(json.dataLoadTime) {
-									updateIf("dynload", json.dataLoadTime);
-								}
-
-								surveyCurrentSection = '';
-								surveyCurrentPage = json.pageId;
-								updateHashAndMenus(); // now that we have a pageid
-								if(!surveyUser) {
-									showInPop2(stui.str("loginGuidance"), null, null, null, true); /* show the box the first time */
-								} else if(!json.canModify) {
-									showInPop2(stui.str("readonlyGuidance"), null, null, null, true); /* show the box the first time */
-								} else {
-									showInPop2(stui.str("dataPageInitialGuidance"), null, null, null, true); /* show the box the first time */
-								}
-								doUpdate(theDiv.id, function() {
-									showLoader(theDiv.loader,stui.loading3);
-									insertRows(theDiv,json.pageId,surveySessionId,json); // pageid is the xpath..
-									updateCoverage(flipper.get(pages.data)); // make sure cov is set right before we show.
-									flipper.flipTo(pages.data); // TODO now? or later?
-									window.showCurrentId(); // already calls scroll
-									//refresh counter and add navigation at bottom
-									refreshCounterVetting();
-									$('.vetting-page').after($('#nav-page .nav-button').clone());
-								});
-							}
-						});
-					}
-				} else if(surveyCurrentSpecial =='oldvotes') {
-					var url = contextPath + "/SurveyAjax?what=oldvotes&_="+surveyCurrentLocale+"&s="+surveySessionId+"&"+cacheKill();
-					myLoad(url, "(loading oldvotes " + surveyCurrentLocale + ")", function(json) {
-						isLoading=false;
-						showLoader(null,stui.loading2);
-						if(!verifyJson(json, 'oldvotes')) {
-							return;
-						} else {
-							showLoader(null, "loading..");
-							if(json.dataLoadTime) {
-								updateIf("dynload", json.dataLoadTime);
-							}
-
-							var theDiv = flipper.flipToEmpty(pages.other); // clean slate, and proceed..
-
-							removeAllChildNodes(theDiv);
-
-							// changed h2txt, v_oldvotes_title per https://unicode.org/cldr/trac/ticket/11135
-							// TODO: simplify if votesafter, newVersion no longer used
-							// var h2var = {votesafter:json.oldvotes.votesafter, newVersion:json.status.newVersion};
-							// var h2txt = stui.sub("v_oldvotes_title",h2var);
-							var h2txt = stui.str("v_oldvotes_title");
-							theDiv.appendChild(createChunk(h2txt, "h2", "v-title"));
-
-							if(!json.oldvotes.locale) {
-								surveyCurrentLocale='';
-								updateHashAndMenus();
-
-								var ul = document.createElement("div");
-								ul.className = "oldvotes_list";
-								var data = json.oldvotes.locales.data;
-								var header = json.oldvotes.locales.header;
-
-								if(data.length > 0) {
-									data.sort((a, b) => a[header.LOCALE].localeCompare(b[header.LOCALE]));
-									for(var k in data) {
-										var li = document.createElement("li");
-
-										var link = createChunk(data[k][header.LOCALE_NAME],"a");
-										link.href = "#"+data[k][header.LOCALE];
-										(function(loc,link) {
-											return (function() {
-												var clicky;
-											listenFor(link, "click", clicky = function(e) {
-												surveyCurrentLocale = loc;
-												reloadV();
-												stStopPropagation(e);
-												return false;
-											});
-											link.onclick = clicky;
-											}); })(data[k][header.LOCALE],link)();
-										li.appendChild(link);
-										li.appendChild(createChunk(" "));
-										li.appendChild(createChunk("("+data[k][header.COUNT]+")"));
-
-										ul.appendChild(li);
-									}
-
-									theDiv.appendChild(ul);
-
-									theDiv.appendChild(createChunk(stui.str("v_oldvotes_locale_list_help_msg"), "p", "helpContent"));
-								} else {
-									theDiv.appendChild(createChunk(stui.str("v_oldvotes_no_old"),"i")); // TODO fix
-								}
-							} else {
-								surveyCurrentLocale=json.oldvotes.locale;
-								updateHashAndMenus();
-								var loclink;
-								theDiv.appendChild(loclink=createChunk(stui.str("v_oldvotes_return_to_locale_list"),"a", "notselected"));
-								listenFor(loclink, "click", function(e) {
-									surveyCurrentLocale='';
-									reloadV();
-									stStopPropagation(e);
-									return false;
-								});
-								theDiv.appendChild(createChunk(json.oldvotes.localeDisplayName, "h3","v-title2"));
-								var oldVotesLocaleMsg = document.createElement("p");
-								oldVotesLocaleMsg.className = "helpContent";
-								var ovLocMsg = stui.sub("v_oldvotes_locale_msg", {version: surveyLastVoteVersion, locale: json.oldvotes.localeDisplayName});
-								if (!json.oldvotes.uncontested || json.oldvotes.uncontested.length == 0) {
-									ovLocMsg = stui.sub("v_oldvotes_winning_already_imported", {version: surveyLastVoteVersion}) + " " + ovLocMsg;
-								}
-								oldVotesLocaleMsg.innerHTML = ovLocMsg;
-								theDiv.appendChild(oldVotesLocaleMsg);
-								if ((json.oldvotes.contested && json.oldvotes.contested.length > 0) || (json.oldvotes.uncontested && json.oldvotes.uncontested.length > 0)) {
-
-									function showVoteTable(voteList, type) {
-										var t = document.createElement("table");
-										t.id = 'oldVotesAcceptList';
-										var th = document.createElement("thead");
-										var tb = document.createElement("tbody");
-
-										var tr = document.createElement("tr");
-										tr.appendChild(createChunk(stui.str("v_oldvotes_path"),"th","code"));
-										tr.appendChild(createChunk(json.BASELINE_LANGUAGE_NAME,"th","v-comp"));
-										tr.appendChild(createChunk(stui.sub("v_oldvotes_winning_msg", {version: surveyLastVoteVersion}),"th","v-win"));
-										tr.appendChild(createChunk(stui.str("v_oldvotes_mine"),"th","v-mine"));
-
-										var accept;
-										tr.appendChild(accept=createChunk(stui.str("v_oldvotes_accept"),"th","v-accept"));
-										th.appendChild(tr);
-										t.appendChild(th);
-										var oldPath = '';
-										var oldSplit = [];
-										for(var k in voteList) {
-											var row = voteList[k];
-											var tr = document.createElement("tr");
-											var tdp;
-											var rowTitle = '';
-
-											// delete common substring
-											var pathSplit = row.pathHeader.split('	');
-											for(var nn in pathSplit) {
-												if(pathSplit[nn] != oldSplit[nn]) {
-													break;
-												}
-											}
-											if(nn != pathSplit.length-1) {
-												// need a header row.
-												var trh = document.createElement('tr');
-												trh.className='subheading';
-												var tdh = document.createElement('th');
-												tdh.colSpan = 5;
-												for(var nn in pathSplit) {
-													if(nn < pathSplit.length-1) {
-														tdh.appendChild(createChunk(pathSplit[nn],"span","pathChunk"));
-													}
-												}
-												trh.appendChild(tdh);
-												tb.appendChild(trh);
-											}
-											oldSplit = pathSplit;
-											rowTitle = pathSplit[pathSplit.length - 1];
-
-											tdp = createChunk("","td","v-path");
-
-											var dtpl = createChunk(rowTitle, "a");
-											dtpl.href = "v#/"+surveyCurrentLocale+"//"+row.strid;
-											dtpl.target='_CLDR_ST_view';
-											tdp.appendChild(dtpl);
-
-											tr.appendChild(tdp);
-											var td00 = createChunk(row.baseValue,"td","v-comp"); // english
-											tr.appendChild(td00);
-											var td0 = createChunk("","td","v-win");
-											if(row.winValue) {
-												var span0 = appendItem(td0, row.winValue, "winner");
-												span0.dir = json.oldvotes.dir;
-											}
-											tr.appendChild(td0);
-											var td1 = createChunk("","td","v-mine");
-											var label  = createChunk("","label","");
-											var span1 = appendItem(label, row.myValue, "value");
-											td1.appendChild(label);
-											span1.dir = json.oldvotes.dir;
-											tr.appendChild(td1);
-											var td2 = createChunk("","td","v-accept");
-											var box = createChunk("","input","");
-											box.type="checkbox";
-											if(type=='uncontested') { // uncontested true by default
-												box.checked=true;
-											}
-											row.box = box; // backlink
-											td2.appendChild(box);
-											tr.appendChild(td2);
-
-											(function(tr,box,tdp){return function(){
-                                                // allow click anywhere
-											    listenFor(tr, "click", function(e) {
-													box.checked = !box.checked;
-													stStopPropagation(e);
-													return false;
-												});
-                                                // .. but not on the path.  Also listem to the box and do nothing
-												listenFor([tdp,box], "click", function(e) {
-													stStopPropagation(e);
-													return false;
-												});
-											};})(tr,box,tdp)();
-
-											tb.appendChild(tr);
-										}
-										t.appendChild(tb);
-
-										t.appendChild(createLinkToFn("v_oldvotes_none", function() {
-											for(var k in json.oldvotes[type]) {
-												var row = json.oldvotes[type][k];
-												row.box.checked = false;
-											}
-										}, "button"));
-										return t;
-									}
-
-									var frag = document.createDocumentFragment();
-
-									const oldVoteCount = (json.oldvotes.contested ? json.oldvotes.contested.length : 0) +
-									                     (json.oldvotes.uncontested ? json.oldvotes.uncontested.length : 0);
-									var summaryMsg = stui.sub("v_oldvotes_count_msg", {count: oldVoteCount});
-									frag.appendChild(createChunk(summaryMsg, "div", ""));
-
-									var navChunk = document.createElement("div");
-									navChunk.className = 'v-oldVotes-nav';
-									frag.appendChild(navChunk);
-
-									var uncontestedChunk = null;
-									var contestedChunk = null;
-
-									function addOldvotesType(type, jsondata, frag, navChunk) {
-										var content = createChunk("", "div", "v-oldVotes-subDiv");
-										content.strid = "v_oldvotes_title_" + type; // v_oldvotes_title_contested or v_oldvotes_title_uncontested
-
-										/* Normally this interface is for old "losing" (contested) votes only, since old "winning" (uncontested) votes
-										 * are imported automatically. An exception is for TC users, for whom auto-import is disabled. The server-side
-										 * code leaves json.oldvotes.uncontested undefined except for TC users.
-										 * Show headings for "Winning/Losing" only if json.oldvotes.uncontested is defined and non-empty.
-										 */
-										if ((json.oldvotes.uncontested && json.oldvotes.uncontested.length > 0)) {
-											var title = stui.str(content.strid);
-											content.title = title;
-											content.appendChild(createChunk(title,"h2","v-oldvotes-sub"));
-										}
-
-										content.appendChild(showVoteTable(jsondata, type));
-
-										var submit = BusyButton({
-											label: stui.str("v_submit_msg"),
-											busyLabel: stui.str("v_submit_busy")
-										});
-
-										submit.on("click",function(e) {
-											setDisplayed(navChunk, false);
-											var confirmList= []; // these will be revoted with current params
-											var deleteList = []; // these will be deleted
-
-											// explicit confirm list -  save us desync hassle
-											for(var kk in jsondata ) {
-												if(jsondata[kk].box.checked) {
-													confirmList.push(jsondata[kk].strid);
-												}
-											}
-
-											var saveList = {
-													locale: surveyCurrentLocale,
-													confirmList: confirmList,
-													deleteList: deleteList
-											};
-
-											console.log(saveList.toString());
-											console.log("Submitting " + type + " " +  confirmList.length + " for confirm and " + deleteList.length + " for deletion");
-
-											var url = contextPath + "/SurveyAjax?what=oldvotes&_="+surveyCurrentLocale+"&s="+surveySessionId+"&doSubmit=true&"+cacheKill();
-											myLoad(url, "(submitting oldvotes " + surveyCurrentLocale + ")", function(json) {
-												showLoader(theDiv.loader,stui.loading2);
-												if(!verifyJson(json, 'oldvotes')) {
-													handleDisconnect("Error submitting votes!", json, "Error");
-													return;
-												} else {
-													reloadV();
-												}
-											},  JSON.stringify(saveList), { "Content-Type": "application/json"} );
-										});
-
-										submit.placeAt(content);
-										// hide by default
-										setDisplayed(content, false);
-
-										frag.appendChild(content);
-										return content;
-									}
-
-									if (json.oldvotes.uncontested && json.oldvotes.uncontested.length > 0){
-										uncontestedChunk = addOldvotesType("uncontested",json.oldvotes.uncontested, frag, navChunk);
-									}
-									if (json.oldvotes.contested && json.oldvotes.contested.length > 0){
-										contestedChunk = addOldvotesType("contested",json.oldvotes.contested, frag, navChunk);
-									}
-
-									if(contestedChunk==null && uncontestedChunk != null) {
-										setDisplayed(uncontestedChunk, true); // only item
-									} else if(contestedChunk!=null && uncontestedChunk == null) {
-										setDisplayed(contestedChunk, true); // only item
-									} else {
-										// navigation
-										navChunk.appendChild(createChunk(stui.str('v_oldvotes_show')));
-										navChunk.appendChild(createLinkToFn(uncontestedChunk.strid, function() {
-											setDisplayed(contestedChunk, false);
-											setDisplayed(uncontestedChunk, true);
-										}, 'button'));
-										navChunk.appendChild(createLinkToFn(contestedChunk.strid, function() {
-											setDisplayed(contestedChunk, true);
-											setDisplayed(uncontestedChunk, false);
-										}, 'button'));
-
-										contestedChunk.appendChild(createLinkToFn("v_oldvotes_hide", function() {
-											setDisplayed(contestedChunk, false);
-										}, 'button'));
-										uncontestedChunk.appendChild(createLinkToFn("v_oldvotes_hide", function() {
-											setDisplayed(uncontestedChunk, false);
-										}, 'button'));
-
-									}
-
-									theDiv.appendChild(frag);
-								} else {
-									theDiv.appendChild(createChunk(stui.str("v_oldvotes_no_old_here"),"i",""));
-								}
-							}
-						}
-						hideLoader(null);
-					});
-				} else if(surveyCurrentSpecial == 'mail') {
-					var url = contextPath + "/SurveyAjax?what=mail&s="+surveySessionId+"&fetchAll=true&"+cacheKill();
-					myLoad(url, "(loading mail " + surveyCurrentLocale + ")", function(json) {
-						hideLoader(null,stui.loading2);
-						isLoading=false;
-						if(!verifyJson(json, 'mail')) {
-							return;
-						} else {
-							if(json.dataLoadTime) {
-								updateIf("dynload", json.dataLoadTime);
-							}
-
-							var theDiv = flipper.flipToEmpty(pages.other); // clean slate, and proceed..
-
-							removeAllChildNodes(theDiv);
-
-							var listDiv = createChunk("","div","mailListChunk");
-							var contentDiv = createChunk("","div","mailContentChunk");
-
-							theDiv.appendChild(listDiv);
-							theDiv.appendChild(contentDiv);
-
-							setDisplayed(contentDiv,false);
-							var header = json.mail.header;
-							var data = json.mail.data;
-
-							if(data.length == 0) {
-								listDiv.appendChild(createChunk(stui.str("mail_noMail"),"p","helpContent"));
-							} else {
-								for(var ii in data) {
-									var row = data[ii];
-									var li = createChunk(row[header.QUEUE_DATE] + ": " + row[header.SUBJECT], "li", "mailRow");
-									if(row[header.READ_DATE]) {
-										addClass(li,"readMail");
-									}
-									if(header.USER !== undefined) {
-										li.appendChild(document.createTextNode("(to "+row[header.USER]+")"));
-									}
-									if(row[header.SENT_DATE] !== false) {
-										li.appendChild(createChunk("(sent)", "span", "winner"));
-									} else  if(row[header.TRY_COUNT]>=3) {
-										li.appendChild(createChunk("(try#"+row[header.TRY_COUNT]+")", "span", "loser"));
-									} else  if(row[header.TRY_COUNT]> 0) {
-										li.appendChild(createChunk("(try#"+row[header.TRY_COUNT]+")", "span", "warning"));
-									}
-									listDiv.appendChild(li);
-
-									li.onclick = (function(li,row,header) {
-										return function() {
-										 	  if(!row[header.READ_DATE])
-												myLoad(contextPath + "/SurveyAjax?what=mail&s="+surveySessionId+"&markRead="+row[header.ID]+"&"+cacheKill(), 'Marking mail read', function(json) {
-													if(!verifyJson(json, 'mail')) {
-														return;
-													} else {
-														addClass(li, "readMail"); // mark as read when server answers
-														row[header.READ_DATE]=true; // close enough
-													}
-												});
-
-										 	  setDisplayed(contentDiv, false);
-
-										 	  removeAllChildNodes(contentDiv);
-
-										 	  contentDiv.appendChild(createChunk("Date: " + row[header.QUEUE_DATE], "h2", "mailHeader"));
-										 	  contentDiv.appendChild(createChunk("Subject: " + row[header.SUBJECT], "h2", "mailHeader"));
-										 	  contentDiv.appendChild(createChunk("Message-ID: " + row[header.ID], "h2", "mailHeader"));
-										 	  if(header.USER !== undefined) {
-											 	  contentDiv.appendChild(createChunk("To: " + row[header.USER], "h2", "mailHeader"));
-											  }
-										 	  contentDiv.appendChild(createChunk(row[header.TEXT], "p", "mailContent"));
-
-										 	  setDisplayed(contentDiv, true);
-											};
-										})(li, row, header);
-								}
-							}
-
-						}
-					});
-				} else if(isReport(surveyCurrentSpecial)) {
-					showLoader(theDiv.loader);
-					showInPop2(stui.str("reportGuidance"), null, null, null, true, true); /* show the box the first time */
-					require([
-					         "dojo/ready",
-					         "dojo/dom",
-					         "dojo/dom-construct",
-					         "dojo/request",
-					         "dojo/number",
-					         "dojo/domReady!"
-					         ],
-					         // HANDLES
-					         function(
-					        		 ready,
-					        		 dom,
-					        		 dcons,
-					        		 request,
-					        		 dojoNumber
-					        ) { ready(function(){
-
-								var url = contextPath + "/EmbeddedReport.jsp?x="+surveyCurrentSpecial+"&_="+surveyCurrentLocale+"&s="+surveySessionId+cacheKill();
-								var errFunction = function errFunction(err) {
-									console.log("Error: loading " + url + " -> " + err);
-									hideLoader(null,stui.loading2);
-									isLoading=false;
-									flipper.flipTo(pages.other, domConstruct.toDom("<div style='padding-top: 4em; font-size: x-large !important;' class='ferrorbox warning'><span class='icon i-stop'> &nbsp; &nbsp;</span>Error: could not load: " + err + "</div>"));
-								};
-								if(isDashboard()) {
-									if(!isVisitor) {
-										request
-						    			.get(url, {handleAs: 'json'})
-						    			.then(function(json) {
-											hideLoader(null,stui.loading2);
-											isLoading=false;
-											// further errors are handled in JSON
-											showReviewPage(json, function() {
-												// show function - flip to the 'other' page.
-												flipper.flipTo(pages.other, null);
-											});
-										})
-										.otherwise(errFunction);
-									}
-									else {
-										alert('Please login to access Dashboard');
-										surveyCurrentSpecial = '';
-										surveyCurrentLocale = '';
-										reloadV();
-									}
-								}
-								else {
-									hideLoader(null,stui.loading2);
-
-									request
-					    			.get(url, {handleAs: 'html'})
-					    			.then(function(html) {
-					    				// errors are handled as HTML.
-										hideLoader(null,stui.loading2);
-										isLoading=false;
-										flipper.flipTo(pages.other, domConstruct.toDom(html));
-									})
-									.otherwise(errFunction);
-								}
-
-					        });
-					 });
-				} else if(surveyCurrentSpecial == 'none') {
-					// for now - redirect
-					hideLoader(null);
-					isLoading=false;
-					window.location = survURL; // redirect home
-				} else if(surveyCurrentSpecial == 'locales') {
-					hideLoader(null);
-					isLoading=false;
-					var theDiv = document.createElement("div");
-					theDiv.className = 'localeList';
-
-					var addSubLocale = function addSubLocale(parLocDiv, subLoc) {
-						var subLocInfo = locmap.getLocaleInfo(subLoc);
-						var subLocDiv = createChunk(null, "div", "subLocale");
-						appendLocaleLink(subLocDiv, subLoc, subLocInfo);
-
-						parLocDiv.appendChild(subLocDiv);
-					};
-
-					var addSubLocales = function addSubLocales(parLocDiv, subLocInfo) {
-						if(subLocInfo.sub) {
-							for(var n in subLocInfo.sub) {
-								var subLoc = subLocInfo.sub[n];
-								addSubLocale(parLocDiv, subLoc);
-							}
-						}
-					};
-
-					var addTopLocale = function addTopLocale(topLoc) {
-						var topLocInfo = locmap.getLocaleInfo(topLoc);
-
-						var topLocRow = document.createElement("div");
-						topLocRow.className="topLocaleRow";
-
-						var topLocDiv = document.createElement("div");
-						topLocDiv.className="topLocale";
-						appendLocaleLink(topLocDiv, topLoc, topLocInfo);
-
-						var topLocList = document.createElement("div");
-						topLocList.className="subLocaleList";
-
-						addSubLocales(topLocList, topLocInfo);
-
-						topLocRow.appendChild(topLocDiv);
-						topLocRow.appendChild(topLocList);
-						theDiv.appendChild(topLocRow);
-					};
-
-					addTopLocale("root");
-					// top locales
-					for(var n in locmap.locmap.topLocales) {
-						var topLoc = locmap.locmap.topLocales[n];
-						addTopLocale(topLoc);
-					}
-					flipper.flipTo(pages.other,null);
-				    filterAllLocale();//filter for init data
-					forceSidebar();
-					surveyCurrentLocale=null;
-					surveyCurrentSpecial='locales';
-					showInPop2(stui.str("localesInitialGuidance"), null, null, null, true); /* show the box the first time */
-					$('#itemInfo').html('');
-				} else {
-					otherSpecial.show(surveyCurrentSpecial, {flipper: flipper, pages: pages});
-				}
-			}; // end shower
-
-			shower(); // first load
-
-			// set up the "show-er" function so that if this locale gets reloaded, the page will load again - execept for the dashboard, where only the row get updated
-			if(!isDashboard()) {
-				showers[flipper.get(pages.data).id]=shower;
-			}
-		};  // end reloadV
-
-		function trimNull(x) {
-			if(x==null) {
-				return '';
-			}
-			try {
-				x = x.toString().trim();
-			} catch(e) {
-				// do nothing
-			}
-			return x;
-		}
-
-		ready(function(){
-			window.parseHash(dojoHash()); // get the initial settings
-			// load the menus - first.
-
-			var theLocale = surveyCurrentLocale;
-			if(surveyCurrentLocale===null || surveyCurrentLocale=='') {
-				theLocale = 'und';
-			}
-			var xurl = contextPath + "/SurveyAjax?_="+theLocale+"&s="+surveySessionId+"&what=menus&locmap="+true+cacheKill();
-			myLoad(xurl, "initial menus for " + surveyCurrentLocale, function(json) {
-				if(!verifyJson(json,'locmap')) {
-					return;
-				} else {
-					locmap = new LocaleMap(json.locmap);
-
-					// make this into a hashmap.
-					if(json.canmodify) {
-						var canmodify = {};
-						for(var k in json.canmodify) {
-							canmodify[json.canmodify[k]]=true;
-						}
-						window.canmodify = canmodify;
-					}
-
-					//update left sidebar with locale data
-					var theDiv = document.createElement("div");
-					theDiv.className = 'localeList';
-
-					var addSubLocale;
-
-					addSubLocale = function addSubLocale(parLocDiv, subLoc) {
-						var subLocInfo = locmap.getLocaleInfo(subLoc);
-						var subLocDiv = createChunk(null, "div", "subLocale");
-						appendLocaleLink(subLocDiv, subLoc, subLocInfo);
-
-						parLocDiv.appendChild(subLocDiv);
-					};
-
-					var addSubLocales = function addSubLocales(parLocDiv, subLocInfo) {
-						if(subLocInfo.sub) {
-							for(var n in subLocInfo.sub) {
-								var subLoc = subLocInfo.sub[n];
-								addSubLocale(parLocDiv, subLoc);
-							}
-						}
-					};
-
-					var addTopLocale = function addTopLocale(topLoc) {
-						var topLocInfo = locmap.getLocaleInfo(topLoc);
-
-						var topLocRow = document.createElement("div");
-						topLocRow.className="topLocaleRow";
-
-						var topLocDiv = document.createElement("div");
-						topLocDiv.className="topLocale";
-						appendLocaleLink(topLocDiv, topLoc, topLocInfo);
-
-						var topLocList = document.createElement("div");
-						topLocList.className="subLocaleList";
-
-						addSubLocales(topLocList, topLocInfo);
-
-						topLocRow.appendChild(topLocDiv);
-						topLocRow.appendChild(topLocList);
-						theDiv.appendChild(topLocRow);
-					};
-
-
-					addTopLocale("root");
-					// top locales
-					for(var n in locmap.locmap.topLocales) {
-						var topLoc = locmap.locmap.topLocales[n];
-						addTopLocale(topLoc);
-					}
-					$('#locale-list').html(theDiv.innerHTML);
-
-					if(isVisitor)
-						$('#show-read').prop('checked', true);
-					//tooltip locale
-					$('a.locName').tooltip();
-
-					filterAllLocale();
-					//end of adding the locale data
-
-					if (json.autoImportedOldWinningVotes) {
-						var vals = { count: dojoNumber.format(json.autoImportedOldWinningVotes) };
-						var autoImportedDialog = new Dialog({
-							title: stui.sub("v_oldvote_auto_msg", vals),
-							content: stui.sub("v_oldvote_auto_desc_msg", vals)
-						});
-						autoImportedDialog.addChild(new Button({
-							label: "OK",
-							onClick: function() {
-								window.haveDialog = false;
-								autoImportedDialog.hide();
-								reloadV();
-							}
-						}));
-						autoImportedDialog.show();
-						window.haveDialog = true;
-						hideOverlayAndSidebar();
-					}
-
-					updateCovFromJson(json);
-					// setup coverage level
-					window.surveyLevels = json.menus.levels;
-
-					var titleCoverage = dojo.byId("title-coverage"); // coverage label
-
-					var levelNums = [];  // numeric levels
-					for(var k in window.surveyLevels) {
-						levelNums.push( { num: parseInt(window.surveyLevels[k].level), level: window.surveyLevels[k] } );
-					}
-					levelNums.sort(function(a,b){return a.num-b.num;});
-
-					var store = [];
-
-					store.push({
-							label: 'Auto',
-							value: 'auto',
-							title: stui.str('coverage_auto_desc')
-						});
-
-					store.push({
-						type: "separator"
-					});
-
-					for(var j in levelNums) { // use given order
-						if(levelNums[j].num==0) continue; // none - skip
-						if(levelNums[j].num < covValue('minimal')) continue; // don't bother showing these
-						if(window.surveyOfficial && levelNums[j].num==101) continue; // hide Optional in production
-						var level = levelNums[j].level;
-						store.push({
-								label: stui.str('coverage_'+ level.name),
-								value: level.name,
-								title: stui.str('coverage_'+ level.name + '_desc')
-						});
-					}
-					//coverage menu
-					var patternCoverage = $('#title-coverage .dropdown-menu');
-				    if(store[0].value) {
-					    $('#coverage-info').text(store[0].label);
-				    }
-					for (var index = 0; index < store.length; ++index) {
-					    var data = store[index];
-					    if(data.value) {
-						    var html = '<li><a class="coverage-list" data-value="'+data.value+'"href="#">'+data.label+'</a></li>';
-						    patternCoverage.append(html);
-					    }
-					}
-					patternCoverage.find('li a').click(function(event){
-						event.stopPropagation();
-						event.preventDefault();
-						var newValue = $(this).data('value');
-						var setUserCovTo = null;
-						if(newValue == 'auto') {
-							setUserCovTo = null; // auto
-						} else {
-							setUserCovTo = newValue;
-						}
-						if(setUserCovTo === window.surveyUserCov) {
-							console.log('No change in user cov: ' + setUserCovTo);
-						} else {
-							window.surveyUserCov = setUserCovTo;
-							var updurl  = contextPath + "/SurveyAjax?_="+theLocale+"&s="+surveySessionId+"&what=pref&pref=p_covlev&_v="+window.surveyUserCov+cacheKill(); // SurveyMain.PREF_COVLEV
-							myLoad(updurl, "updating covlev to  " + surveyUserCov, function(json) {
-								if(!verifyJson(json,'pref')) {
-									return;
-								} else {
-									unpackMenuSideBar(json);
-									if(surveyCurrentSpecial && isReport(surveyCurrentSpecial))
-										reloadV();
-									console.log('Server set  covlev successfully.');
-								}
-							});
-						}
-						// still update these.
-						updateCoverage(flipper.get(pages.data)); // update CSS and 'auto' menu title
-						updateHashAndMenus(false); // TODO: why? Maybe to show an item?
-						$('#coverage-info').text(newValue.ucFirst());
-						$(this).parents('.dropdown-menu').dropdown('toggle');
-						if(!isDashboard())
-							refreshCounterVetting();
-						return false;
-					});
-					// TODO have to move this out of the DOM..
-
-				window.reloadV(); // call it
-
-				// watch for hashchange to make other changes..
-				dojoTopic.subscribe("/dojo/hashchange", function(changedHash){
-					var oldLocale = trimNull(surveyCurrentLocale);
-					var oldSpecial = trimNull(surveyCurrentSpecial);
-					var oldPage = trimNull(surveyCurrentPage);
-					var oldId = trimNull(surveyCurrentId);
-
-					window.parseHash(changedHash);
-
-					surveyCurrentId = trimNull(surveyCurrentId);
-
-					// did anything change?
-					if(oldLocale!=trimNull(surveyCurrentLocale) ||
-							oldSpecial!=trimNull(surveyCurrentSpecial) ||
-							oldPage != trimNull(surveyCurrentPage) ) {
-						console.log("# hash changed, (loc, etc) reloadingV..");
-						reloadV();
-					} else if(oldId != surveyCurrentId && surveyCurrentId != '') {
-						console.log("# just ID changed, to " + surveyCurrentId);
-					    // surveyCurrentID and the hash have already changed.
-					    // just call showInPop if the item is present. If not present, make sure it's visible.
-						window.showCurrentId();
-					}
-				});
-				}
-			});
-			});
-		}); // end stui  load
-	});  // end require()
-} // end showV
+        }
+        if (nn != pathSplit.length - 1) {
+            // need a header row.
+            var trh = document.createElement('tr');
+            trh.className = 'subheading';
+            var tdh = document.createElement('th');
+            tdh.colSpan = 5;
+            for (var nn in pathSplit) {
+                if (nn < pathSplit.length - 1) {
+                    tdh.appendChild(createChunk(pathSplit[nn], "span", "pathChunk"));
+                }
+            }
+            trh.appendChild(tdh);
+            tb.appendChild(trh);
+        }
+        if (mainCategories.indexOf(pathSplit[0]) === -1) {
+            mainCategories.push(pathSplit[0]);
+        }
+        oldSplit = pathSplit;
+        rowTitle = pathSplit[pathSplit.length - 1];
+
+        tdp = createChunk("", "td", "v-path");
+
+        var dtpl = createChunk(rowTitle, "a");
+        dtpl.href = "v#/" + surveyCurrentLocale + "//" + row.strid;
+        dtpl.target = '_CLDR_ST_view';
+        tdp.appendChild(dtpl);
+
+        tr.appendChild(tdp);
+        var td00 = createChunk(row.baseValue, "td", "v-comp"); // english
+        tr.appendChild(td00);
+        var td0 = createChunk("", "td", "v-win");
+        if (row.winValue) {
+            var span0 = appendItem(td0, row.winValue, "winner");
+            span0.dir = dir;
+        }
+        tr.appendChild(td0);
+        var td1 = createChunk("", "td", "v-mine");
+        var label = createChunk("", "label", "");
+        var span1 = appendItem(label, row.myValue, "value");
+        td1.appendChild(label);
+        span1.dir = dir;
+        tr.appendChild(td1);
+        var td2 = createChunk("", "td", "v-accept");
+        var box = createChunk("", "input", "");
+        box.type = "checkbox";
+        if (type == 'uncontested') { // uncontested true by default
+            box.checked = true;
+        }
+        row.box = box; // backlink
+        td2.appendChild(box);
+        tr.appendChild(td2);
+
+        (function(tr, box, tdp) {
+            return function() {
+                // allow click anywhere
+                listenFor(tr, "click", function(e) {
+                    box.checked = !box.checked;
+                    stStopPropagation(e);
+                    return false;
+                });
+                // .. but not on the path.  Also listen to the box and do nothing
+                listenFor([tdp, box], "click", function(e) {
+                    stStopPropagation(e);
+                    return false;
+                });
+            };
+        })(tr, box, tdp)();
+
+        tb.appendChild(tr);
+    }
+    t.appendChild(tb);
+    addImportVotesFooter(voteTableDiv, voteList, mainCategories);
+    return voteTableDiv;
+}
+
+/**
+ * Add to the given div a footer with buttons for choosing all or none
+ * of the old votes, and with checkboxes for choosing all or none within
+ * each of two or more main categories such as "Locale Display Names".
+ *
+ * @param voteTableDiv the div to add to
+ * @param voteList the list of old votes
+ * @param mainCategories the list of main categories
+ * 
+ * Called only by showVoteTable
+ * 
+ * Reference: https://unicode.org/cldr/trac/ticket/11517
+ */
+function addImportVotesFooter(voteTableDiv, voteList, mainCategories) {
+    'use strict';
+    voteTableDiv.appendChild(createLinkToFn("v_oldvotes_all", function() {
+        for (var k in voteList) {
+        	voteList[k].box.checked = true;
+        }
+        for (var cat in mainCategories) {
+    		$("#cat" + cat).prop('checked', true);
+        }
+    }, "button"));
+
+    voteTableDiv.appendChild(createLinkToFn("v_oldvotes_none", function() {
+        for (var k in voteList) {
+        	voteList[k].box.checked = false;
+        }
+        for (var cat in mainCategories) {
+    		$("#cat" + cat).prop('checked', false);
+        }
+    }, "button"));
+
+    if (mainCategories.length > 1) {
+    	voteTableDiv.appendChild(document.createTextNode(stui.str("v_oldvotes_all_section")));
+    	for (var cat in mainCategories) {
+    		let mainCat = mainCategories[cat];
+    		var checkbox = document.createElement("input");
+    		checkbox.type = "checkbox";
+    		checkbox.id = "cat" + cat;
+    		voteTableDiv.appendChild(checkbox);
+    		voteTableDiv.appendChild(document.createTextNode(mainCat + ' '));
+    		listenFor(checkbox, "click", function(e) {
+    	        for (var k in voteList) {
+    	        	var row = voteList[k];
+    	        	if (row.pathHeader.startsWith(mainCat)) {
+        	            row.box.checked = this.checked;    	        		
+    	        	}
+    	        }
+    			stStopPropagation(e);
+    			return false;
+    		});
+    	}
+    }
+}
 
 /**
  * reload a specific row
  * @method refreshRow2
+ * 
+ * Called by loadHandler in handleWiredClick, and by loadHandler in handleCancelWiredClick
  */
 function refreshRow2(tr,theRow,vHash,onSuccess, onFailure) {
 	showLoader(tr.theTable.theDiv.loader,stui.loadingOneRow);
@@ -6207,7 +3314,7 @@ function refreshRow2(tr,theRow,vHash,onSuccess, onFailure) {
         		if(json.section.rows[tr.rowHash]) {
         			theRow = json.section.rows[tr.rowHash];
         			tr.theTable.json.section.rows[tr.rowHash] = theRow;
-        			updateRow(tr, theRow);
+        			cldrSurveyTable.updateRow(tr, theRow);
 
         			//style the radios
         			//wrapRadios(tr);
@@ -6396,7 +3503,7 @@ function handleWiredClick(tr,theRow,vHash,box,button,what) {
 
 /**
 * bottleneck for cancel buttons
- * @method handleWiredClick
+ * @method handleCancelWiredClick
  */
 function handleCancelWiredClick(tr,theRow,vHash,button) {
 	var value="";

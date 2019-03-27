@@ -2758,6 +2758,15 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
                 while (rs.next()) {
                     int theirId = rs.getInt(1);
                     int theirLevel = rs.getInt(2);
+                    /*
+                     * In this context always silently skip anonymous users. Don't send email to anon20@example.org.
+                     * This interface could be changed to treat anonymous users more like locked users, if there is
+                     * ever motivation; but anonymous users should never be sent email.
+                     * Reference: https://unicode.org/cldr/trac/ticket/11517
+                     */
+                    if (theirLevel == UserRegistry.ANONYMOUS) {
+                        continue;
+                    }
                     if (!showLocked
                         && theirLevel >= UserRegistry.LOCKED
                         && just == null /* if only one user, show regardless of lock state. */) {
@@ -4701,8 +4710,8 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
                     throw new InternalError(msg);
                 }
             }
-            File oldCommonA = new File(oldBase, "common/main");
-            File oldSeedA = new File(oldBase, "seed/main");
+            File oldCommonA = new File(oldBase, "common/annotations");
+            File oldSeedA = new File(oldBase, "seed/annotations");
             oldCommonA.mkdirs(); // may not exist
             oldSeedA.mkdirs(); // may not exist
 
@@ -5082,10 +5091,11 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
             return;
 
         boolean useCache = isUnofficial(); // NB: do NOT use the cache if we are
-        // in unofficial mode. Parsing here
+        // in official mode. Parsing here
         // doesn't take very long (about
         // 16s), but
         // we want to save some time during development iterations.
+        // In production, we want the files to be more carefully checked every time.
 
         Hashtable<CLDRLocale, CLDRLocale> aliasMapNew = new Hashtable<CLDRLocale, CLDRLocale>();
         Hashtable<CLDRLocale, String> directionMapNew = new Hashtable<CLDRLocale, String>();
@@ -6194,11 +6204,15 @@ public class SurveyMain extends HttpServlet implements CLDRProgressIndicator, Ex
     static protected File[] getInFiles() {
         //        ElapsedTimer et = SurveyLog.DEBUG ? new ElapsedTimer("getInFiles()") : null;
         Set<File> s = new HashSet<File>();
-        for (File f : getInFiles(fileBase)) {
-            s.add(f);
+        if (fileBase != null) {
+            for (File f : getInFiles(fileBase)) {
+                s.add(f);
+            }
         }
-        for (File f : getInFiles(fileBaseSeed)) {
-            s.add(f);
+        if (fileBaseSeed != null) {
+            for (File f : getInFiles(fileBaseSeed)) {
+                s.add(f);
+            }
         }
         File arr[] = s.toArray(new File[s.size()]);
         //        SurveyLog.debug(et);

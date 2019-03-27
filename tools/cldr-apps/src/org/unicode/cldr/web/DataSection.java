@@ -65,6 +65,7 @@ import org.unicode.cldr.web.DataSection.DataRow.CandidateItem;
 import org.unicode.cldr.web.SurveyMain.UserLocaleStuff;
 import org.unicode.cldr.web.UserRegistry.User;
 
+import com.google.common.collect.ImmutableList;
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.util.Output;
 
@@ -349,7 +350,7 @@ public class DataSection implements JSONString {
              * @return true if any valid tests were found, else false
              */
             private boolean setTests(List<CheckStatus> testList) {
-                tests = testList;
+                tests = ImmutableList.copyOf(testList);
                 // only consider non-example tests as notable.
                 boolean weHaveTests = false;
                 int errorCount = 0;
@@ -520,7 +521,9 @@ public class DataSection implements JSONString {
         private String pathWhereFound = null;
 
         /*
-         * TODO: document confirmStatus and other members of DataRow
+         * confirmStatus indicates the status of the winning value. It is sent to
+         * the client, which displays a corresponding status icon in the "A"
+         * ("Approval status") column. See VoteResolver.Status and VoteResolver.getWinningStatus. 
          */
         Status confirmStatus;
 
@@ -529,6 +532,9 @@ public class DataSection implements JSONString {
          */
         public int coverageValue;
 
+        /*
+         * TODO: document displayName and other members of DataRow
+         */
         private String displayName = null;
         // these apply to the 'winning' item, if applicable
         boolean hasErrors = false;
@@ -632,6 +638,11 @@ public class DataSection implements JSONString {
         private String oldValue;
         
         /**
+         * The status for this DataRow in the previous release version.
+         */
+        private Status oldStatus;
+
+        /**
          * The PathHeader for this DataRow, assigned in the constructor based on xpath.
          */
         private PathHeader pathHeader;
@@ -663,6 +674,7 @@ public class DataSection implements JSONString {
             confirmStatus = resolver.getWinningStatus();
 
             oldValue = resolver.getLastReleaseValue();
+            oldStatus = resolver.getLastReleaseStatus();
 
             this.displayName = baselineFile.getStringValue(xpath);
         }
@@ -694,7 +706,7 @@ public class DataSection implements JSONString {
          *     in populateFromThisXpath:
          *         row.addItem(row.winningValue, "winningValue");
          *
-         * (4) For oldValue (if not null, not in votes, and not same as ourValue):
+         * (4) For oldValue (if not null, and not same as ourValue):
          *     in populateFromThisXpath:
          *         row.addItem(row.oldValue, "oldValue");
          *
@@ -765,6 +777,10 @@ public class DataSection implements JSONString {
             return intgroup;
         }
 
+        /**
+         * Get the locale for this DataRow
+         */
+        @Override
         public CLDRLocale getLocale() {
             return locale;
         }
@@ -863,6 +879,10 @@ public class DataSection implements JSONString {
             return winningValue;
         }
 
+        /**
+         * Get the xpath for this DataRow
+         */
+        @Override
         public String getXpath() {
             return xpath;
         }
@@ -1490,7 +1510,7 @@ public class DataSection implements JSONString {
          *
          * A bug may occur on the client if there is no item for winningVhash.
          *
-         * See updateRowProposedWinningCell in survey.js:
+         * See updateRowProposedWinningCell in CldrSurveyVettingTable.js:
          * addVitem(children[config.proposedcell], tr, theRow, theRow.items[theRow.winningVhash], cloneAnon(protoButton));
          *
          * We get an error "item is undefined" in addVitem if theRow.items[theRow.winningVhash] isn't defined.
@@ -1565,6 +1585,14 @@ public class DataSection implements JSONString {
         @Override
         public String getLastReleaseValue() {
             return oldValue;
+        }
+
+        /**
+         * Get the last release value for this DataRow
+         */
+        @Override
+        public Status getLastReleaseStatus() {
+            return oldStatus;
         }
 
         /**
@@ -2624,9 +2652,8 @@ public class DataSection implements JSONString {
     private void populateFrom(CLDRFile ourSrc, TestResultBundle checkCldr, String workingCoverageLevel) {
         XPathParts xpp = new XPathParts(null, null);
         STFactory stf = sm.getSTFactory();
-        CLDRFile oldFile = stf.getOldFile(locale);
+        CLDRFile oldFile = stf.getOldFileResolved(locale);
         diskFile = stf.getDiskFile(locale);
-        List<CheckStatus> examplesResult = new ArrayList<CheckStatus>();
         String workPrefix = xpathPrefix;
 
         int workingCoverageValue = Level.fromString(workingCoverageLevel).getLevel();
@@ -2634,7 +2661,6 @@ public class DataSection implements JSONString {
         Set<String> allXpaths;
 
         Set<String> extraXpaths = null;
-        List<CheckStatus> checkCldrResult = new ArrayList<CheckStatus>();
 
         if (pageId != null) {
             allXpaths = PathHeader.Factory.getCachedPaths(pageId.getSectionId(), pageId);
@@ -2684,7 +2710,7 @@ public class DataSection implements JSONString {
                 System.err.println("@@X@ base[" + workPrefix + "]: " + baseXpaths.size() + ", extra: " + extraXpaths.size());
             }
         }
-        populateFromAllXpaths(allXpaths, workPrefix, ourSrc, oldFile, extraXpaths, stf, workingCoverageValue, xpp, checkCldr, examplesResult, checkCldrResult);
+        populateFromAllXpaths(allXpaths, workPrefix, ourSrc, oldFile, extraXpaths, stf, workingCoverageValue, xpp, checkCldr);
     }
     
     /**
@@ -2699,14 +2725,12 @@ public class DataSection implements JSONString {
      * @param workingCoverageValue
      * @param xpp
      * @param checkCldr
-     * @param examplesResult
-     * @param checkCldrResult
      * 
      * TODO: resurrect SHOW_TIME and TRACE_TIME code, deleted in revision 14327, if and when needed for debugging.
      * It was deleted when this code was moved from populateFrom to new subroutine populateFromAllXpaths.
      */
     private void populateFromAllXpaths(Set<String> allXpaths, String workPrefix, CLDRFile ourSrc, CLDRFile oldFile, Set<String> extraXpaths, STFactory stf,
-        int workingCoverageValue, XPathParts xpp, TestResultBundle checkCldr, List<CheckStatus> examplesResult, List<CheckStatus> checkCldrResult) {
+        int workingCoverageValue, XPathParts xpp, TestResultBundle checkCldr) {
 
         for (String xpath : allXpaths) {
             if (xpath == null) {
@@ -2756,7 +2780,7 @@ public class DataSection implements JSONString {
                 fullPath = xpath; // (this is normal for 'extra' paths)
             }
             // Now we are ready to add the data
-            populateFromThisXpath(xpath, extraXpaths, ourSrc, oldFile, xpp, fullPath, checkCldr, coverageValue, base_xpath, examplesResult, checkCldrResult);
+            populateFromThisXpath(xpath, extraXpaths, ourSrc, oldFile, xpp, fullPath, checkCldr, coverageValue, base_xpath);
         }
     }
 
@@ -2772,11 +2796,9 @@ public class DataSection implements JSONString {
      * @param checkCldr
      * @param coverageValue
      * @param base_xpath
-     * @param examplesResult
-     * @param checkCldrResult
      */
     private void populateFromThisXpath(String xpath, Set<String> extraXpaths, CLDRFile ourSrc, CLDRFile oldFile, XPathParts xpp, String fullPath,
-        TestResultBundle checkCldr, int coverageValue, int base_xpath, List<CheckStatus> examplesResult, List<CheckStatus> checkCldrResult) {
+        TestResultBundle checkCldr, int coverageValue, int base_xpath) {
         /*
          * 'extra' paths get shim treatment
          * 
@@ -2811,7 +2833,6 @@ public class DataSection implements JSONString {
          * 
          * See fixWinningValue for more related comments.
          */
-
         String ourValue = isExtraPath ? null : ourSrc.getStringValue(xpath);
         if (ourValue == null) {
             /*
@@ -2881,12 +2902,16 @@ public class DataSection implements JSONString {
         }
 
         /*
-         * Add an item for oldValue if there isn't one already.
+         * Add an item for oldValue if there isn't one already. Do so even if it occurs
+         * in the vote array v, since populateFromThisXpathAddItemsForVotes may skip items
+         * for which getVotesForValue is null or empty. There is no harm in calling addItem
+         * twice for the same value.
          *
-         * TODO: clarify whether the conditions "!row.oldValue.equals(ourValue)" and
-         * "v == null || !v.contains(row.oldValue)" are needed here and if so why.
+         * TODO: clarify whether the condition "!row.oldValue.equals(ourValue)" is
+         * needed here and if so why. (For example, if ourValue same as inheritedValue,
+         * don't treat it as a "hard" item.) 
          */
-        if (row.oldValue != null && !row.oldValue.equals(ourValue) && (v == null || !v.contains(row.oldValue))) {
+        if (row.oldValue != null && !row.oldValue.equals(ourValue)) {
             row.addItem(row.oldValue, "oldValue");
         }
 
@@ -2935,6 +2960,8 @@ public class DataSection implements JSONString {
             row.hasMultipleProposals = true;
         }
         CLDRLocale setInheritFrom = ourValueIsInherited ? CLDRLocale.getInstance(sourceLocale) : null;
+        List<CheckStatus> checkCldrResult = new ArrayList<CheckStatus>();
+        List<CheckStatus> examplesResult = new ArrayList<CheckStatus>();
         if (checkCldr != null) {
             checkCldr.check(xpath, checkCldrResult, isExtraPath ? null : ourValue);
             checkCldr.getExamples(xpath, isExtraPath ? null : ourValue, examplesResult);
@@ -2960,6 +2987,10 @@ public class DataSection implements JSONString {
      */
     private void populateFromThisXpathAddItemsForVotes(Set<String> v, String xpath, DataRow row, TestResultBundle checkCldr) {
         for (String avalue : v) {
+            Set<User> votes = ballotBox.getVotesForValue(xpath, avalue);
+            if (votes == null || votes.size() == 0) {
+                continue;
+            }
             CandidateItem item2 = row.addItem(avalue, "votes");
             if (avalue != null && checkCldr != null) {
                 List<CheckStatus> item2Result = new ArrayList<CheckStatus>();
@@ -2974,6 +3005,9 @@ public class DataSection implements JSONString {
     /**
      * Add an item for "ourValue" to the given DataRow, and set various fields of the DataRow
      *
+     * TODO: rename this function and/or move parts elsewhere? The setting of various fields may be
+     * more necessary than adding an item for ourValue. This function lacks a coherent purpose.
+     * 
      * @param ourValue
      * @param row
      * @param checkCldrResult
@@ -2988,18 +3022,23 @@ public class DataSection implements JSONString {
             org.unicode.cldr.util.CLDRFile.Status sourceLocaleStatus, String xpath, CLDRLocale setInheritFrom,
             List<CheckStatus> examplesResult) {
 
-        CandidateItem myItem = row.addItem(ourValue, "ourValue");
-
-        if (DEBUG) {
-            System.err.println("Added item " + ourValue + " - now items=" + row.items.size());
+        /*
+         * Skip ourValue if it matches inheritedValue. Otherwise we tend to get both "hard" and "soft"
+         * inheritance items even when there are no votes yet in the current cycle. This is related
+         * to the open question of how ourValue is related to winningValue (often but not always the same),
+         * and why there is any need at all for ourValue in addition to winningValue.
+         * Reference: https://unicode.org/cldr/trac/ticket/11611
+         */
+        CandidateItem myItem = null;
+        if (!(ourValue != null && ourValue.equals(row.inheritedValue))) {
+            myItem = row.addItem(ourValue, "ourValue");
+            if (DEBUG) {
+                System.err.println("Added item " + ourValue + " - now items=" + row.items.size());
+            }
         }
 
-        if (!checkCldrResult.isEmpty()) {
+        if (myItem != null && !checkCldrResult.isEmpty()) {
             myItem.setTests(checkCldrResult);
-            /*
-             * set the parent, can't reuse it if nonempty
-             */
-            checkCldrResult = new ArrayList<CheckStatus>();
         }
 
         if (sourceLocaleStatus != null && sourceLocaleStatus.pathWhereFound != null
@@ -3016,9 +3055,9 @@ public class DataSection implements JSONString {
          * TODO: explain the following block.
          * myItem.examples is assigned to here, but not referenced anywhere else,
          * so what is this block for, and does examples need to be a member of
-         * CandidateItem rather than just a local variable here?
+         * CandidateItem (as it currently is) rather than just a local variable here?
          */
-        if (!examplesResult.isEmpty()) {
+        if (myItem != null && !examplesResult.isEmpty()) {
             // reuse the same ArrayList unless it contains something
             if (myItem.examples == null) {
                 myItem.examples = new Vector<ExampleEntry>();
