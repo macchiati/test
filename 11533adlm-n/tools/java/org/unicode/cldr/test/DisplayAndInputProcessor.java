@@ -104,6 +104,7 @@ public class DisplayAndInputProcessor {
     private static final CLDRLocale FARSI = CLDRLocale.getInstance("fa");
     private static final CLDRLocale GERMAN_SWITZERLAND = CLDRLocale.getInstance("de_CH");
     private static final CLDRLocale SWISS_GERMAN = CLDRLocale.getInstance("gsw");
+    private static final CLDRLocale FF_ADLAM = CLDRLocale.getInstance("ff_Adlm");
     public static final Set<String> LANGUAGES_USING_MODIFIER_APOSTROPHE = new HashSet<String>(
         Arrays.asList("br", "bss", "cch", "gn", "ha", "ha_Latn", "lkt", "mgo", "moh", "nnh", "qu", "quc", "uk", "uz", "uz_Latn"));
 
@@ -341,7 +342,7 @@ public class DisplayAndInputProcessor {
                 value = replaceChars(path, value, KYRGYZ_CONVERSIONS, false);
             } else if (locale.childOf(URDU) || locale.childOf(PASHTO) || locale.childOf(FARSI)) {
                 value = replaceChars(path, value, URDU_PLUS_CONVERSIONS, true);
-            } else if (locale.childOf(CLDRLocale.getInstance("ff_Adlm")) && !isUnicodeSet) {
+            } else if (locale.childOf(FF_ADLAM) && !isUnicodeSet) {
                 value = fixAdlamNasalization(value);
             }
 
