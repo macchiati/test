@@ -818,7 +818,7 @@ public class DisplayAndInputProcessor {
         return value;
     }
 
-    static Pattern ADLAM_MISNASALIZED = PatternCache.get("([𞤲𞤐])['’‘]([𞤔𞤘𞤄𞤣𞤦𞤶𞤺])");
+    static Pattern ADLAM_MISNASALIZED = PatternCache.get("([𞤲𞤐])['’‘]([𞤁𞤔𞤘𞤄𞤣𞤦𞤶𞤺])");
     public static String ADLAM_NASALIZATION = Character.toString(0x1E94B);
 
     public static String fixAdlamNasalization(String fromString) {
