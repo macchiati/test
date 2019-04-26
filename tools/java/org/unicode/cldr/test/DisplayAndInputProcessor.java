@@ -341,6 +341,8 @@ public class DisplayAndInputProcessor {
                 value = replaceChars(path, value, KYRGYZ_CONVERSIONS, false);
             } else if (locale.childOf(URDU) || locale.childOf(PASHTO) || locale.childOf(FARSI)) {
                 value = replaceChars(path, value, URDU_PLUS_CONVERSIONS, true);
+            } else if (locale.childOf(CLDRLocale.getInstance("ff_Adlm")) && !isUnicodeSet) {
+                value = fixAdlamNasalization(value);
             }
 
             if (UNICODE_WHITESPACE.containsSome(value)) {
@@ -814,6 +816,14 @@ public class DisplayAndInputProcessor {
     private String replaceArabicPresentationForms(String value) {
         value = fixArabicPresentation.transform(value);
         return value;
+    }
+
+    static Pattern ADLAM_MISNASALIZED = PatternCache.get("([𞤲𞤐])['’‘]([𞤔𞤘𞤄𞤣𞤦𞤶𞤺])");
+    public static String ADLAM_NASALIZATION = Character.toString(0x1E94B);
+
+    public static String fixAdlamNasalization(String fromString) {
+        return ADLAM_MISNASALIZED.matcher(fromString)
+        .replaceAll("$1"+ADLAM_NASALIZATION+"$2");  // replace quote with 𞥋
     }
 
     static Pattern REMOVE_QUOTE1 = PatternCache.get("(\\s)(\\\\[-\\}\\]\\&])()");
