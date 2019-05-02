@@ -4,6 +4,8 @@ jdk:
   - oraclejdk8
 services:
 install: true
+before_script:
+  mkdir -p test/tools/cldr-unittest/libs
 script:
   ant all -f tools/java/build.xml ;  ant jar -f tools/java/build.xml ; ant check -f tools/cldr-unittest/build.xml -DCLDR_DIR=$(pwd)
   
