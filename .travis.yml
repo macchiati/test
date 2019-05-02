@@ -5,7 +5,6 @@ jdk:
 services:
 install: true
 script:
-  ant all -f tools/java/build.xml
-  ant jar -f tools/java/build.xml
-  ant check -f tools/cldr-unittest/build.xml -DCLDR_DIR=$(pwd)
-  echo TODO tomcat || ant -DCLDR_TOOLS=$(pwd)/tools/java -DCATALINA_HOME=cldr.tomcat -f tools/cldr-apps/build.xml
+  ant all -f tools/java/build.xml ;  ant jar -f tools/java/build.xml ; ant check -f tools/cldr-unittest/build.xml -DCLDR_DIR=$(pwd)
+  
+# ant -DCLDR_TOOLS=$(pwd)/tools/java -DCATALINA_HOME=cldr.tomcat -f tools/cldr-apps/build.xml
